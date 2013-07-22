@@ -1,0 +1,40 @@
+name "ctrl_lib"
+
+import_types_from "ctrl_libTypes.hpp"
+import_types_from "base"
+
+# using_library "ctrl_lib"
+# import_types_from "ctrl_lib/CustomType.hpp"
+
+task_context "JointPIDCtrl" do
+    needs_configuration
+    property "kp", "std/vector<double>"
+    property "ki", "std/vector<double>"
+    property "kd", "std/vector<double>"
+    property "output", "std/string" #Might be position, velocity, acceleration, torque, raw
+    property "input", "std/string" #  same as above
+
+    input_port "current", "base/samples/Joints"
+    
+    input_port "setpoint", "base/commands/Joints"
+    output_port "ctrl_out", "base/commands/Joints"
+
+    periodic 0.1
+end
+
+task_context "CartPIDCtrl" do
+    needs_configuration
+    property "kp", "std/vector<double>"
+    property "ki", "std/vector<double>"
+    property "kd", "std/vector<double>"
+    property "output", "std/string" #Might be position, velocity, acceleration, torque, raw
+    property "input", "std/string" #  same as above
+
+    input_port "current", "base/samples/RigidBodyState"
+    
+    input_port "setpoint", "base/samples/RigidBodyState"
+    output_port "ctrl_out", "base/samples/RigidBodyState"
+
+    periodic 0.1
+end
+

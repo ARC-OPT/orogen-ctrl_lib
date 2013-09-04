@@ -13,8 +13,8 @@ task_context "JointPIDCtrl" do
     property "kd", "std/vector<double>"
     property "output", "std/string" #Might be position, velocity, acceleration, torque, raw
     property "input", "std/string" #  same as above
-
-    input_port "current", "base/samples/Joints"
+   
+    input_port "feedback", "base/samples/Joints"
     
     input_port "setpoint", "base/commands/Joints"
     output_port "ctrl_out", "base/commands/Joints"
@@ -30,11 +30,28 @@ task_context "CartPIDCtrl" do
     property "output", "std/string" #Might be position, velocity, acceleration, torque, raw
     property "input", "std/string" #  same as above
 
-    input_port "current", "base/samples/RigidBodyState"
-    
-    input_port "setpoint", "base/samples/RigidBodyState"
+    #to work with frame name aliases
+    property "controlled_frame_frame", "std/string"
+    property "controlled_in_frame", "std/string"
+    property "target_frame", "std/string"
+
+    #no explicit input ports are needed, since
+    #transformer will deliver the necessary data
+
     output_port "ctrl_out", "base/samples/RigidBodyState"
+
+    transformer do
+      transform 'controlled_in', 'setpoint'
+      transform 'controlled_in', 'controlled_frame'
+      max_latency 0.1
+    end
 
     periodic 0.1
 end
+
+#task_context "FFCartPID" do
+#...
+#  input_port "feed_forward", "basw/samples/RigidBodyState"
+#...
+#end
 

@@ -1,43 +1,164 @@
 name "ctrl_lib"
 
-import_types_from "ctrl_libTypes.hpp"
 import_types_from "base"
+using_library "ctrl_lib"
 
-# using_library "ctrl_lib"
-# import_types_from "ctrl_lib/CustomType.hpp"
+##########################################################################################################
 
+# Repulsive Potential Field method in joint space.
+# One 1-dim. potential field per joint.
+# 
+# Velocity Output: dq = (1/d - 1/d0) * (1/d^3) * (q - q0), if d < d_0
+#                  dq = 0                                , else
+#
+#            with: d0 = Maximum influence distance 
+#                  q0 = Potential Field Center
+#                   d = |q - q0|                
+#
+task_context "JointRepPotField" do
+    needs_configuration
+
+    # Potential field center per joint
+    property "q_zero", "base/samples/Joints"
+
+    # Proportional Gain. 
+    property "kp", "base/VectorXd"
+
+    # Maximum influence distance per joint
+    property "d_zero", "base/samples/Joints"
+
+    
+    # Current Joint status
+    input_port "feedback", "base/samples/Joints"
+
+    # Output (velocity)
+    output_port "ctrl_out", "base/commands/Joints"
+    
+    periodic 0.1
+end
+
+##########################################################################################################
+
+# Repulsive Potential Field method in Cartesian space. 
+# 3-dim. radial potential field
+# 
+# Velocity Output: dv = (1/d - 1/d0) * (1/d^3) * (x - x0), if d < d_0
+#                  dv = 0                                , else
+#
+#            with: d0 = Maximum influence distance 
+#                  x0 = Potential Field Center
+#                   d = ||x - x0||                
+#
+task_context "CartRepPotField" do
+    needs_configuration
+
+    # Maximum influence distance
+    property "d_zero", "double"
+
+    # Proportional Gain. 
+    property "kp", "base/Vector3d"
+ 
+    # This is the 'end effector' frame of the controlled motion
+    property "controlled_frame_frame", "std/string" 
+
+    # This is the base frame of the controller motion, e.g. the robot base frame
+    property "controlled_in_frame", "std/string"
+
+    # This is the rep_field_center frame of the controller motion
+    property "rep_field_center_frame", "std/string"
+   
+    # Output (velocity)
+    output_port "ctrl_out", "base/samples/RigidBodyState"
+    
+    transformer do
+      transform 'controlled_in', 'rep_field_center'
+      transform 'controlled_in', 'controlled_frame'
+      max_latency 0.1
+    end
+
+    periodic 0.1
+end
+
+##########################################################################################################
+
+# Joint PID controller with acceleration feedfoward plus velocity and acceleration saturation
+# 
+# Velocity Output:        dq_des = dq_r + kp/kd*(q_r-q) + ki/kd*(sum(q_r-q)), 
+#
+#            with:        |dq_des| <= dq_max (velocity saturation)
+#                         |sum(q_r-q)| <= max_windup
+# 
+# Acceleration Output:    ddq_des = ddq_r + kd*(dq_des-dq)
+#
+#                         with: |ddq_des| <= ddq_max (acceleration saturation)
+#
 task_context "JointPIDCtrl" do
     needs_configuration
-    property "kp", "std/vector<double>"
-    property "ki", "std/vector<double>"
-    property "kd", "std/vector<double>"
-    property "output", "std/string" #Might be position, velocity, acceleration, torque, raw
-    property "input", "std/string" #  same as above
    
+    # Saturation values. Max velocities and accelerations can be defined here. 
+    # If left empty, infinite ctrl output will be allowed
+    property "max_ctrl_out", "base/samples/Joints"
+
+    # PID Controller parameters, this property will determine the expected number of inputs and outputs!
+    # Note: The maxPWM entry of pidValues will be used as windup
+    property "pid", "std/vector<base/actuators/PIDValues>"
+
+
+    # Reference value for controller. Depending on which field is filled out, the corresponding control mode will
+    # be used (position, speed, effort, raw). Has to have same size as pid property.
+    input_port "setpoint", "base/commands/Joints"   
+
+    # Current joint state. Has to have same size as pid property.
     input_port "feedback", "base/samples/Joints"
+
+    # Optional port for online setting new pid values 
+    input_port "pid_values", "std/vector<base/actuators/PIDValues>"
     
-    input_port "setpoint", "base/commands/Joints"
+    # Controller output. Will have same size as pid property.
     output_port "ctrl_out", "base/commands/Joints"
 
     periodic 0.1
 end
 
+##########################################################################################################
+
+# Cartesian PID controller with acceleration feedfoward, velocity and acceleration saturation
+# 
+# Velocity Output:        v_des = v_r + kp/kd*(x_r-x) + ki/kd*(sum(x_r-x)), 
+#
+#            with:        |v_des| <= v_max (velocity saturation)
+#                         |sum(x_r-x)| <= max_windup
+# 
+# Acceleration Output:    a_des = a_r + kd*(v_des-v)
+#
+#                         with: |a_des| <= a_max (acceleration saturation)
+#
 task_context "CartPIDCtrl" do
     needs_configuration
-    property "kp", "std/vector<double>"
-    property "ki", "std/vector<double>"
-    property "kd", "std/vector<double>"
-    property "output", "std/string" #Might be position, velocity, acceleration, torque, raw
-    property "input", "std/string" #  same as above
 
-    #to work with frame name aliases
-    property "controlled_frame_frame", "std/string"
+
+    # Saturation values. Max cartesian velocities and accelerations can be defined here. If left empty,
+    # infinite ctrl output will be allowed
+    property "max_ctrl_out", "base/samples/RigidBodyState"
+
+    # PID Controller parameters. Size has to be 6! Note: The maxPWM entry of pidValues
+    # will be used as windup
+    property "pid", "std/vector<base/actuators/PIDValues>"
+ 
+    # This is the 'end effector' frame of the controlled motion
+    property "controlled_frame_frame", "std/string" 
+
+    # This is the base frame of the controller motion, e.g. the robot base frame
     property "controlled_in_frame", "std/string"
+
+    # This is the setpoint frame of the controller motion, e.g. the control target
     property "target_frame", "std/string"
+  
 
-    #no explicit input ports are needed, since
-    #transformer will deliver the necessary data
+    # Optional port for online setting new pid values 
+    input_port "pid_values", "std/vector<base/actuators/PIDValues>"
 
+    # Controller output. Will have velocity and acceleration output (see above)
     output_port "ctrl_out", "base/samples/RigidBodyState"
 
     transformer do
@@ -49,9 +170,4 @@ task_context "CartPIDCtrl" do
     periodic 0.1
 end
 
-#task_context "FFCartPID" do
-#...
-#  input_port "feed_forward", "basw/samples/RigidBodyState"
-#...
-#end
-
+##########################################################################################################

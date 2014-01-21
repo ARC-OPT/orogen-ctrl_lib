@@ -22,22 +22,21 @@ bool JointRepPotField::configureHook()
 
     base::samples::Joints q_zero = _q_zero.get();
     base::samples::Joints d_zero = _d_zero.get();
-    base::VectorXd kp = _kp.get();
+    std::vector<base::actuators::PIDValues> pid = _pid.get();
 
     if(q_zero.size() != d_zero.size()){
         LOG_ERROR("q_zero property has size %i and d_zero property size %i", q_zero.size(), d_zero.size());
-        return false;
-    }
-    if(kp.rows() != q_zero.size()){
-        LOG_ERROR("q_zero property has size %i and kp property size %i", q_zero.size(), kp.size());
         return false;
     }
 
     for(uint i = 0; i < q_zero.size(); i++){
         RepulsivePotentialField* rpf = new RepulsivePotentialField(1);
         rpf->d0_ = d_zero[i].position;
-        rpf->q0_(0) = q_zero[i].position;
-        rpf->kp_(0) = kp(i);
+        rpf->q0_(i) = q_zero[i].position;
+        if(pid.size() == q_zero.size()){
+            rpf->kp_(i) = pid[i].kp;
+            rpf->max_(i) = pid[i].maxPWM;
+        }
         rpf_.push_back(rpf);
     }
 
@@ -70,9 +69,10 @@ void JointRepPotField::updateHook()
     }
 
     for(uint i = 0; i < rpf_.size(); i++){
-        rpf_[i]->q_(0) = feedback_[i].position;
+        rpf_[i]->q_(i) = feedback_[i].position;
         rpf_[i]->update();
-        ctrl_output_[i].speed = rpf_[i]->gradU_(0);
+        ctrl_output_[i].speed = rpf_[i]->ctrl_out_(i);
+        ctrl_output_[i].effort = rpf_[i]->ctrl_out_(i);
     }
 
     _ctrl_out.write(ctrl_output_);

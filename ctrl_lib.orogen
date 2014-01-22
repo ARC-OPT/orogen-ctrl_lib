@@ -83,12 +83,13 @@ task_context "CartRepPotField" do
 end
 
 ##########################################################################################################
-# Joint PID controller with acceleration feedfoward plus velocity and acceleration saturation
+# Joint PD controller with velocity and acceleration feedfoward term as proposed in 
+# Khatib: "Real-time obstacle avoidance for manipulators and mobile robots", 1986
 # 
-#   vel_out = v_r + kp/kd*(x_r-x) + ki/kd*(sum(x_r-x)), |vel_out| <= max_vel
-#   acc_out = a_r + kd*(v_out-v), |acc_out| <= max_acc
+#   v_ctrl_out = kp/kd*(x_r-x), |v_ctrl_out| <= max_vel
+#   a_ctrl_out = a_r + kd*(v_ctrl_out + v_r - v), |a_ctrl_out| <= max_acc
 #
-task_context "JointPIDCtrl" do
+task_context "JointPDCtrlFeedForward" do
     needs_configuration
    
     property("max_ctrl_out", "base/samples/Joints").
@@ -96,38 +97,42 @@ task_context "JointPIDCtrl" do
 
     property("pid", "std/vector<base/actuators/PIDValues>").
          doc("PID Controller parameters, this property will determine the expected number of inputs and outputs!
-              Note: The maxPWM entry of pidValues will be used as windup.")
+              I-Value will be ignored.")
 
     input_port("setpoint", "base/commands/Joints").
-         doc("Reference value for controller. Has to have same size as pid property.")
+         doc("Reference value for controller. Has to have same size as pid property.
+              Position == x_r, speed = v_r, effort = a_r.")
 
     input_port("feedback", "base/samples/Joints").
-         doc("Current joint state. Has to have same size as pid property.")
+         doc("Current joint state. Has to have same size as pid property.
+              Position = x, Speed = v. Effort will be ignored.")
 
     input_port("pid_values", "std/vector<base/actuators/PIDValues>").
-         doc("Optional port for online setting new pid values ")
+         doc("Optional port for online setting new pid values. I-Value will be ignored.")
     
     output_port("ctrl_out", "base/commands/Joints").
-         doc("Controller output. Will have same size as pid property.")
+         doc("Controller output. Will have same size as pid property. 
+              Speed = v_ctrl_out. Effort = a_ctrl_out. Position will not be used.")
 
     periodic 0.1
 end
 
 ##########################################################################################################
-
-# Cartesian PID controller with acceleration feedfoward, velocity and acceleration saturation
+# Cartesian PD controller with acceleration and velocity feedfoward term as proposed in 
+# Khatib: "Real-time obstacle avoidance for manipulators and mobile robots", 1986
 # 
-#   vel_out = v_r + kp/kd*(x_r-x) + ki/kd*(sum(x_r-x)), |vel_out| <= max_vel
-#   acc_out = a_r + kd*(v_out-v), |acc_out| <= max_acc
+#   v_ctrl_out = kp/kd*(x_r-x), |v_ctrl_out| <= max_vel
+#   a_ctrl_out = a_r + kd*(v_ctrl_out + v_r - v), |a_ctrl_out| <= max_acc
 #
-task_context "CartPIDCtrl" do
+task_context "CartPDCtrlFeedForward" do
     needs_configuration
 
     property("max_ctrl_out", "base/samples/RigidBodyState").
-       doc("Max cartesian velocities and accelerations can be defined here. If left empty, infinite ctrl output will be allowed")
+       doc("Max. cartesian velocities and accelerations can be defined here. If left empty, infinite ctrl output will be allowed.")
 
     property("pid", "std/vector<base/actuators/PIDValues>").
-       doc("PID Controller parameters. Size has to be 6! Note: The maxPWM entry of pidValues will be used as windup")
+       doc("PID Controller parameters. Size has to be 6!
+            I-Value will be ignored. ")
  
     property("controlled_frame_frame", "std/string" ).
        doc("This is the 'end effector' frame of the controlled motion")
@@ -139,10 +144,11 @@ task_context "CartPIDCtrl" do
        doc("This is the setpoint frame of the controller motion, e.g. the control target")
   
     input_port("pid_values", "std/vector<base/actuators/PIDValues>").
-       doc("Optional port for online setting new pid values ")
+       doc("Optional port for online setting new pid values. I-Value will be ignored.")
 
     output_port("ctrl_out", "base/samples/RigidBodyState").
-       doc("Controller output. Will have velocity and acceleration output (see above)")
+       doc("Controller output. Velocity/angular_velocity = v_ctrl_out. 
+            Acceleration/Angular_acceleration = a_ctrl_out. Position will not be used.")
 
     transformer do
       transform 'controlled_in', 'setpoint'
@@ -153,4 +159,3 @@ task_context "CartPIDCtrl" do
     periodic 0.1
 end
 
-##########################################################################################################

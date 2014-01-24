@@ -26,7 +26,9 @@ void CartPDCtrlFeedForward::setPID(const std::vector<base::actuators::PIDValues>
         return;
 
     //Ignores I-Value
+    LOG_DEBUG("PD Values: ");
     for(uint i = 0; i < 6; i++){
+        LOG_DEBUG("i%: %f %f", i, pid[i].kp, pid[i].kd);
         pd_ctrl_->kp_(i) = pid[i].kp;
         pd_ctrl_->kd_(i) = pid[i].kd;
     }
@@ -53,6 +55,12 @@ bool CartPDCtrlFeedForward::configureHook()
     if(max_ctrl_out.hasValidAngularAccelerarion())
         pd_ctrl_->a_max_.segment(3,3) = max_ctrl_out.angular_acceleration;
 
+    LOG_DEBUG("Saturation Values: ");
+    LOG_DEBUG("v_max: %f %f %f",  pd_ctrl_->v_max_(0), pd_ctrl_->v_max_(1), pd_ctrl_->v_max_(2));
+    LOG_DEBUG("v_rot_max: %f %f %f",  pd_ctrl_->v_max_(3), pd_ctrl_->v_max_(4), pd_ctrl_->v_max_(5));
+    LOG_DEBUG("a_max: %f %f %f",  pd_ctrl_->a_max_(0), pd_ctrl_->a_max_(1), pd_ctrl_->a_max_(2));
+    LOG_DEBUG("a_rot_max: %f %f %f",  pd_ctrl_->a_max_(3), pd_ctrl_->a_max_(4), pd_ctrl_->a_max_(5));
+
     return true;
 }
 
@@ -63,6 +71,9 @@ void CartPDCtrlFeedForward::updateHook()
     //Get Transforms:
     _controlled_in2setpoint.get(base::Time::now(), ref_);
     _controlled_in2controlled_frame.get(base::Time::now(), cur_);
+
+    _setpoint.read(ref_);
+    _feedback.read(cur_);
 
     if(!ref_.hasValidPosition() ||
        !ref_.hasValidOrientation()){

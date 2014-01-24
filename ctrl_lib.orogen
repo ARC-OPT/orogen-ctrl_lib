@@ -3,7 +3,7 @@ name "ctrl_lib"
 import_types_from "base"
 using_library "ctrl_lib"
 
-##########################################################################################################
+
 # Repulsive Potential Field method in joint space. One 1-dim. potential field per joint of shape: 
 #
 #     U = (kp/2) * (1/d - 1/d_0), d <= d_0
@@ -38,7 +38,7 @@ task_context "JointRepPotField" do
     periodic 0.1
 end
 
-##########################################################################################################
+
 # Repulsive Potential Field method in Cartesian space. 3-dim. radial potential field of shape: 
 #
 #     U = (kp/2) * (1/d - 1/d_0), d <= d_0
@@ -49,7 +49,7 @@ end
 #   x_0 = Potential field center
 #    kp = Proportional gain
 #
-# Out: acc = vel = -grad(U) = kp * (1/d - 1/d_0) * (q - q_0)/d^2,  d<= d_0
+# Out: acc = vel = -grad(U) = kp * (1/d - 1/d_0) * (x - x_0)/d^2,  d<= d_0
 #                           = 0                                 ,  else
 #
 task_context "CartRepPotField" do
@@ -82,7 +82,7 @@ task_context "CartRepPotField" do
     periodic 0.1
 end
 
-##########################################################################################################
+
 # Joint PD controller with velocity and acceleration feedfoward term as proposed in 
 # Khatib: "Real-time obstacle avoidance for manipulators and mobile robots", 1986
 # 
@@ -117,7 +117,7 @@ task_context "JointPDCtrlFeedForward" do
     periodic 0.1
 end
 
-##########################################################################################################
+
 # Cartesian PD controller with acceleration and velocity feedfoward term as proposed in 
 # Khatib: "Real-time obstacle avoidance for manipulators and mobile robots", 1986
 # 
@@ -142,7 +142,7 @@ task_context "CartPDCtrlFeedForward" do
 
     property("target_frame", "std/string").
        doc("This is the setpoint frame of the controller motion, e.g. the control target")
-  
+
     input_port("pid_values", "std/vector<base/actuators/PIDValues>").
        doc("Optional port for online setting new pid values. I-Value will be ignored.")
 
@@ -155,6 +155,10 @@ task_context "CartPDCtrlFeedForward" do
       transform 'controlled_in', 'controlled_frame'
       max_latency 0.1
     end
+
+    # For testing
+    input_port("setpoint", "base/samples/RigidBodyState")
+    input_port("feedback", "base/samples/RigidBodyState")
 
     periodic 0.1
 end

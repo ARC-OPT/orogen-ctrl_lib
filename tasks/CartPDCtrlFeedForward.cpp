@@ -74,6 +74,7 @@ void CartPDCtrlFeedForward::updateHook()
 
     _setpoint.read(ref_);
     _feedback.read(cur_);
+    _feedback_out.write(cur_);
 
     if(!ref_.hasValidPosition() ||
        !ref_.hasValidOrientation()){

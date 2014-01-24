@@ -159,6 +159,7 @@ task_context "CartPDCtrlFeedForward" do
     # For testing
     input_port("setpoint", "base/samples/RigidBodyState")
     input_port("feedback", "base/samples/RigidBodyState")
+    output_port("feedback_out", "base/samples/RigidBodyState")
 
     periodic 0.1
 end

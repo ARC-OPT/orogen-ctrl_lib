@@ -32,6 +32,8 @@ Orocos.run 'ctrl_lib::CartPDCtrlFeedForward' => 'ctrl' do
    setpoint_port.write(setpoint)
    feedback_port.write(feedback)
 
+   sleep(5.0)
+
    ctrl_out_port.on_data do |ctrl_out| 
        feedback.position = feedback.position + ctrl_out.velocity * sample_time
        feedback_port.write(feedback)

@@ -1,0 +1,22 @@
+
+--- name:default
+# Maximum influence distance per joint (only position field used)
+d_zero:
+  names: ["J_Shoulder1_r", "J_Elbow_r"]
+  elements: 
+     - position: 2.0
+     - position: 1.0
+
+# PID Gain. I and D values will be ignored. Max PWM will be used as ctrl output saturation.
+pid: 
+  - kp: 0.01
+    maxPWM: 10.0
+  - kp: 1.0
+    maxPWM: 1.0
+
+# Potential field center per joint (only position field used)
+q_zero:
+  names: ["J_Shoulder1_r", "J_Elbow_r"]
+  elements:
+     - position: 0.0
+     - position: 0.0

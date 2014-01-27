@@ -32,10 +32,10 @@ bool JointRepPotField::configureHook()
     for(uint i = 0; i < q_zero.size(); i++){
         RepulsivePotentialField* rpf = new RepulsivePotentialField(1);
         rpf->d0_ = d_zero[i].position;
-        rpf->q0_(i) = q_zero[i].position;
+        rpf->q0_(0) = q_zero[i].position;
         if(pid.size() == q_zero.size()){
-            rpf->kp_(i) = pid[i].kp;
-            rpf->max_(i) = pid[i].maxPWM;
+            rpf->kp_(0) = pid[i].kp;
+            rpf->max_(0) = pid[i].maxPWM;
         }
         rpf_.push_back(rpf);
     }
@@ -69,12 +69,13 @@ void JointRepPotField::updateHook()
     }
 
     for(uint i = 0; i < rpf_.size(); i++){
-        rpf_[i]->q_(i) = feedback_[i].position;
+        rpf_[i]->q_(0) = feedback_[i].position;
         rpf_[i]->update();
-        ctrl_output_[i].speed = rpf_[i]->ctrl_out_(i);
-        ctrl_output_[i].effort = rpf_[i]->ctrl_out_(i);
+        ctrl_output_[i].speed = rpf_[i]->ctrl_out_(0);
+        ctrl_output_[i].effort = rpf_[i]->ctrl_out_(0);
     }
 
+    _feedback_out.write(feedback_);
     _ctrl_out.write(ctrl_output_);
 
 }

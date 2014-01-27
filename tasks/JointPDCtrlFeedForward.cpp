@@ -18,16 +18,11 @@ JointPDCtrlFeedForward::JointPDCtrlFeedForward(std::string const& name, RTT::Exe
 }
 
 void JointPDCtrlFeedForward::setPID(const std::vector<base::actuators::PIDValues> &pid){
-    if(pid.size() != 6){
-        LOG_ERROR("Size of pid parameter is %i but should be 6!", pid.size());
-        throw std::invalid_argument("Invalid pid size");
-    }
-
     if(!pd_ctrl_)
         return;
 
     //I-Value is ignored
-    for(uint i = 0; i < 6; i++){
+    for(uint i = 0; i < pid.size(); i++){
         pd_ctrl_->kp_(i) = pid[i].kp;
         pd_ctrl_->kd_(i) = pid[i].kd;
     }
@@ -125,6 +120,7 @@ void JointPDCtrlFeedForward::updateHook()
     }
 
     _ctrl_out.write(ctrl_output_);
+    _feedback_out.write(cur_);
 }
 
 void JointPDCtrlFeedForward::cleanupHook()

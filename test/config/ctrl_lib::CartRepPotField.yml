@@ -1,0 +1,30 @@
+--- name:default
+# This is the 'end effector' frame of the controlled motion
+controlled_frame_frame: ''
+
+# This is the base frame of the controller motion, e.g. the robot base frame
+controlled_in_frame: ''
+
+# Maximum influence distance
+d_zero: 3.0
+
+# PID Gain. Size 3. I and D values will be ignored. Max PWM will be used as ctrl output saturation.
+pid: 
+  - kp: 1.0
+    maxPWM: 1.0
+  - kp: 1.0
+    maxPWM: 1.0
+  - kp: 1.0
+    maxPWM: 1.0
+
+# This is the rep_field_center frame of the controller motion
+rep_field_center_frame: ''
+
+# list of static transformations
+static_transformations: []
+
+# Maximum time in seconds the transformer will wait until it starts dropping samples
+transformer_max_latency: 0.1
+
+# Minimum system time in seconds between two updates of the status ports
+transformer_status_period: 1.0

@@ -34,6 +34,9 @@ task_context "JointRepPotField" do
 
     output_port("ctrl_out", "base/commands/Joints").
           doc("Output (velocity and effort)")
+
+    # Debug Ports
+    output_port("feedback_out", "base/samples/Joints")
     
     periodic 0.1
 end
@@ -79,6 +82,11 @@ task_context "CartRepPotField" do
       max_latency 0.1
     end
 
+    # Debug Ports
+    input_port("rep_field_center", "base/samples/RigidBodyState")
+    input_port("controlled_frame", "base/samples/RigidBodyState")
+    output_port("controlled_frame_out", "base/samples/RigidBodyState")
+
     periodic 0.1
 end
 
@@ -113,6 +121,9 @@ task_context "JointPDCtrlFeedForward" do
     output_port("ctrl_out", "base/commands/Joints").
          doc("Controller output. Will have same size as pid property. 
               Speed = v_ctrl_out. Effort = a_ctrl_out. Position will not be used.")
+
+    # For debugging
+    output_port("feedback_out", "base/samples/Joints")
 
     periodic 0.1
 end
@@ -156,7 +167,9 @@ task_context "CartPDCtrlFeedForward" do
       max_latency 0.1
     end
 
-    # For testing
+    # Debug Ports: TODO: Do we need these ports anyways? E.g. If we want to 
+    # control a velocity that comes from a Force controller?
+    # Or create a seperate controller for this purpose?
     input_port("setpoint", "base/samples/RigidBodyState")
     input_port("feedback", "base/samples/RigidBodyState")
     output_port("feedback_out", "base/samples/RigidBodyState")

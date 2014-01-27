@@ -53,6 +53,9 @@ void CartRepPotField::updateHook()
     _controlled_in2rep_field_center.get(base::Time::now(), center_);
     _controlled_in2controlled_frame.get(base::Time::now(), cur_);
 
+    _rep_field_center.read(center_);
+    _controlled_frame.read(cur_);
+
     if(!center_.hasValidPosition()){
         LOG_DEBUG("Transform between controlled_in and rep_field_center has no valid position");
         return;
@@ -63,6 +66,8 @@ void CartRepPotField::updateHook()
         return;
     }
 
+    _controlled_frame_out.write(cur_);
+
     rpf_->q0_ = center_.position;
     rpf_->q_ = cur_.position;
 
@@ -70,6 +75,8 @@ void CartRepPotField::updateHook()
 
     ctrl_output_.velocity = rpf_->ctrl_out_;
     ctrl_output_.acceleration = rpf_->ctrl_out_;
+
+    _ctrl_out.write(ctrl_output_);
 }
 
 void CartRepPotField::cleanupHook()

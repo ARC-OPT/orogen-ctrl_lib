@@ -14,7 +14,7 @@ class CartRepPotField : public CartRepPotFieldBase
     friend class CartRepPotFieldBase;
 protected:
     RepulsivePotentialField* rpf_;
-    base::samples::RigidBodyState cur_, center_, ctrl_output_;
+    base::samples::RigidBodyState cur_, center_, ctrl_output_, ctrl_error_;
 public:
     CartRepPotField(std::string const& name = "ctrl_lib::CartRepPotField");
     CartRepPotField(std::string const& name, RTT::ExecutionEngine* engine);

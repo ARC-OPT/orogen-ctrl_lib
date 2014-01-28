@@ -1,8 +1,10 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "CartPDCtrlFeedForward.hpp"
+#include <base/Eigen.hpp>
 
 using namespace ctrl_lib;
+using namespace std;
 
 CartPDCtrlFeedForward::CartPDCtrlFeedForward(std::string const& name)
     : CartPDCtrlFeedForwardBase(name)
@@ -68,12 +70,9 @@ void CartPDCtrlFeedForward::updateHook()
 {
     CartPDCtrlFeedForwardBase::updateHook();
 
-    //Get Transforms:
+    //Get Transforms:s
     _controlled_in2setpoint.get(base::Time::now(), ref_);
     _controlled_in2controlled_frame.get(base::Time::now(), cur_);
-
-    _setpoint.read(ref_);
-    _feedback.read(cur_);
 
     if(!ref_.hasValidPosition() ||
        !ref_.hasValidOrientation()){
@@ -86,14 +85,12 @@ void CartPDCtrlFeedForward::updateHook()
         LOG_DEBUG("Transform between controlled_in and controlled_frame has no valid position and/or orientation");
         return;
     }
-
-    _feedback_out.write(cur_);
-
     //Convert to eigen:
     pd_ctrl_->x_r_.segment(0,3) = ref_.position;
     pd_ctrl_->x_r_.segment(3,3) = base::getEuler(ref_.orientation);
     pd_ctrl_->x_.segment(0,3) = cur_.position;
     pd_ctrl_->x_.segment(3,3) = base::getEuler(cur_.orientation);
+
 
     if(ref_.hasValidVelocity())
         pd_ctrl_->v_r_.segment(0,3) = ref_.velocity;
@@ -119,8 +116,14 @@ void CartPDCtrlFeedForward::updateHook()
     ctrl_output_.angular_velocity = pd_ctrl_->v_ctrl_out_.segment(3,3);
     ctrl_output_.acceleration = pd_ctrl_->a_ctrl_out_.segment(0,3);
     ctrl_output_.angular_acceleration = pd_ctrl_->a_ctrl_out_.segment(3,3);
-
     _ctrl_out.write(ctrl_output_);
+
+    //Write debug data
+    ctrl_error_.velocity = (pd_ctrl_->x_r_ - pd_ctrl_->x_).segment(0,3);
+    ctrl_error_.angular_velocity = (pd_ctrl_->x_r_ - pd_ctrl_->x_).segment(3,3);
+    ctrl_error_.acceleration = (pd_ctrl_->v_r_ - pd_ctrl_->v_).segment(0,3);
+    ctrl_error_.angular_acceleration = (pd_ctrl_->v_r_ - pd_ctrl_->v_).segment(3,3);
+    _control_error.write(ctrl_error_);
 }
 
 void CartPDCtrlFeedForward::cleanupHook(){

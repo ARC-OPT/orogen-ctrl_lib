@@ -51,6 +51,7 @@ bool JointPDCtrlFeedForward::configureHook()
     }
 
     ctrl_output_.resize(pd_ctrl_->no_vars_);
+    ctrl_error_.resize(pd_ctrl_->no_vars_);
 
     return true;
 }
@@ -117,10 +118,12 @@ void JointPDCtrlFeedForward::updateHook()
     for(uint i = 0; i < ctrl_output_.size(); i++){
         ctrl_output_[i].speed = pd_ctrl_->v_ctrl_out_(i);
         ctrl_output_[i].effort = pd_ctrl_->a_ctrl_out_(i);
+        ctrl_error_[i].speed = pd_ctrl_->x_r_(i) - pd_ctrl_->x_(i);
+        ctrl_error_[i].effort = pd_ctrl_->v_r_(i) - pd_ctrl_->v_(i);
     }
 
     _ctrl_out.write(ctrl_output_);
-    _feedback_out.write(cur_);
+    _control_error.write(ctrl_error_);
 }
 
 void JointPDCtrlFeedForward::cleanupHook()

@@ -6,39 +6,51 @@ include Orocos
 
 Orocos.initialize
 Orocos.conf.load_dir('../config')
+Orocos.transformer.load_conf('../config/transforms.rb')
 
 Orocos.run 'ctrl_lib::CartRepPotField' => 'pot_field' do  
     
-   pot_field = Orocos::Async.name_service.get 'pot_field'
+   pot_field = Orocos::TaskContext.get 'pot_field'
    Orocos.conf.apply(pot_field, ['default'])
 
-   rep_field_center_port = pot_field.port("rep_field_center").writer
-   controlled_frame_port = pot_field.port("controlled_frame").writer
-   ctrl_out_port = pot_field.port("ctrl_out")
+   reader = pot_field.port("ctrl_out").reader
 
-   rep_field_center = Types::Base::Samples::RigidBodyState.new
-   controlled_frame = Types::Base::Samples::RigidBodyState.new
+   ctrl_out = Types::Base::Samples::RigidBodyState.new
+   rep_field_center = Types::Base::Samples::RigidBodyState.new 
+   rep_field_center.sourceFrame = "controlled_in"
+   rep_field_center.targetFrame = "setpoint"
+   feedback = Types::Base::Samples::RigidBodyState.new
+   feedback.sourceFrame = "controlled_in"
+   feedback.targetFrame = "controlled_frame"
 
    rep_field_center.position = Types::Base::Vector3d.new(0,0,0)
-   controlled_frame.position = Types::Base::Vector3d.new(0.5, 0.5, 0.5)
+   feedback.position = Types::Base::Vector3d.new(0.1, 0.1, 0.1)
 
    rep_field_center.orientation = Types::Base::Quaterniond.new(1.0, 0.0, 0.0, 0.0)
-   controlled_frame.orientation = Types::Base::Quaterniond.new(1.0, 0.0, 0.0, 0.0)
+   feedback.orientation = Types::Base::Quaterniond.new(1.0, 0.0, 0.0, 0.0)
 
+   my_task = Orocos::RubyTaskContext.new("my_task")
+   my_task.create_output_port("setpoint", "/base/samples/RigidBodyState")
+   my_task.create_output_port("feedback", "/base/samples/RigidBodyState")
+   my_task.start
+
+   Orocos.transformer.setup(pot_field)  
    pot_field.configure
    pot_field.start
 
-   sleep(3.0)
    sample_time = 0.1
-   rep_field_center_port.write(rep_field_center)
-   controlled_frame_port.write(controlled_frame)
+   sleep(2)
 
-
-   ctrl_out_port.on_data do |ctrl_out| 
-       controlled_frame.position = controlled_frame.position + ctrl_out.velocity * sample_time
-       controlled_frame_port.write(controlled_frame)
-   end
-
-   Vizkit.exec
+   while true do
+      if reader.read(ctrl_out) != nil then
+         euler = feedback.orientation.to_euler()
+         euler = euler + ctrl_out.angular_velocity * sample_time
+         feedback.position = feedback.position + ctrl_out.velocity * sample_time
+         puts ctrl_out.velocity
+      end
+      my_task.feedback.write(feedback)
+      my_task.setpoint.write(rep_field_center)
+      sleep(sample_time)
+   end 
     
 end

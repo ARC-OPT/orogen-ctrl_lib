@@ -3,19 +3,14 @@ name "ctrl_lib"
 import_types_from "base"
 using_library "ctrl_lib"
 
-
-# Repulsive Potential Field method in joint space. One 1-dim. potential field per joint of shape: 
+# Repulsive Potential Field method in joint space. One 1-dim. potential field per joint:
 #
-#     U = (kp/2) * (1/d - 1/d_0), d <= d_0
-#       = 0                     , else
-#
+# Out: acc = vel = -grad(U) = kp * (1/d - 1/d_0) * (q - q_0)/d^2,  d<= d_0
+#                           = 0                                 ,  else
 #     d = |q-q_0|
 #   d_0 = Maximum Influence distance
 #   q_0 = Potential field center
 #    kp = Proportional gain
-#
-# Out: acc = vel = -grad(U) = kp * (1/d - 1/d_0) * (q - q_0)/d^2,  d<= d_0
-#                           = 0                                 ,  else
 #
 task_context "JointRepPotField" do
     needs_configuration
@@ -36,24 +31,20 @@ task_context "JointRepPotField" do
           doc("Output (velocity and effort)")
 
     # Debug Ports
-    output_port("feedback_out", "base/samples/Joints")
+    output_port("control_error", "base/samples/Joints")
     
     periodic 0.1
 end
 
 
-# Repulsive Potential Field method in Cartesian space. 3-dim. radial potential field of shape: 
+# Repulsive Potential Field method in Cartesian space. 3-dim. radial potential field:
 #
-#     U = (kp/2) * (1/d - 1/d_0), d <= d_0
-#       = 0                       , else
-#
+# Out: acc = vel = -grad(U) = kp * (1/d - 1/d_0) * (x - x_0)/d^2,  d<= d_0
+#                           = 0                                 ,  else
 #     d = ||x-x_0||
 #   d_0 = Maximum Influence distance
 #   x_0 = Potential field center
 #    kp = Proportional gain
-#
-# Out: acc = vel = -grad(U) = kp * (1/d - 1/d_0) * (x - x_0)/d^2,  d<= d_0
-#                           = 0                                 ,  else
 #
 task_context "CartRepPotField" do
     needs_configuration
@@ -83,17 +74,13 @@ task_context "CartRepPotField" do
     end
 
     # Debug Ports
-    input_port("rep_field_center", "base/samples/RigidBodyState")
-    input_port("controlled_frame", "base/samples/RigidBodyState")
-    output_port("controlled_frame_out", "base/samples/RigidBodyState")
+    output_port("control_error", "base/samples/RigidBodyState")
 
     periodic 0.1
 end
 
 
-# Joint PD controller with velocity and acceleration feedfoward term as proposed in 
-# Khatib: "Real-time obstacle avoidance for manipulators and mobile robots", 1986
-# 
+# Joint PD controller with velocity and acceleration feedfoward term:
 #   v_ctrl_out = kp/kd*(x_r-x), |v_ctrl_out| <= max_vel
 #   a_ctrl_out = a_r + kd*(v_ctrl_out + v_r - v), |a_ctrl_out| <= max_acc
 #
@@ -123,15 +110,13 @@ task_context "JointPDCtrlFeedForward" do
               Speed = v_ctrl_out. Effort = a_ctrl_out. Position will not be used.")
 
     # For debugging
-    output_port("feedback_out", "base/samples/Joints")
+    output_port("control_error", "base/samples/Joints")
 
     periodic 0.1
 end
 
 
-# Cartesian PD controller with acceleration and velocity feedfoward term as proposed in 
-# Khatib: "Real-time obstacle avoidance for manipulators and mobile robots", 1986
-# 
+# Cartesian PD controller with acceleration and velocity feedfoward term:
 #   v_ctrl_out = kp/kd*(x_r-x), |v_ctrl_out| <= max_vel
 #   a_ctrl_out = a_r + kd*(v_ctrl_out + v_r - v), |a_ctrl_out| <= max_acc
 #
@@ -151,7 +136,7 @@ task_context "CartPDCtrlFeedForward" do
     property("controlled_in_frame", "std/string").
        doc("This is the base frame of the controller motion, e.g. the robot base frame")
 
-    property("target_frame", "std/string").
+    property("setpoint_frame", "std/string").
        doc("This is the setpoint frame of the controller motion, e.g. the control target")
 
     input_port("pid_values", "std/vector<base/actuators/PIDValues>").
@@ -160,19 +145,15 @@ task_context "CartPDCtrlFeedForward" do
     output_port("ctrl_out", "base/samples/RigidBodyState").
        doc("Controller output. Velocity/angular_velocity = v_ctrl_out. 
             Acceleration/Angular_acceleration = a_ctrl_out. Position will not be used.")
-
+    
     transformer do
       transform 'controlled_in', 'setpoint'
       transform 'controlled_in', 'controlled_frame'
       max_latency 0.1
     end
 
-    # Debug Ports: TODO: Do we need these ports anyways? E.g. If we want to 
-    # control a velocity that comes from a Force controller?
-    # Or create a seperate controller for this purpose?
-    input_port("setpoint", "base/samples/RigidBodyState")
-    input_port("feedback", "base/samples/RigidBodyState")
-    output_port("feedback_out", "base/samples/RigidBodyState")
+    # For debugging
+    output_port("control_error", "base/samples/RigidBodyState")
 
     periodic 0.1
 end

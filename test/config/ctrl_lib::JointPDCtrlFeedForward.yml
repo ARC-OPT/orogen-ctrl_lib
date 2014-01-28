@@ -2,7 +2,9 @@
 
 # Max velocities and accelerations can be defined here. If left empty, infinite ctrl output will be allowed
 max_ctrl_out:
-  elements: []
+  elements:
+    - speed: 0.1
+    - speed: 0.1
 
 # PID Controller parameters, this property will determine the expected number of inputs and outputs!
 #               I-Value will be ignored.

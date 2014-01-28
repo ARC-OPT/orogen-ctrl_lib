@@ -42,6 +42,8 @@ bool JointRepPotField::configureHook()
 
     ctrl_output_.resize(q_zero.size());
     ctrl_output_.names = q_zero.names;
+    ctrl_error_.resize(q_zero.size());
+    ctrl_error_.names = q_zero.names;
 
     return true;
 }
@@ -73,9 +75,10 @@ void JointRepPotField::updateHook()
         rpf_[i]->update();
         ctrl_output_[i].speed = rpf_[i]->ctrl_out_(0);
         ctrl_output_[i].effort = rpf_[i]->ctrl_out_(0);
+        ctrl_error_[i].speed = rpf_[i]->q0_(0) - rpf_[i]->q_(0);
     }
 
-    _feedback_out.write(feedback_);
+    _control_error.write(ctrl_error_);
     _ctrl_out.write(ctrl_output_);
 
 }
@@ -86,4 +89,6 @@ void JointRepPotField::cleanupHook()
     for(uint i = 0; i < rpf_.size(); i++)
         delete rpf_[i];
     rpf_.clear();
+    ctrl_output_.clear();
+    ctrl_error_.clear();
 }

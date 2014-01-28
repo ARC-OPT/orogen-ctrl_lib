@@ -14,7 +14,7 @@ class JointPDCtrlFeedForward : public JointPDCtrlFeedForwardBase
 protected:
     PDCtrlFeedForward* pd_ctrl_;
     std::vector<base::actuators::PIDValues> pid_;
-    base::samples::Joints cur_, ref_, ctrl_output_;
+    base::samples::Joints cur_, ref_, ctrl_output_, ctrl_error_;
 
     void setPID(const std::vector<base::actuators::PIDValues> &pid);
 

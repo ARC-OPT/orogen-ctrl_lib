@@ -14,7 +14,7 @@ class JointRepPotField : public JointRepPotFieldBase
 protected:
     std::vector<RepulsivePotentialField*> rpf_;
     base::samples::Joints feedback_;
-    base::commands::Joints ctrl_output_;
+    base::commands::Joints ctrl_output_, ctrl_error_;
 
 public:
     JointRepPotField(std::string const& name = "ctrl_lib::JointRepPotField");

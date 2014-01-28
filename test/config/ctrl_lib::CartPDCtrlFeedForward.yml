@@ -1,20 +1,20 @@
 --- name:default
 # This is the 'end effector' frame of the controlled motion
-controlled_frame_frame: ''
+controlled_frame_frame: 'controlled_frame'
 
 # This is the base frame of the controller motion, e.g. the robot base frame
-controlled_in_frame: ''
+controlled_in_frame: 'controlled_in'
 
 # This is the setpoint frame of the controller motion, e.g. the control target
-target_frame: ''
+setpoint_frame: 'setpoint'
 
 # Max. cartesian velocities and accelerations can be defined here. If left empty, infinite ctrl output will be allowed.
 max_ctrl_out:
   velocity:
     data:
-    - 0.1
-    - 0.1
-    - 0.1
+    - .nan
+    - .nan
+    - .nan
   angular_velocity:
     data:
     - .nan

@@ -34,6 +34,12 @@ bool JointPDCtrlFeedForward::configureHook()
         return false;
 
     pid_ = _pid.get();
+    joint_names_ = _joint_names.get();
+    if(joint_names_.size() != pid_.size())
+    {
+        LOG_ERROR("PID property should have size %i but has size %i", joint_names_.size(), pid_.size());
+        return false;
+    }
     pd_ctrl_ = new PDCtrlFeedForward(pid_.size());
     setPID(pid_);
 
@@ -72,38 +78,54 @@ void JointPDCtrlFeedForward::updateHook()
         LOG_DEBUG("No data on set point port");
         return;
     }
-    if(ref_.size() != pd_ctrl_->no_vars_){
-        LOG_ERROR("Setpoint should have size %i but has size %i", pd_ctrl_->no_vars_, ref_.size());
-        throw std::invalid_argument("Invalid Setpoint size");
-    }
+
     if(_feedback.read(cur_) == RTT::NoData){
         LOG_DEBUG("No data on feedback point port");
         return;
     }
-    if(cur_.size() != pd_ctrl_->no_vars_){
-        LOG_ERROR("Feedback should have size %i but has size %i", pd_ctrl_->no_vars_, cur_.size());
-        throw std::invalid_argument("Invalid Feedback size");
-    }
 
-    for(uint i = 0; i < pd_ctrl_->no_vars_; i++){
-        if(!cur_[i].hasPosition())
-            throw std::invalid_argument("Feedback Input has invalid position");
+    for(uint i = 0; i < joint_names_.size(); i++)
+    {
+        uint idx;
+        try{
+            idx = cur_.mapNameToIndex(joint_names_[i]);
+        }
+        catch(std::exception e){
+            LOG_ERROR("Name %s if not in feedback vector", joint_names_[i].c_str());
+            throw std::invalid_argument("Invalid feedback input");
+        }
 
-        if(!ref_[i].hasPosition())
-            throw std::invalid_argument("Setpoint Input has invalid position");
+        if(!cur_[idx].hasPosition())
+        {
+            LOG_ERROR("Feedback vector index %s has invalid position", idx);
+            throw std::invalid_argument("Invalid feedback input");
+        }
 
-        pd_ctrl_->x_(i) = cur_[i].position;
-        pd_ctrl_->x_r_(i) = ref_[i].position;
+        pd_ctrl_->x_(i) = cur_[idx].position;
+        if(cur_[idx].hasSpeed())
+            pd_ctrl_->v_(i) = cur_[idx].speed;
+        if(cur_[idx].hasEffort())
+            pd_ctrl_->a_(i) = cur_[idx].effort;
 
-        if(cur_[i].hasSpeed())
-            pd_ctrl_->v_(i) = cur_[i].speed;
-        if(ref_[i].hasSpeed())
-            pd_ctrl_->v_r_(i) = ref_[i].speed;
+        try{
+            idx = ref_.mapNameToIndex(joint_names_[i]);
+        }
+        catch(std::exception e){
+            LOG_ERROR("Name %s if not in reference vector", joint_names_[i].c_str());
+            throw std::invalid_argument("Invalid reference input");
+        }
 
-        if(cur_[i].hasEffort())
-            pd_ctrl_->a_(i) = cur_[i].effort;
-        if(ref_[i].hasEffort())
-            pd_ctrl_->a_r_(i) = ref_[i].effort;
+        if(!ref_[idx].hasPosition())
+        {
+            LOG_ERROR("Reference vector index %s has invalid position", idx);
+            throw std::invalid_argument("Invalid reference input");
+        }
+
+        pd_ctrl_->x_r_(i) = ref_[idx].position;
+        if(ref_[idx].hasSpeed())
+            pd_ctrl_->v_r_(i) = ref_[idx].speed;
+        if(ref_[idx].hasEffort())
+            pd_ctrl_->a_r_(i) = ref_[idx].effort;
     }
 
     //Read new pid values

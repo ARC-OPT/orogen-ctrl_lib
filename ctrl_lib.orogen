@@ -91,6 +91,9 @@ task_context "JointPDCtrlFeedForward" do
     property("max_ctrl_out", "base/samples/Joints").
          doc("Max velocities and accelerations can be defined here. If left empty, infinite ctrl output will be allowed")
 
+    property("joint_names", "std/vector<std::string>").
+         doc("Joint Names used for this task")
+
     property("pid", "std/vector<base/actuators/PIDValues>").
          doc("PID Controller parameters, this property will determine the expected number of inputs and outputs!
               I-Value will be ignored.")

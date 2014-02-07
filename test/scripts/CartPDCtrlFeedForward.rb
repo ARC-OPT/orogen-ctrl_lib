@@ -28,7 +28,7 @@ Orocos.run 'ctrl_lib::CartPDCtrlFeedForward' => 'ctrl' do
    feedback.time = Types::Base::Time.now
 
    setpoint.position = Types::Base::Vector3d.new(1,2,3)
-   setpoint.orientation = Types::Base::Quaterniond.from_euler()
+   setpoint.orientation = Types::Base::Quaterniond.new(1.0, 0.0, 0.0, 0.0)
 
    feedback.position = Types::Base::Vector3d.new(0,0,0)
    feedback.orientation = Types::Base::Quaterniond.new(1.0, 0.0, 0.0, 0.0)

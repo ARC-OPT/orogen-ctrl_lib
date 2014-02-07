@@ -2,6 +2,7 @@ name "ctrl_lib"
 
 import_types_from "base"
 using_library "ctrl_lib"
+using_library "kdl_conversions"
 
 # Repulsive Potential Field method in joint space. One 1-dim. potential field per joint:
 #

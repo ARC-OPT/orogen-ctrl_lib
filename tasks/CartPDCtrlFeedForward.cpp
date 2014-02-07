@@ -2,6 +2,8 @@
 
 #include "CartPDCtrlFeedForward.hpp"
 #include <base/Eigen.hpp>
+#include <kdl_conversions/KDLConversions.hpp>
+#include <kdl/frames_io.hpp>
 
 using namespace ctrl_lib;
 using namespace std;
@@ -70,9 +72,13 @@ void CartPDCtrlFeedForward::updateHook()
 {
     CartPDCtrlFeedForwardBase::updateHook();
 
-    //Get Transforms:s
+    //Get Transforms:
     _controlled_in2setpoint.get(base::Time::now(), ref_);
     _controlled_in2controlled_frame.get(base::Time::now(), cur_);
+
+    KDL::Frame ref_kdl, cur_kdl;
+    kdl_conversions::RigidBodyState2KDL(ref_, ref_kdl);
+    kdl_conversions::RigidBodyState2KDL(cur_, cur_kdl);
 
     if(!ref_.hasValidPosition() ||
        !ref_.hasValidOrientation()){
@@ -85,12 +91,14 @@ void CartPDCtrlFeedForward::updateHook()
         LOG_DEBUG("Transform between controlled_in and controlled_frame has no valid position and/or orientation");
         return;
     }
-    //Convert to eigen:
-    pd_ctrl_->x_r_.segment(0,3) = ref_.position;
-    pd_ctrl_->x_r_.segment(3,3) = base::getEuler(ref_.orientation);
-    pd_ctrl_->x_.segment(0,3) = cur_.position;
-    pd_ctrl_->x_.segment(3,3) = base::getEuler(cur_.orientation);
 
+    //Use KDL::Diff to get a non-singular orientation error
+    KDL::Twist diff = KDL::diff(cur_kdl, ref_kdl);
+
+    //Convert to eigen: Use diff as reference value and set current vale to zero
+    pd_ctrl_->x_r_.segment(0,3) << diff.vel(0), diff.vel(1), diff.vel(2);
+    pd_ctrl_->x_r_.segment(3,3) << diff.rot(0), diff.rot(1), diff.rot(2);
+    pd_ctrl_->x_.setZero();
 
     if(ref_.hasValidVelocity())
         pd_ctrl_->v_r_.segment(0,3) = ref_.velocity;
@@ -111,7 +119,8 @@ void CartPDCtrlFeedForward::updateHook()
 
     pd_ctrl_->updateCtrlOutput();
 
-    //Convert to RigidBodyState
+    //Convert to RigidBodyState*/
+    ctrl_output_.time = base::Time::now();
     ctrl_output_.velocity = pd_ctrl_->v_ctrl_out_.segment(0,3);
     ctrl_output_.angular_velocity = pd_ctrl_->v_ctrl_out_.segment(3,3);
     ctrl_output_.acceleration = pd_ctrl_->a_ctrl_out_.segment(0,3);

@@ -81,14 +81,26 @@ void CartPDCtrlFeedForward::updateHook()
     kdl_conversions::RigidBodyState2KDL(cur_, cur_kdl);
 
     if(!ref_.hasValidPosition() ||
-       !ref_.hasValidOrientation()){
-        LOG_DEBUG("Transform between controlled_in and setpoint has no valid position and/or orientation");
+            !ref_.hasValidOrientation())
+    {
+        if((base::Time::now() - stamp_).toSeconds() > 1)
+        {
+            LOG_DEBUG("Transform between controlled_in and setpoint has no valid position and/or orientation");
+            LOG_DEBUG("Norm of quaternion is %f", ref_.orientation.squaredNorm());
+            stamp_ = base::Time::now();
+        }
         return;
     }
 
     if(!cur_.hasValidPosition() ||
-       !cur_.hasValidOrientation()){
-        LOG_DEBUG("Transform between controlled_in and controlled_frame has no valid position and/or orientation");
+       !cur_.hasValidOrientation())
+    {
+        if((base::Time::now() - stamp_).toSeconds() > 1)
+        {
+            stamp_ = base::Time::now();
+            LOG_DEBUG("Transform between controlled_in and controlled_frame has no valid position and/or orientation");
+            LOG_DEBUG("Norm of quaternion is %f", ref_.orientation.squaredNorm());
+        }
         return;
     }
 

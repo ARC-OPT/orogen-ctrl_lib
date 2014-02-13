@@ -17,6 +17,7 @@ protected:
     base::samples::RigidBodyState cur_, ref_, ctrl_error_;
 
     void setPID(const std::vector<base::actuators::PIDValues> &pid);
+    base::Time stamp_;
 
 public:
     CartPDCtrlFeedForward(std::string const& name = "ctrl_lib::CartPDCtrlFeedForward");

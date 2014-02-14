@@ -1,5 +1,7 @@
 # Generated from orogen/lib/orogen/templates/tasks/CMakeLists.txt
 
+add_definitions(-DBASE_LOG_NAMESPACE=${PROJECT_NAME})
+
 include(ctrl_libTaskLib)
 ADD_LIBRARY(${CTRL_LIB_TASKLIB_NAME} SHARED 
     ${CTRL_LIB_TASKLIB_SOURCES})

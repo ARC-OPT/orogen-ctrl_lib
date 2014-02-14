@@ -16,20 +16,26 @@ using_library "kdl_conversions"
 task_context "JointRepPotField" do
     needs_configuration
 
-    property("q_zero", "base/samples/Joints").
-          doc("Potential field center per joint (only position field used)")
+    property("joint_names", "std/vector<std/string>").
+         doc("Joint Names used for this task")
+ 
+    property("q_zero", "base/VectorXd").
+          doc("Potential field center per joint. Has to have same size as joint_names.")
 
-    property("d_zero", "base/samples/Joints").
-          doc("Maximum influence distance per joint (only position field used)")
+    property("d_zero", "base/VectorXd").
+          doc("Maximum influence distance per joint. Has to have same size as joint_names.")
 
-    property("pid", "std/vector<base/actuators/PIDValues>").
-          doc("PID Gain. I and D values will be ignored. Max PWM will be used as ctrl output saturation.")    
+    property("max_ctrl_out", "base/VectorXd").
+          doc("Maximum controller output. Has to have same size as joint_names or empty, in which case infinite control output will be allowed.")
+
+    property("kp", "base/VectorXd").
+          doc("Proportional gain. Has to have same size as joint_names.")    
     
     input_port("feedback", "base/samples/Joints").
-          doc("Current Joint status")
+          doc("Current Joint status. Has to contain at least all names defined by joint_names.")
 
     output_port("ctrl_out", "base/commands/Joints").
-          doc("Output (velocity and effort)")
+          doc("Controller output (speed).  Will have same size as joint_names.")
 
     # Debug Ports
     output_port("control_error", "base/samples/Joints")
@@ -51,10 +57,13 @@ task_context "CartRepPotField" do
     needs_configuration
 
     property("d_zero", "double").
-         doc("Maximum influence distance")
+         doc("Maximum radial influence distance")
 
-    property("pid", "std/vector<base/actuators/PIDValues>").
-         doc("PID Gain. Size 3. I and D values will be ignored. Max PWM will be used as ctrl output saturation.")
+    property("kp", "base/Vector3d").
+         doc("Proportional Gain.")
+
+    property("max_ctrl_out", "base/Vector3d").
+         doc("Maximum Controller output.")
  
     property("controlled_frame_frame", "std/string").
          doc("This is the 'end effector' frame of the controlled motion")
@@ -81,37 +90,33 @@ task_context "CartRepPotField" do
 end
 
 
-# Joint PD controller with velocity and acceleration feedfoward term:
-#   v_ctrl_out = kp/kd*(x_r-x), |v_ctrl_out| <= max_vel
-#   a_ctrl_out = a_r + kd*(v_ctrl_out + v_r - v), |a_ctrl_out| <= max_acc
+# Joint P-controller with velocity feedfoward term:
+#   ctrl_out = v_r + kp*(x_r-x), |ctrl_out| <= max_ctrl_out
 #
-task_context "JointPDCtrlFeedForward" do
+task_context "JointPosCtrlVelFF" do
     needs_configuration
    
-    property("max_ctrl_out", "base/samples/Joints").
-         doc("Max velocities and accelerations can be defined here. If left empty, infinite ctrl output will be allowed")
-
-    property("joint_names", "std/vector<std::string>").
+    property("joint_names", "std/vector<std/string>").
          doc("Joint Names used for this task")
 
-    property("pid", "std/vector<base/actuators/PIDValues>").
-         doc("PID Controller parameters, this property will determine the expected number of inputs and outputs!
-              I-Value will be ignored.")
+    property("max_ctrl_out", "base/VectorXd").
+         doc("Max controller output. Size has to be either the same as joint_names or left 
+              empty, in which case infinite ctrl output will be allowed")
+
+    property("kp", "base/VectorXd").
+         doc("Proportional controller parameters. Size has to be same as joint names")
 
     input_port("setpoint", "base/commands/Joints").
-         doc("Reference value for controller. Has to have same size as pid property.
-              Position == x_r, speed = v_r, effort = a_r.")
+         doc("Reference value for controller. Has to contain at least all names defined by joint_names.")
 
     input_port("feedback", "base/samples/Joints").
-         doc("Current joint state. Has to have same size as pid property.
-              Position = x, Speed = v. Effort will be ignored.")
+         doc("Current joint state. Has to contain at least all names defined by joint_names.")
 
-    input_port("pid_values", "std/vector<base/actuators/PIDValues>").
-         doc("Optional port for online setting new pid values. I-Value will be ignored.")
+    input_port("kp_values", "base/VectorXd").
+         doc("Optional port for online setting new gains.")
     
     output_port("ctrl_out", "base/commands/Joints").
-         doc("Controller output. Will have same size as pid property. 
-              Speed = v_ctrl_out. Effort = a_ctrl_out. Position will not be used.")
+         doc("Controller output (speed). Will have same size as joint_names.")
 
     # For debugging
     output_port("control_error", "base/samples/Joints")
@@ -120,19 +125,17 @@ task_context "JointPDCtrlFeedForward" do
 end
 
 
-# Cartesian PD controller with acceleration and velocity feedfoward term:
-#   v_ctrl_out = kp/kd*(x_r-x), |v_ctrl_out| <= max_vel
-#   a_ctrl_out = a_r + kd*(v_ctrl_out + v_r - v), |a_ctrl_out| <= max_acc
+# Cartesian P-controller with velocity feedforward term:
+#   ctrl_out = v_r + kp*(x_r-x), |ctrl_out| <= max_ctrl_out
 #
-task_context "CartPDCtrlFeedForward" do
+task_context "CartPosCtrlVelFF" do
     needs_configuration
 
-    property("max_ctrl_out", "base/samples/RigidBodyState").
-       doc("Max. cartesian velocities and accelerations can be defined here. If left empty, infinite ctrl output will be allowed.")
+    property("kp", "base/Vector6d").
+       doc("Proportional controller parameters.")
 
-    property("pid", "std/vector<base/actuators/PIDValues>").
-       doc("PID Controller parameters. Size has to be 6!
-            I-Value will be ignored. ")
+    property("max_ctrl_out", "base/Vector6d").
+       doc("Maximum controller output.")
  
     property("controlled_frame_frame", "std/string" ).
        doc("This is the 'end effector' frame of the controlled motion")
@@ -143,12 +146,11 @@ task_context "CartPDCtrlFeedForward" do
     property("setpoint_frame", "std/string").
        doc("This is the setpoint frame of the controller motion, e.g. the control target")
 
-    input_port("pid_values", "std/vector<base/actuators/PIDValues>").
-       doc("Optional port for online setting new pid values. I-Value will be ignored.")
+    input_port("kp_values", "base/Vector6d").
+       doc("Optional port for online setting new gain values.")
 
     output_port("ctrl_out", "base/samples/RigidBodyState").
-       doc("Controller output. Velocity/angular_velocity = v_ctrl_out. 
-            Acceleration/Angular_acceleration = a_ctrl_out. Position will not be used.")
+       doc("Controller output (velocity/angular velocity).")
     
     transformer do
       transform 'controlled_in', 'setpoint'

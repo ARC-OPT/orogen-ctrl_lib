@@ -39,17 +39,17 @@ Orocos.run 'ctrl_lib::CartRepPotField' => 'pot_field' do
    pot_field.start
 
    sample_time = 0.1
-   sleep(2)
+   sleep(1)
 
    while true do
+      my_task.feedback.write(feedback)
+      my_task.setpoint.write(rep_field_center)
       if reader.read(ctrl_out) != nil then
          euler = feedback.orientation.to_euler()
          euler = euler + ctrl_out.angular_velocity * sample_time
          feedback.position = feedback.position + ctrl_out.velocity * sample_time
          puts ctrl_out.velocity
       end
-      my_task.feedback.write(feedback)
-      my_task.setpoint.write(rep_field_center)
       sleep(sample_time)
    end 
     

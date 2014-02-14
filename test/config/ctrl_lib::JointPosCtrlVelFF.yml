@@ -1,0 +1,12 @@
+--- name:default
+# Joint Names used for this task
+joint_names: ["J_Foot"]
+
+# Proportional controller parameters. Size has to be same as joint names
+kp:
+  data: [1.0]
+
+# Max controller output. Size has to be either the same as joint_names or left 
+#               empty, in which case infinite ctrl output will be allowed
+max_ctrl_out:
+  data: []

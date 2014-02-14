@@ -19,19 +19,19 @@ Orocos.run 'ctrl_lib::JointRepPotField' => 'pot_field' do
    state = Types::Base::JointState.new
    state.position = 0.1
    feedback.elements << state
-   state.position = 0.1
-   feedback.elements << state
+   feedback.names << "J_Foot"
 	
    pot_field.configure
    pot_field.start
 
-   sleep(3.0)
+   sleep(1.0)
    sample_time = 0.1
    feedback_port.write(feedback)
 
    ctrl_out_port.on_data do |ctrl_out| 
        for i in 0..feedback.elements.size()-1
             feedback.elements[i].position = feedback.elements[i].position + ctrl_out.elements[i].speed * sample_time
+            puts feedback.elements[i].position
        end
        feedback_port.write(feedback)
    end

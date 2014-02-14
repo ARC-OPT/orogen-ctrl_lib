@@ -1,22 +1,19 @@
-
 --- name:default
-# Maximum influence distance per joint (only position field used)
+# Maximum influence distance per joint. Has to have same size as joint_names.
 d_zero:
-  names: ["J_Shoulder1_r", "J_Elbow_r"]
-  elements: 
-     - position: 1.0
-     - position: 1.0
+  data: [1.0]
 
-# PID Gain. I and D values will be ignored. Max PWM will be used as ctrl output saturation.
-pid: 
-  - kp: 1.0
-    maxPWM: 1.0
-  - kp: 1.0
-    maxPWM: 1.0
+# Joint Names used for this task
+joint_names: ["J_Foot"]
 
-# Potential field center per joint (only position field used)
+# Proportional gain. Has to have same size as joint_names.
+kp:
+  data: [0.1]
+
+# Maximum controller output. Has to have same size as joint_names or empty, in which case infinite control output will be allowed.
+max_ctrl_out:
+  data: [0.3]
+
+# Potential field center per joint. Has to have same size as joint_names.
 q_zero:
-  names: ["J_Shoulder1_r", "J_Elbow_r"]
-  elements:
-     - position: 0.0
-     - position: 0.0
+  data: [0.0]

@@ -8,7 +8,7 @@ Orocos.initialize
 Orocos.conf.load_dir('../config')
 Orocos.transformer.load_conf('../config/transforms.rb')
 
-Orocos.run 'ctrl_lib::CartPDCtrlFeedForward' => 'ctrl' do  
+Orocos.run 'ctrl_lib::CartPosCtrlVelFF' => 'ctrl' do  
     
    ctrl = Orocos::TaskContext.get 'ctrl'
    Orocos.conf.apply(ctrl, ['default'])
@@ -50,8 +50,8 @@ Orocos.run 'ctrl_lib::CartPDCtrlFeedForward' => 'ctrl' do
 
       if reader.read(ctrl_out) != nil then
          euler = feedback.orientation.to_euler()
-         puts euler
          feedback.position = feedback.position + ctrl_out.velocity * sample_time
+         puts feedback.position
          euler = euler + ctrl_out.angular_velocity * sample_time
          feedback.orientation.from_euler(euler, 1,1,1)
       end

@@ -20,30 +20,39 @@ bool JointRepPotField::configureHook()
     if (! JointRepPotFieldBase::configureHook())
         return false;
 
-    base::samples::Joints q_zero = _q_zero.get();
-    base::samples::Joints d_zero = _d_zero.get();
-    std::vector<base::actuators::PIDValues> pid = _pid.get();
+    std::vector<std::string> joint_names = _joint_names.get();
+    base::VectorXd q_zero = _q_zero.get();
+    base::VectorXd d_zero = _d_zero.get();
+    base::VectorXd kp = _kp.get();
+    base::VectorXd max_ctrl_out = _max_ctrl_out.get();
 
-    if(q_zero.size() != d_zero.size()){
-        LOG_ERROR("q_zero property has size %i and d_zero property size %i", q_zero.size(), d_zero.size());
+    if(q_zero.size() != (int)joint_names.size()){
+        LOG_ERROR("q_zero property should have size %i, but has size %i", joint_names.size(), q_zero.size());
+        return false;
+    }
+    if(d_zero.size() != (int)joint_names.size()){
+        LOG_ERROR("d_zero property should have size %i, but has size %i", joint_names.size(), d_zero.size());
+        return false;
+    }
+    if(kp.size() != (int)joint_names.size()){
+        LOG_ERROR("d_zero property should have size %i, but has size %i", joint_names.size(), kp.size());
         return false;
     }
 
-    for(uint i = 0; i < q_zero.size(); i++){
+    for(uint i = 0; i < joint_names.size(); i++){
         RepulsivePotentialField* rpf = new RepulsivePotentialField(1);
-        rpf->d0_ = d_zero[i].position;
-        rpf->q0_(0) = q_zero[i].position;
-        if(pid.size() == q_zero.size()){
-            rpf->kp_(0) = pid[i].kp;
-            rpf->max_(0) = pid[i].maxPWM;
-        }
+        rpf->d0_ = d_zero(i);
+        rpf->q0_(0) = q_zero(i);
+        rpf->kp_(0) = kp(i);
+        if(max_ctrl_out.size() == (int)joint_names.size())
+            rpf->max_(0) = max_ctrl_out(i);
         rpf_.push_back(rpf);
     }
 
-    ctrl_output_.resize(q_zero.size());
-    ctrl_output_.names = q_zero.names;
-    ctrl_error_.resize(q_zero.size());
-    ctrl_error_.names = q_zero.names;
+    ctrl_output_.resize(joint_names.size());
+    ctrl_output_.names = joint_names;
+    ctrl_error_.resize(joint_names.size());
+    ctrl_error_.names = joint_names;
 
     return true;
 }
@@ -65,13 +74,16 @@ void JointRepPotField::updateHook()
         return;
     }
 
-    if(rpf_.size() != feedback_.size()){
-        LOG_ERROR("Feedback has size %i but should have size %i", feedback_.size(), rpf_.size());
-        throw std::invalid_argument("Invalid input size");
-    }
-
     for(uint i = 0; i < rpf_.size(); i++){
-        rpf_[i]->q_(0) = feedback_[i].position;
+        uint idx;
+        try{
+            idx = feedback_.mapNameToIndex(ctrl_output_.names[i]);
+        }
+        catch(std::exception e){
+            LOG_ERROR("No such joint name in feedback vector: %s", ctrl_output_.names[i].c_str());
+            throw std::invalid_argument("Invalid input vector");
+        }
+        rpf_[i]->q_(0) = feedback_[idx].position;
         rpf_[i]->update();
         ctrl_output_[i].speed = rpf_[i]->ctrl_out_(0);
         ctrl_output_[i].effort = rpf_[i]->ctrl_out_(0);

@@ -7,7 +7,7 @@ include Orocos
 Orocos.initialize
 Orocos.conf.load_dir('../config')
 
-Orocos.run 'ctrl_lib::JointPDCtrlFeedForward' => 'ctrl' do  
+Orocos.run 'ctrl_lib::JointPosCtrlVelFF' => 'ctrl' do  
     
    ctrl = Orocos::Async.name_service.get 'ctrl'
    Orocos.conf.apply(ctrl, ['default'])
@@ -20,14 +20,14 @@ Orocos.run 'ctrl_lib::JointPDCtrlFeedForward' => 'ctrl' do
    feedback = Types::Base::Samples::Joints.new
 
    state = Types::Base::JointState.new
-   state.position = 0.0
-   feedback.elements << state
-   state.position = 0.0
-   feedback.elements << state
    state.position = 1.0
    setpoint.elements << state
-   state.position = 1.0
-   setpoint.elements << state
+   setpoint.names << "J_Foot"
+
+   state.position = 0.0
+   feedback.elements << state
+   feedback.names << "J_Foot"
+
    
    ctrl.configure
    ctrl.start
@@ -36,11 +36,12 @@ Orocos.run 'ctrl_lib::JointPDCtrlFeedForward' => 'ctrl' do
    setpoint_port.write(setpoint)
    feedback_port.write(feedback)
 
-   sleep(5.0)
+   sleep(1.0)
 
    ctrl_out_port.on_data do |ctrl_out| 
        for i in 0..feedback.elements.size()-1
            feedback.elements[i].position = feedback.elements[i].position + ctrl_out.elements[i].speed * sample_time
+           puts feedback.elements[i].position
        end
        feedback_port.write(feedback)
    end

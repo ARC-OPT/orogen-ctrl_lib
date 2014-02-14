@@ -5,20 +5,28 @@ controlled_frame_frame: 'controlled_frame'
 # This is the base frame of the controller motion, e.g. the robot base frame
 controlled_in_frame: 'controlled_in'
 
-# This is the setpoint frame of the controller motion, e.g. the control target
+# Maximum radial influence distance
+d_zero: 1.0
+
+# Proportional Gain.
+kp:
+  data:
+  - 1.0
+  - 1.0
+  - 1.0
+
+# Maximum Controller output.
+max_ctrl_out:
+  data:
+  - 0.3
+  - 0.3
+  - 0.3
+
+# This is the rep_field_center frame of the controller motion
 rep_field_center_frame: 'setpoint'
 
-# Maximum influence distance
-d_zero: 1.7320508075688772
-
-# PID Gain. Size 3. I and D values will be ignored. Max PWM will be used as ctrl output saturation.
-pid: 
-  - kp: 1.0
-    maxPWM: 2.0
-  - kp: 1.0
-    maxPWM: 2.0
-  - kp: 1.0
-    maxPWM: 2.0
+# list of static transformations
+static_transformations: []
 
 # Maximum time in seconds the transformer will wait until it starts dropping samples
 transformer_max_latency: 0.1

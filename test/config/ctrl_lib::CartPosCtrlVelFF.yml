@@ -10,41 +10,11 @@ setpoint_frame: 'setpoint'
 
 # Max. cartesian velocities and accelerations can be defined here. If left empty, infinite ctrl output will be allowed.
 max_ctrl_out:
-  velocity:
-    data:
-    - .nan
-    - .nan
-    - .nan
-  angular_velocity:
-    data:
-    - .nan
-    - .nan
-    - .nan
-  acceleration:
-    data:
-    - .nan
-    - .nan
-    - .nan
-  angular_acceleration:
-    data:
-    - .nan
-    - .nan
-    - .nan
+  data: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
 
 # PID Controller parameters. Size has to be 6! I-Value will be ignored. 
-pid: 
-   - kp: 1.0
-     kd: 0.0 
-   - kp: 1.0
-     kd: 0.0
-   - kp: 1.0
-     kd: 0.0 
-   - kp: 1.0
-     kd: 0.0
-   - kp: 1.0
-     kd: 0.0
-   - kp: 1.0
-     kd: 0.0
+kp: 
+  data: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
 
 # list of static transformations
 static_transformations: []

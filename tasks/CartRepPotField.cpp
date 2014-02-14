@@ -23,15 +23,8 @@ bool CartRepPotField::configureHook()
 
     rpf_ = new RepulsivePotentialField(3);
     rpf_->d0_ = _d_zero.get();
-
-    std::vector<base::actuators::PIDValues> pid = _pid.get();
-    if(pid.size() == 3){
-        for(uint i = 0; i < 3; i++){
-            rpf_->kp_(i) = pid[i].kp;
-            rpf_->max_(i) = pid[i].maxPWM;
-        }
-    }
-
+    rpf_->kp_ = _kp.get();
+    rpf_->max_ = _max_ctrl_out.get();
     ctrl_output_.angular_velocity.setZero();
     ctrl_output_.angular_acceleration.setZero();
 

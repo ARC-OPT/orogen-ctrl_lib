@@ -15,6 +15,9 @@ protected:
     std::vector<RepulsivePotentialField*> rpf_;
     base::samples::Joints feedback_;
     base::commands::Joints ctrl_output_, ctrl_error_;
+    base::VectorXd activation_;
+    double transition_range_;
+    base::Time stamp_;
 
 public:
     JointRepPotField(std::string const& name = "ctrl_lib::JointRepPotField");

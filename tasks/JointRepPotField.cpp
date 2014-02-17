@@ -25,6 +25,7 @@ bool JointRepPotField::configureHook()
     base::VectorXd d_zero = _d_zero.get();
     base::VectorXd kp = _kp.get();
     base::VectorXd max_ctrl_out = _max_ctrl_out.get();
+    transition_range_ = _transition_range.get();
 
     if(q_zero.size() != (int)joint_names.size()){
         LOG_ERROR("q_zero property should have size %i, but has size %i", joint_names.size(), q_zero.size());
@@ -36,6 +37,11 @@ bool JointRepPotField::configureHook()
     }
     if(kp.size() != (int)joint_names.size()){
         LOG_ERROR("d_zero property should have size %i, but has size %i", joint_names.size(), kp.size());
+        return false;
+    }
+
+    if(transition_range_ < 0 || transition_range_ > 1){
+        LOG_ERROR("Transition range must be within 0 .. 1");
         return false;
     }
 
@@ -53,6 +59,8 @@ bool JointRepPotField::configureHook()
     ctrl_output_.names = joint_names;
     ctrl_error_.resize(joint_names.size());
     ctrl_error_.names = joint_names;
+    activation_.resize(joint_names.size());
+    activation_.setZero();
 
     return true;
 }
@@ -70,7 +78,11 @@ void JointRepPotField::updateHook()
     JointRepPotFieldBase::updateHook();
 
     if(_feedback.read(feedback_) == RTT::NoData){
-        LOG_DEBUG("No data on feedback port");
+        if((base::Time::now() - stamp_).toSeconds() > 1)
+        {
+            LOG_DEBUG("No data on feedback port");
+            stamp_ = base::Time::now();
+        }
         return;
     }
 
@@ -88,8 +100,23 @@ void JointRepPotField::updateHook()
         ctrl_output_[i].speed = rpf_[i]->ctrl_out_(0);
         ctrl_output_[i].effort = rpf_[i]->ctrl_out_(0);
         ctrl_error_[i].speed = rpf_[i]->q0_(0) - rpf_[i]->q_(0);
+
+        //Activation function: Piecewise linear in the range of activation_hysteresis * d_zero
+        double d_0 = rpf_[i]->d0_; //Influence distance
+        double d = rpf_[i]->d_; //Distance to rep field center
+        if(d > d_0)
+            activation_(i) = 0;
+        else if(d < (1-transition_range_)*d_0)
+            activation_(i) = 1;
+        else{
+            if(transition_range_ == 0)
+                activation_(i) = 1;
+            else
+                activation_(i) = (d_0 - d)/(transition_range_*d_0);
+        }
     }
 
+    _activation.write(activation_);
     _control_error.write(ctrl_error_);
     _ctrl_out.write(ctrl_output_);
 

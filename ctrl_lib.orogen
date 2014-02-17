@@ -8,6 +8,7 @@ using_library "kdl_conversions"
 #
 # Out: acc = vel = -grad(U) = kp * (1/d - 1/d_0) * (q - q_0)/d^2,  d<= d_0
 #                           = 0                                 ,  else
+#
 #     d = |q-q_0|
 #   d_0 = Maximum Influence distance
 #   q_0 = Potential field center
@@ -25,6 +26,12 @@ task_context "JointRepPotField" do
     property("d_zero", "base/VectorXd").
           doc("Maximum influence distance per joint. Has to have same size as joint_names.")
 
+    property("transition_range", "double", 0.5).
+          doc("Transition rnage in percentage of the maximum influence distance. Has to be within 0..1.
+               Activation function is a piecewise linear function, that increases from 0 to 1.
+               The higher this value, the smaller the incline of the activation function.
+               For transition_range = 0, the activation will be a step function.")
+
     property("max_ctrl_out", "base/VectorXd").
           doc("Maximum controller output. Has to have same size as joint_names or empty, in which case infinite control output will be allowed.")
 
@@ -36,6 +43,9 @@ task_context "JointRepPotField" do
 
     output_port("ctrl_out", "base/commands/Joints").
           doc("Controller output (speed).  Will have same size as joint_names.")
+
+    output_port("activation", "base/VectorXd").
+          doc("Activation function. Will be between 0 and 1 for each joint.")
 
     # Debug Ports
     output_port("control_error", "base/samples/Joints")

@@ -100,20 +100,7 @@ void JointRepPotField::updateHook()
         ctrl_output_[i].speed = rpf_[i]->ctrl_out_(0);
         ctrl_output_[i].effort = rpf_[i]->ctrl_out_(0);
         ctrl_error_[i].speed = rpf_[i]->q0_(0) - rpf_[i]->q_(0);
-
-        //Activation function: Piecewise linear in the range of activation_hysteresis * d_zero
-        double d_0 = rpf_[i]->d0_; //Influence distance
-        double d = rpf_[i]->d_; //Distance to rep field center
-        if(d > d_0)
-            activation_(i) = 0;
-        else if(d < (1-transition_range_)*d_0)
-            activation_(i) = 1;
-        else{
-            if(transition_range_ == 0)
-                activation_(i) = 1;
-            else
-                activation_(i) = (d_0 - d)/(transition_range_*d_0);
-        }
+        activation_(i) = rpf_[i]->activation_;
     }
 
     _activation.write(activation_);

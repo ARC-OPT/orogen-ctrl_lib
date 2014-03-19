@@ -101,6 +101,7 @@ void CartPosCtrlVelFF::updateHook()
     //Write debug data
     ctrl_error_.velocity = (p_ctrl_->x_r_ - p_ctrl_->x_).segment(0,3);
     ctrl_error_.angular_velocity = (p_ctrl_->x_r_ - p_ctrl_->x_).segment(3,3);
+    ctrl_error_.time = base::Time::now();
     _control_error.write(ctrl_error_);
 }
 

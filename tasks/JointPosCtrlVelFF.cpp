@@ -137,6 +137,8 @@ void JointPosCtrlVelFF::updateHook()
         ctrl_error_[i].speed = p_ctrl_->x_r_(i) - p_ctrl_->x_(i);
     }
 
+    ctrl_output_.time = base::Time::now();
+    ctrl_error_.time = base::Time::now();
     _ctrl_out.write(ctrl_output_);
     _control_error.write(ctrl_error_);
 }

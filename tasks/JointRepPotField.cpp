@@ -103,6 +103,8 @@ void JointRepPotField::updateHook()
         activation_(i) = rpf_[i]->activation_;
     }
 
+    ctrl_output_.time = base::Time::now();
+    ctrl_error_.time = base::Time::now();
     _activation.write(activation_);
     _control_error.write(ctrl_error_);
     _ctrl_out.write(ctrl_output_);

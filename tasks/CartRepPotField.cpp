@@ -67,6 +67,7 @@ void CartRepPotField::updateHook()
 
     //Write debug data
     ctrl_error_.velocity = (center_.position - cur_.position);
+    ctrl_error_.time = base::Time::now();
     _control_error.write(ctrl_error_);
 }
 

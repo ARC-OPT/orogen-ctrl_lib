@@ -49,10 +49,46 @@ task_context "JointRepPotField" do
 
     # Debug Ports
     output_port("control_error", "base/samples/Joints")
-    
-    periodic 0.1
+
+    port_driven "feedback"
 end
 
+task_context "JointLimitAvoidance" do
+
+    needs_configuration
+
+    property("joint_limits","base/JointLimits").
+         doc("Joint limits. Avoidance will be only done for the joints defined in the name vector")
+
+    property("d_zero", "base/VectorXd").
+         doc("Maximum influence distance per joint. Has to have same size as joint_names.")
+
+    property("transition_range", "double", 0.5).
+         doc("Transition rnage in percentage of the maximum influence distance. Has to be within 0..1.
+             Activation function is a piecewise linear function, that increases from 0 to 1.
+             The higher this value, the smaller the incline of the activation function.
+             For transition_range = 0, the activation will be a step function.")
+
+    property("max_ctrl_out", "base/VectorXd").
+         doc("Maximum controller output. Has to have same size as joint_names or empty, in which case infinite control output will be allowed.")
+
+    property("kp", "base/VectorXd").
+         doc("Proportional gain. Has to have same size as joint_names.")
+
+    input_port("feedback", "base/samples/Joints").
+         doc("Current Joint status. Has to contain at least all names defined by joint_names.")
+
+    output_port("ctrl_out", "base/commands/Joints").
+         doc("Controller output (speed).  Will have same size as joint_names.")
+
+    output_port("activation", "base/VectorXd").
+         doc("Activation function. Will be between 0 and 1 for each joint.")
+
+    output_port("control_error", "base/samples/Joints").
+         doc("Distance to nearest joint limit.")
+
+    port_driven "feedback"
+end
 
 # Repulsive Potential Field method in Cartesian space. 3-dim. radial potential field:
 #

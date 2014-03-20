@@ -25,7 +25,7 @@ bool JointRepPotField::configureHook()
     base::VectorXd d_zero = _d_zero.get();
     base::VectorXd kp = _kp.get();
     base::VectorXd max_ctrl_out = _max_ctrl_out.get();
-    transition_range_ = _transition_range.get();
+    double transition_range = _transition_range.get();
 
     if(q_zero.size() != (int)joint_names.size()){
         LOG_ERROR("q_zero property should have size %i, but has size %i", joint_names.size(), q_zero.size());
@@ -40,7 +40,7 @@ bool JointRepPotField::configureHook()
         return false;
     }
 
-    if(transition_range_ < 0 || transition_range_ > 1){
+    if(transition_range < 0 || transition_range > 1){
         LOG_ERROR("Transition range must be within 0 .. 1");
         return false;
     }
@@ -52,6 +52,7 @@ bool JointRepPotField::configureHook()
         rpf->kp_(0) = kp(i);
         if(max_ctrl_out.size() == (int)joint_names.size())
             rpf->max_(0) = max_ctrl_out(i);
+        rpf->transition_range_ = transition_range;
         rpf_.push_back(rpf);
     }
 

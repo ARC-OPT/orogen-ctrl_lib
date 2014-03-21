@@ -120,19 +120,11 @@ void JointLimitAvoidance::updateHook()
         lower_rpf_[i]->q_(0) = feedback_[idx].position;
         lower_rpf_[i]->update();
 
-        LOG_DEBUG("Joint %s: Position: %f, Lower q0: %f. Upper q0: %f, lower ctrl out: %f, Upper ctrl out: %f",
-                  ctrl_output_.names[i].c_str(),
-                  upper_rpf_[i]->q_(0),
-                  lower_rpf_[i]->q0_(0), upper_rpf_[i]->q0_(0),
-                  lower_rpf_[i]->ctrl_out_(0), upper_rpf_[i]->ctrl_out_(0));
-
         RepulsivePotentialField *active_field;
         if(fabs(upper_rpf_[i]->ctrl_out_(0)) >= fabs(lower_rpf_[i]->ctrl_out_(0))){
-            LOG_DEBUG("Active Field: Upper");
             active_field = upper_rpf_[i];
         }
         else{
-            LOG_DEBUG("Active Field: Lower");
             active_field = lower_rpf_[i];
         }
 
@@ -146,6 +138,7 @@ void JointLimitAvoidance::updateHook()
         else
             ctrl_error_[i].position = diff_upper;
     }
+
     ctrl_output_.time = base::Time::now();
     ctrl_error_.time = base::Time::now();
     _activation.write(activation_);

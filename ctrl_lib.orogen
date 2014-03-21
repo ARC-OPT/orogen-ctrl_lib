@@ -64,7 +64,7 @@ task_context "JointLimitAvoidance" do
          doc("Maximum influence distance per joint. Has to have same size as joint_names.")
 
     property("transition_range", "double", 0.5).
-         doc("Transition rnage in percentage of the maximum influence distance. Has to be within 0..1.
+         doc("Transition range in percentage of the maximum influence distance. Has to be within 0..1.
              Activation function is a piecewise linear function, that increases from 0 to 1.
              The higher this value, the smaller the incline of the activation function.
              For transition_range = 0, the activation will be a step function.")

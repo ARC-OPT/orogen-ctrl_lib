@@ -173,6 +173,8 @@ end
 
 # Cartesian P-controller with velocity feedforward term:
 #   ctrl_out = v_r + kp*(x_r-x), |ctrl_out| <= max_ctrl_out
+# 
+# where x_r and x describe full 3D poses, respectively, and v_r the reference twist.
 #
 task_context "CartPosCtrlVelFF" do
     needs_configuration
@@ -180,9 +182,9 @@ task_context "CartPosCtrlVelFF" do
     property("kp", "base/Vector6d").
        doc("Proportional controller parameters.")
 
-    property("max_ctrl_out", "base/Vector6d").
+    property("max_ctrl_out", "base/VectorXd").
        doc("Maximum controller output.")
- 
+
     property("controlled_frame_frame", "std/string" ).
        doc("This is the 'end effector' frame of the controlled motion")
 
@@ -204,8 +206,8 @@ task_context "CartPosCtrlVelFF" do
       max_latency 0.1
     end
 
-    # For debugging
-    output_port("control_error", "base/samples/RigidBodyState")
+    # For debugging: x_r-x
+    output_port("pos_control_error", "base/samples/RigidBodyState")
 
     periodic 0.1
 end

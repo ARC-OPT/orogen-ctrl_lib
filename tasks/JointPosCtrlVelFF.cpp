@@ -8,13 +8,11 @@ using namespace ctrl_lib;
 JointPosCtrlVelFF::JointPosCtrlVelFF(std::string const& name)
     : JointPosCtrlVelFFBase(name)
 {
-    p_ctrl_ = 0;
 }
 
 JointPosCtrlVelFF::JointPosCtrlVelFF(std::string const& name, RTT::ExecutionEngine* engine)
     : JointPosCtrlVelFFBase(name, engine)
 {
-    p_ctrl_ = 0;
 }
 
 bool JointPosCtrlVelFF::configureHook()
@@ -24,28 +22,32 @@ bool JointPosCtrlVelFF::configureHook()
 
     joint_names_ = _joint_names.get();
     kp_ = _kp.get();
-    base::VectorXd max_ctrl_out = _max_ctrl_out.get();
+    max_ctrl_out_ = _max_ctrl_out.get();
 
-    if(joint_names_.size() != (int)kp_.size())
+    if(joint_names_.size() != kp_.size())
     {
         LOG_ERROR("Kp property should have size %i but has size %i", joint_names_.size(), kp_.size());
         return false;
     }
-    p_ctrl_ = new PDCtrlFeedForward(joint_names_.size());
-    p_ctrl_->kp_ = kp_;
 
-    if(max_ctrl_out.size() > 0){
-        if(max_ctrl_out.size() != p_ctrl_->no_vars_){
-            LOG_ERROR("Max Ctrl out property should have size %i but has size %i", p_ctrl_->no_vars_, max_ctrl_out.size());
-            return  false;
-        }
-        p_ctrl_->v_max_ = max_ctrl_out;
+    if(max_ctrl_out_.size() == 0){
+        max_ctrl_out_.resize(joint_names_.size());
+        max_ctrl_out_.setConstant(base::infinity<double>());
     }
 
-    ctrl_output_.resize(p_ctrl_->no_vars_);
+    if(max_ctrl_out_.size() != joint_names_.size()){
+        LOG_ERROR("Max Ctrl out property should have size %i but has size %i", joint_names_.size(), max_ctrl_out_.size());
+        return  false;
+    }
+
+    ctrl_output_.resize(joint_names_.size());
     ctrl_output_.names = joint_names_;
-    ctrl_error_.resize(p_ctrl_->no_vars_);
+    ctrl_error_.resize(joint_names_.size());
     ctrl_error_.names = joint_names_;
+    ctrl_out_.resize(joint_names_.size());
+    x_r_.resize(joint_names_.size());
+    x_.resize(joint_names_.size());
+    v_r_.resize(joint_names_.size());
 
     return true;
 }
@@ -54,6 +56,11 @@ bool JointPosCtrlVelFF::startHook()
 {
     if (! JointPosCtrlVelFFBase::startHook())
         return false;
+
+    ctrl_out_.setZero();
+    v_r_.setZero();
+    x_.setZero();
+    x_r_.setZero();
 
     return true;
 }
@@ -64,9 +71,9 @@ void JointPosCtrlVelFF::updateHook()
 
     if(_setpoint.read(ref_) == RTT::NoData)
     {
-        if((base::Time::now() - stamp_).toSeconds() > 1.0)
+        if((base::Time::now() - stamp_).toSeconds() > 2.0)
         {
-            LOG_DEBUG("No data on set point port");
+            LOG_DEBUG("%s: No data on set point port", this->getName().c_str());
             stamp_ = base::Time::now();
         }
         return;
@@ -76,7 +83,7 @@ void JointPosCtrlVelFF::updateHook()
     {
         if((base::Time::now() - stamp_).toSeconds() > 1.0)
         {
-            LOG_DEBUG("No data on feedback point port");
+            LOG_DEBUG("%s: No data on feedback point port");
             stamp_ = base::Time::now();
         }
         return;
@@ -95,11 +102,11 @@ void JointPosCtrlVelFF::updateHook()
 
         if(!cur_[idx].hasPosition())
         {
-            LOG_ERROR("Feedback vector index %s has invalid position", idx);
+            LOG_ERROR("%s: Joint %s has invalid feedback position", this->getName().c_str(), joint_names_[i].c_str());
             throw std::invalid_argument("Invalid feedback input");
         }
 
-        p_ctrl_->x_(i) = cur_[idx].position;
+        x_(i) = cur_[idx].position;
 
         try{
             idx = ref_.mapNameToIndex(joint_names_[i]);
@@ -111,13 +118,14 @@ void JointPosCtrlVelFF::updateHook()
 
         if(!ref_[idx].hasPosition())
         {
-            LOG_ERROR("Reference vector index %s has invalid position", idx);
+            LOG_ERROR("%s: Joint %s has invalid reference position", this->getName().c_str(), joint_names_[i].c_str());
             throw std::invalid_argument("Invalid reference input");
         }
 
-        p_ctrl_->x_r_(i) = ref_[idx].position;
+        x_r_(i) = ref_[idx].position;
+
         if(ref_[idx].hasSpeed())
-            p_ctrl_->v_r_(i) = ref_[idx].speed;
+            v_r_(i) = ref_[idx].speed;
     }
 
     //Read new pid values
@@ -127,14 +135,23 @@ void JointPosCtrlVelFF::updateHook()
             LOG_ERROR("Kp Values should have size %i but have size %i", joint_names_.size(), kp_.size());
             throw std::invalid_argument("Invalid gain input");
         }
-        p_ctrl_->kp_ = kp_;
     }
 
-    p_ctrl_->updateCtrlOutput();
+    //Control law:
+    ctrl_out_ = v_r_ + kp_.cwiseProduct(x_r_ - x_);
+
+    //Apply saturation: ctrl_out_ = ctrl_out_ * min(1, v_max/|ctrl_out_|). Scale all entries of ctrl_out_ appriopriately.
+    double eta = 1;
+    for(uint i = 0; i < joint_names_.size(); i++){
+        if(ctrl_out_(i) != 0)
+            eta = std::min( eta, max_ctrl_out_(i)/fabs(ctrl_out_(i)) );
+    }
+    ctrl_out_ = ctrl_out_ * eta;
+
 
     for(uint i = 0; i < ctrl_output_.size(); i++){
-        ctrl_output_[i].speed = p_ctrl_->v_ctrl_out_(i);
-        ctrl_error_[i].speed = p_ctrl_->x_r_(i) - p_ctrl_->x_(i);
+        ctrl_output_[i].speed = ctrl_out_(i);
+        ctrl_error_[i].speed = x_r_(i) - x_(i);
     }
 
     ctrl_output_.time = base::Time::now();
@@ -146,7 +163,4 @@ void JointPosCtrlVelFF::updateHook()
 void JointPosCtrlVelFF::cleanupHook()
 {
     JointPosCtrlVelFFBase::cleanupHook();
-
-    delete p_ctrl_;
-    p_ctrl_ = 0;
 }

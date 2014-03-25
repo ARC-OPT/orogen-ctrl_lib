@@ -3,7 +3,6 @@
 #include "CartPosCtrlVelFF.hpp"
 #include <base/Eigen.hpp>
 #include <kdl_conversions/KDLConversions.hpp>
-#include <kdl/frames_io.hpp>
 
 using namespace ctrl_lib;
 using namespace std;
@@ -11,13 +10,11 @@ using namespace std;
 CartPosCtrlVelFF::CartPosCtrlVelFF(std::string const& name)
     : CartPosCtrlVelFFBase(name)
 {
-    p_ctrl_ = 0;
 }
 
 CartPosCtrlVelFF::CartPosCtrlVelFF(std::string const& name, RTT::ExecutionEngine* engine)
     : CartPosCtrlVelFFBase(name, engine)
 {
-    p_ctrl_ = 0;
 }
 
 
@@ -26,13 +23,32 @@ bool CartPosCtrlVelFF::configureHook()
     if (! CartPosCtrlVelFFBase::configureHook())
         return false;
 
-    p_ctrl_ = new PDCtrlFeedForward(6);
-    p_ctrl_->kp_ = _kp.get();
-    p_ctrl_->v_max_ = _max_ctrl_out.get();
+    kp_ = _kp.get();
+    max_ctrl_out_ = _max_ctrl_out.get();
 
-    LOG_DEBUG("Saturation Values: ");
-    LOG_DEBUG("v_max: %f %f %f",  p_ctrl_->v_max_(0), p_ctrl_->v_max_(1), p_ctrl_->v_max_(2));
-    LOG_DEBUG("v_rot_max: %f %f %f",  p_ctrl_->v_max_(3), p_ctrl_->v_max_(4), p_ctrl_->v_max_(5));
+    if(max_ctrl_out_.size() == 0){
+        LOG_DEBUG("No max ctrl output given, will be set to infinity");
+        max_ctrl_out_.resize(6);
+        max_ctrl_out_.setConstant(base::infinity<double>());
+    }
+
+    if(max_ctrl_out_.size() != 6){
+        LOG_ERROR("Max ctrl out should have size 6 but has size %i", max_ctrl_out_.size());
+        return false;
+    }
+
+    return true;
+}
+
+bool CartPosCtrlVelFF::startHook(){
+
+    if(!CartPosCtrlVelFFBase::startHook())
+        return false;
+
+    ctrl_out_.setZero();
+    v_r_.setZero();
+    x_r_.setZero();
+    x_.setZero();
 
     return true;
 }
@@ -42,72 +58,84 @@ void CartPosCtrlVelFF::updateHook()
     CartPosCtrlVelFFBase::updateHook();
 
     //Get Transforms:
-    _controlled_in2setpoint.get(base::Time::now(), ref_);
-    _controlled_in2controlled_frame.get(base::Time::now(), cur_);
-
-    KDL::Frame ref_kdl, cur_kdl;
-    kdl_conversions::RigidBodyState2KDL(ref_, ref_kdl);
-    kdl_conversions::RigidBodyState2KDL(cur_, cur_kdl);
-
-    if(!ref_.hasValidPosition() ||
-            !ref_.hasValidOrientation())
-    {
-        if((base::Time::now() - stamp_).toSeconds() > 1)
-        {
-            LOG_DEBUG("Transform between controlled_in and setpoint has no valid position and/or orientation");
-            LOG_DEBUG("Norm of quaternion is %f", ref_.orientation.squaredNorm());
+    if(!_controlled_in2setpoint.get(base::Time::now(), ref_)){
+        if((base::Time::now() - stamp_).toSeconds() > 2){
+            LOG_DEBUG("%s: No valid transformation available between %s and %s",
+                      this->getName().c_str(), _controlled_in_frame.get().c_str(), _setpoint_frame.get().c_str());
             stamp_ = base::Time::now();
         }
         return;
+    }
+
+    if(!_controlled_in2controlled_frame.get(base::Time::now(), cur_)){
+        if((base::Time::now() - stamp_).toSeconds() > 2){
+            LOG_DEBUG("%s: No valid transformation available between %s and %s",
+                      this->getName().c_str(), _controlled_in_frame.get().c_str(), _controlled_frame_frame.get().c_str());
+            stamp_ = base::Time::now();
+        }
+        return;
+    }
+
+    if(!ref_.hasValidPosition() ||
+       !ref_.hasValidOrientation()){
+        LOG_ERROR("%s: Reference pose (sourceFrame: %s, TargetFrame: %s) has invalid position and/or orientation",
+                  this->getName().c_str(), ref_.sourceFrame.c_str(), ref_.targetFrame.c_str());
+        throw std::invalid_argument("Invalid Reference Input");
     }
 
     if(!cur_.hasValidPosition() ||
-       !cur_.hasValidOrientation())
-    {
-        if((base::Time::now() - stamp_).toSeconds() > 1)
-        {
-            stamp_ = base::Time::now();
-            LOG_DEBUG("Transform between controlled_in and controlled_frame has no valid position and/or orientation");
-            LOG_DEBUG("Norm of quaternion is %f", ref_.orientation.squaredNorm());
-        }
-        return;
+       !cur_.hasValidOrientation()){
+        LOG_ERROR("%s: Current pose (sourceFrame: %s, TargetFrame: %s) has invalid position and/or orientation",
+                  this->getName().c_str(), cur_.sourceFrame.c_str(), cur_.targetFrame.c_str());
+        throw std::invalid_argument("Invalid Reference Input");
     }
 
+    kdl_conversions::RigidBodyState2KDL(ref_, ref_kdl_);
+    kdl_conversions::RigidBodyState2KDL(cur_, cur_kdl_);
+
     //Use KDL::Diff to get a non-singular orientation error
-    KDL::Twist diff = KDL::diff(cur_kdl, ref_kdl);
+    KDL::Twist diff = KDL::diff(cur_kdl_, ref_kdl_);
 
-    //Convert to eigen: Use diff as reference value and set current vale to zero
-    p_ctrl_->x_r_.segment(0,3) << diff.vel(0), diff.vel(1), diff.vel(2);
-    p_ctrl_->x_r_.segment(3,3) << diff.rot(0), diff.rot(1), diff.rot(2);
-    p_ctrl_->x_.setZero();
+    //Convert to eigen: Use diff as reference value and set current value to zero
+    x_r_.segment(0,3) << diff.vel(0), diff.vel(1), diff.vel(2);
+    x_r_.segment(3,3) << diff.rot(0), diff.rot(1), diff.rot(2);
+    x_.setZero();
 
-    if(ref_.hasValidVelocity())
-        p_ctrl_->v_r_.segment(0,3) = ref_.velocity;
-    if(ref_.hasValidAngularVelocity())
-        p_ctrl_->v_r_.segment(3,3) = ref_.angular_velocity;
+    if(ref_.hasValidVelocity() &&
+       ref_.hasValidAngularVelocity())
+    {
+        v_r_.segment(0,3) = ref_.velocity;
+        v_r_.segment(3,3) = ref_.angular_velocity;
+    }
 
-    //Read new pid values
-    if(_kp_values.read(kp_) == RTT::NewData)
-        p_ctrl_->kp_ = kp_;
+    //Read new controller gain values
+    _kp_values.read(kp_);
 
-    p_ctrl_->updateCtrlOutput();
+    //Control law: v_r + kp*(x_r - x)
+    ctrl_out_ = v_r_ + kp_.cwiseProduct(x_r_ - x_);
+
+    //Apply saturation: ctrl_out = ctrl_out * min(1, max/|ctrl_out|). Scale all entries of ctrl_out appriopriately.
+    double eta = 1;
+    for(int i = 0; i < 6; i++){
+        if(ctrl_out_(i) != 0)
+            eta = std::min( eta, max_ctrl_out_(i)/fabs(ctrl_out_(i)) );
+    }
+
+    ctrl_out_ = eta * ctrl_out_;
 
     //Convert to RigidBodyState*/
-    ctrl_output_.time = base::Time::now();
-    ctrl_output_.velocity = p_ctrl_->v_ctrl_out_.segment(0,3);
-    ctrl_output_.angular_velocity = p_ctrl_->v_ctrl_out_.segment(3,3);
-    _ctrl_out.write(ctrl_output_);
+    ctrl_out_rbs_.time = base::Time::now();
+    ctrl_out_rbs_.velocity = ctrl_out_.segment(0,3);
+    ctrl_out_rbs_.angular_velocity = ctrl_out_.segment(3,3);
+    _ctrl_out.write(ctrl_out_rbs_);
 
     //Write debug data
-    ctrl_error_.velocity = (p_ctrl_->x_r_ - p_ctrl_->x_).segment(0,3);
-    ctrl_error_.angular_velocity = (p_ctrl_->x_r_ - p_ctrl_->x_).segment(3,3);
-    ctrl_error_.time = base::Time::now();
-    _control_error.write(ctrl_error_);
+    pos_ctrl_error_.velocity = (x_r_ - x_).segment(0,3);
+    pos_ctrl_error_.angular_velocity = (x_r_ - x_).segment(3,3);
+    pos_ctrl_error_.time = base::Time::now();
+    _pos_control_error.write(pos_ctrl_error_);
 }
 
 void CartPosCtrlVelFF::cleanupHook(){
     CartPosCtrlVelFFBase::cleanupHook();
-
-    delete p_ctrl_;
-    p_ctrl_ = 0;
 }

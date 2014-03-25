@@ -4,7 +4,6 @@
 #define CTRL_LIB_JointPosCtrlVelFF_TASK_HPP
 
 #include "ctrl_lib/JointPosCtrlVelFFBase.hpp"
-#include <ctrl_lib/PDCtrlFeedForward.hpp>
 
 namespace ctrl_lib {
 
@@ -12,8 +11,8 @@ class JointPosCtrlVelFF : public JointPosCtrlVelFFBase
 {
     friend class JointPosCtrlVelFFBase;
 protected:
-    PDCtrlFeedForward* p_ctrl_;
     base::VectorXd kp_;
+    base::VectorXd x_, x_r_, v_r_, max_ctrl_out_, ctrl_out_;
     base::samples::Joints cur_, ref_, ctrl_output_, ctrl_error_;
     std::vector<std::string> joint_names_;
     base::Time stamp_;

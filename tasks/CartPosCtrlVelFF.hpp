@@ -4,17 +4,20 @@
 #define CTRL_LIB_CARTPDCTRL_TASK_HPP
 
 #include "ctrl_lib/CartPosCtrlVelFFBase.hpp"
-#include <ctrl_lib/PDCtrlFeedForward.hpp>
+#include <kdl/frames_io.hpp>
 
 namespace ctrl_lib {
 class CartPosCtrlVelFF : public CartPosCtrlVelFFBase
 {
     friend class CartPosCtrlVelFFBase;
 protected:
-    PDCtrlFeedForward *p_ctrl_;
     base::Vector6d kp_;
-    base::samples::RigidBodyState ctrl_output_;
-    base::samples::RigidBodyState cur_, ref_, ctrl_error_;
+    base::VectorXd max_ctrl_out_;
+    base::Vector6d ctrl_out_;
+    base::Vector6d x_r_, x_, v_r_;
+    KDL::Frame ref_kdl_, cur_kdl_;
+    base::samples::RigidBodyState ctrl_out_rbs_;
+    base::samples::RigidBodyState cur_, ref_, pos_ctrl_error_;
 
     base::Time stamp_;
 
@@ -23,7 +26,7 @@ public:
     CartPosCtrlVelFF(std::string const& name, RTT::ExecutionEngine* engine);
     ~CartPosCtrlVelFF(){}
     bool configureHook();
-    bool startHook(){return CartPosCtrlVelFFBase::startHook();}
+    bool startHook();
     void updateHook();
     void errorHook(){CartPosCtrlVelFFBase::errorHook();}
     void stopHook(){CartPosCtrlVelFFBase::stopHook();}

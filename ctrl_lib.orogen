@@ -212,3 +212,49 @@ task_context "CartPosCtrlVelFF" do
     periodic 0.1
 end
 
+# Cartesian Force Controller with velocity output
+#
+# ctrl_out = kp * (wrench_ref - wrench)
+#
+task_context "CartForceCtrlSimple" do 
+    needs_configuration
+
+    property("kp", "base/Vector6d").
+       doc("Proportional controller parameters.")
+
+    property("max_ctrl_out", "base/VectorXd").
+       doc("Maximum controller output. If empty inifinite control output will be allowed.") 
+
+    property("ft_sensor_frame", "std/string", "").
+       doc("The frame in which the force is measured, i.e. the ft sensor frame. This is 
+            the frame in which the wrench input has to be given. If left empty,
+            the given reference and actual wrench will be assumed to be in the same coordinate frame.")
+
+    property("reference_frame", "std/string", "").
+       doc("The frame in which the reference force is expressed, i.e. the end effector. If left empty,
+            the given reference and actual wrench will be assumed to be in the same coordinate frame.")
+
+    property("ctrl_output_in_ref_frame", "bool", false).
+       doc("If true, the control output will be given in the configured reference frame, else in 
+            the ft sensor frame") 
+    
+    input_port("kp_values", "base/Vector6d").
+       doc("Port for online setting new gain values.")
+
+    input_port("wrench_ref", "base/samples/Wrench").
+       doc("Reference wrench.")
+
+    input_port("wrench", "base/samples/Wrench").
+       doc("Actual wrench.")
+
+    output_port("ctrl_out", "base/samples/RigidBodyState").
+       doc("Controller output (velocity/angular velocity).")
+    
+    transformer do
+      transform 'ft_sensor', 'reference'
+      max_latency 0.1
+    end
+
+    periodic 0.1
+end
+

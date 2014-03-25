@@ -78,16 +78,16 @@ void CartPosCtrlVelFF::updateHook()
 
     if(!ref_.hasValidPosition() ||
        !ref_.hasValidOrientation()){
-        LOG_ERROR("%s: Reference pose (sourceFrame: %s, TargetFrame: %s) has invalid position and/or orientation",
+        LOG_DEBUG("%s: Reference pose (sourceFrame: %s, TargetFrame: %s) has invalid position and/or orientation",
                   this->getName().c_str(), ref_.sourceFrame.c_str(), ref_.targetFrame.c_str());
-        throw std::invalid_argument("Invalid Reference Input");
+        return;
     }
 
     if(!cur_.hasValidPosition() ||
        !cur_.hasValidOrientation()){
-        LOG_ERROR("%s: Current pose (sourceFrame: %s, TargetFrame: %s) has invalid position and/or orientation",
+        LOG_DEBUG("%s: Current pose (sourceFrame: %s, TargetFrame: %s) has invalid position and/or orientation",
                   this->getName().c_str(), cur_.sourceFrame.c_str(), cur_.targetFrame.c_str());
-        throw std::invalid_argument("Invalid Reference Input");
+        return;
     }
 
     kdl_conversions::RigidBodyState2KDL(ref_, ref_kdl_);

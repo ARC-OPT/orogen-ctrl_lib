@@ -24,55 +24,35 @@ bool JointLimitAvoidance::configureHook()
     if (! JointLimitAvoidanceBase::configureHook())
         return false;
 
-    base::JointLimits limits = _joint_limits.get();
-    base::VectorXd d_zero = _d_zero.get();
-    double transition_range = _transition_range.get();
-    base::VectorXd max_ctrl_out = _max_ctrl_out.get();
-    base::VectorXd kp = _kp.get();
+    limits_ = _joint_limits.get();
+    d_zero_ = _d_zero.get();
+    transition_range_ = _transition_range.get();
+    max_ctrl_out_ = _max_ctrl_out.get();
+    kp_ = _kp.get();
 
-
-    if(d_zero.size() != (int)limits.size()){
-        LOG_ERROR("Joint Limits have size %i and d_zero has size %i", limits.size(), d_zero.size());
+    if(max_ctrl_out_.size() != (int)limits_.size()){
+        LOG_ERROR("Max ctrl output should have size %i but has size %i", limits_.size(), max_ctrl_out_.size());
         return false;
     }
-    if(kp.size() != (int)limits.size()){
-        LOG_ERROR("Joint Limits have size %i and kp has size %i", limits.size(), kp.size());
+    if(d_zero_.size() != (int)limits_.size()){
+        LOG_ERROR("Joint Limits have size %i and d_zero has size %i", limits_.size(), d_zero_.size());
+        return false;
+    }
+    if(kp_.size() != (int)limits_.size()){
+        LOG_ERROR("Joint Limits have size %i and kp has size %i", limits_.size(), kp_.size());
         return false;
     }
 
-    if(transition_range < 0 || transition_range > 1){
+    if(transition_range_ < 0 || transition_range_ > 1){
         LOG_ERROR("Transition range must be within 0 .. 1");
         return false;
     }
 
-    for(size_t i = 0; i < limits.size(); i++)
-    {
-        //Upper joint limit
-        RepulsivePotentialField* upper_rpf = new RepulsivePotentialField(1);
-        upper_rpf->d0_ = d_zero(i);
-        upper_rpf->q0_(0) = limits[i].max.position;
-        upper_rpf->kp_(0) = kp(i);
-        if(max_ctrl_out.size() == (int)limits.size()) //If there is no max ctrl out given, it will be infinite
-            upper_rpf->max_(0) = max_ctrl_out(i);
-        upper_rpf->transition_range_ = transition_range;
-        upper_rpf_.push_back(upper_rpf);
-
-        //Lower joint limit
-        RepulsivePotentialField* lower_rpf = new RepulsivePotentialField(1);
-        lower_rpf->d0_ = d_zero(i);
-        lower_rpf->q0_(0) = limits[i].min.position;
-        lower_rpf->kp_(0) = kp(i);
-        if(max_ctrl_out.size() == (int)limits.size()) //If there is no max ctrl out given, it will be infinite
-            lower_rpf->max_(0) = max_ctrl_out(i);
-        lower_rpf->transition_range_ = transition_range;
-        lower_rpf_.push_back(lower_rpf);
-    }
-
-    ctrl_output_.resize(limits.size());
-    ctrl_output_.names = limits.names;
-    ctrl_error_.resize(limits.size());
-    ctrl_error_.names = limits.names;
-    activation_.resize(limits.size());
+    ctrl_output_.resize(limits_.size());
+    ctrl_output_.names = limits_.names;
+    ctrl_error_.resize(limits_.size());
+    ctrl_error_.names = limits_.names;
+    activation_.resize(limits_.size());
 
     return true;
 }
@@ -105,38 +85,61 @@ void JointLimitAvoidance::updateHook()
         return;
     }
 
-    for(uint i = 0; i < upper_rpf_.size(); i++){
-        uint idx;
+    for(uint i = 0; i < limits_.size(); i++){
+
+        base::JointLimitRange range = limits_[i];
+        double position;
+
         try{
-            idx = feedback_.mapNameToIndex(ctrl_output_.names[i]);
+            position = feedback_.getElementByName(limits_.names[i]).position;
         }
         catch(std::exception e){
-            LOG_DEBUG("No such joint name in feedback vector: %s. Skipping it.", ctrl_output_.names[i].c_str());
+            LOG_DEBUG("No such joint name in feedback vector: %s. Skipping it.", limits_.names[i].c_str());
             continue;
         }
-        upper_rpf_[i]->q_(0) = feedback_[idx].position;
-        upper_rpf_[i]->update();
 
-        lower_rpf_[i]->q_(0) = feedback_[idx].position;
-        lower_rpf_[i]->update();
+        double d_upper = fabs(range.max.position - position);
+        double d_lower = fabs(range.min.position - position);
+        double d0 = d_zero_(i);
+        ctrl_output_[i].speed = 0;
+        activation_(i) = 0;
 
-        RepulsivePotentialField *active_field;
-        if(fabs(upper_rpf_[i]->ctrl_out_(0)) >= fabs(lower_rpf_[i]->ctrl_out_(0))){
-            active_field = upper_rpf_[i];
+        if(d_upper <= d_lower){
+            //activation zone:
+            if(d_upper < d0)
+            {
+                //Control output: Proportional to 1/d and limited by max_ctrl_out
+                ctrl_output_[i].speed = std::max(-kp_(i) * (d_zero_(i) - d_upper)*(d_zero_(i) - d_upper), -max_ctrl_out_(i));
+
+                //Activation function: piecewise linear profile
+                if(d_upper < (1-transition_range_)*d0)
+                    activation_(i) = 1;
+                else
+                    activation_(i) = ((d0 - d_upper)*(d0 - d_upper))/((transition_range_*d0)*(transition_range_*d0));
+
+                LOG_DEBUG("Joint %s within lower activation zone. d_lower: %f, ctrl_out: %f, limited_ctrl_out: %f activation: %f",
+                          limits_.names[i].c_str(), d_upper, -kp_(i) * (d_zero_(i) - d_upper), ctrl_output_[i].speed, activation_(i));
+            }
+            ctrl_error_[i].position = range.max.position - position;
         }
         else{
-            active_field = lower_rpf_[i];
+            //activation zone:
+            if(d_lower < d0)
+            {
+                //Control output: Proportional to d0-d and limited by max_ctrl_out
+                ctrl_output_[i].speed = std::min(kp_(i) * (d_zero_(i) - d_lower)*(d_zero_(i) - d_lower), max_ctrl_out_(i));
+
+                //Activation function: piecewise quadratic profile
+                if(d_lower < (1-transition_range_)*d0)
+                    activation_(i) = 1;
+                else
+                    activation_(i) = ((d0 - d_lower)*(d0 - d_lower))/((transition_range_*d0)*(transition_range_*d0));
+
+                LOG_DEBUG("Joint %s within lower activation zone. d_lower: %f, ctrl_out: %f, limited_ctrl_out: %f activation: %f",
+                          limits_.names[i].c_str(), d_lower, kp_(i) * (d_zero_(i) - d_lower), ctrl_output_[i].speed, activation_(i));
+            }
+            ctrl_error_[i].position = position - range.min.position;
         }
-
-        ctrl_output_[i].speed = ctrl_output_[i].effort = active_field->ctrl_out_(0);
-        activation_(i) = active_field->activation_;
-
-        double diff_upper = fabs(upper_rpf_[i]->q0_(0) - upper_rpf_[i]->q_(0));
-        double diff_lower = fabs(lower_rpf_[i]->q0_(0) - lower_rpf_[i]->q_(0));
-        if(diff_upper > diff_lower)
-            ctrl_error_[i].position = diff_lower;
-        else
-            ctrl_error_[i].position = diff_upper;
     }
 
     ctrl_output_.time = base::Time::now();

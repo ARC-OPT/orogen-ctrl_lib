@@ -4,15 +4,15 @@
 #define CTRL_LIB_JOINTLIMITAVOIDANCE_TASK_HPP
 
 #include "ctrl_lib/JointLimitAvoidanceBase.hpp"
-#include <ctrl_lib/RepulsivePotentialField.hpp>
-
 namespace ctrl_lib {
 
 class JointLimitAvoidance : public JointLimitAvoidanceBase
 {
     friend class JointLimitAvoidanceBase;
 protected:
-    std::vector<RepulsivePotentialField*> upper_rpf_, lower_rpf_;
+    base::JointLimits limits_;
+    base::VectorXd d_zero_, max_ctrl_out_, kp_;
+    double transition_range_;
     base::samples::Joints feedback_, ctrl_error_;
     base::commands::Joints ctrl_output_;
     base::Time stamp_;

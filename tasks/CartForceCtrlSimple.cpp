@@ -27,6 +27,17 @@ bool CartForceCtrlSimple::configureHook()
 
     kp_ = _kp.get();
     max_ctrl_output_ = _max_ctrl_out.get();
+    base::samples::Wrench contact_thresh = _contact_threshold.get();
+
+    if(contact_thresh.force.size() == 3)
+        contact_threshold_.segment(0,3) = contact_thresh.force;
+    else
+        contact_threshold_.segment(0,3).setZero();
+
+    if(contact_thresh.torque.size() == 3)
+        contact_threshold_.segment(3,3) = contact_thresh.torque;
+    else
+        contact_threshold_.segment(3,3).setZero();
 
     if(max_ctrl_output_.size() == 0){
         max_ctrl_output_.resize(6);
@@ -78,17 +89,40 @@ void CartForceCtrlSimple::updateHook()
     if(_ft_sensor2reference.get(base::Time::now(), ft2refFrame_))
         kdl_conversions::RigidBodyState2KDL(ft2refFrame_, ft2refFrame_kdl_);
 
-    cout<<"Pos: "<<ft2refFrame_.position<<endl;
-    cout<<"Ori"<<base::getEuler(ft2refFrame_.orientation)<<endl;
+    base::Vector3d euler = base::getEuler(ft2refFrame_.orientation);
+    LOG_DEBUG("%s: Ft Frame: Position: %f %f %f, Orientation: %f %f %f",
+              ft2refFrame_.position(0), ft2refFrame_.position(1), ft2refFrame_.position(2),
+              euler(0), euler(1), euler(2));
+
+    LOG_DEBUG("%s: Force: %f %f %f Torque: %f %f %f",F_(0), F_(1), F_(2), F_(3), F_(4), F_(5));
+    LOG_DEBUG("%s: Force_ref: %f %f %f Torque_ref: %f %f %f",F_r_(0), F_r_(1), F_r_(2), F_r_(3), F_r_(4), F_r_(5));
 
     //Ctrl law: kp * (F_r - F)
-    if(_ctrl_output_in_ref_frame)
-        KDLWrench2Eigen(F_r_ -  ft2refFrame_kdl_.Inverse() * F_, ctrl_error_);
-    else
-        KDLWrench2Eigen(ft2refFrame_kdl_ * F_r_ -  F_, ctrl_error_);
+    if(_ctrl_output_in_ref_frame){
+        KDL::Wrench tmp = ft2refFrame_kdl_.Inverse() * F_;
+        KDLWrench2Eigen(F_r_ -  tmp, ctrl_error_);
 
-    cout<<"Wrench in ft frame: "<<ft2refFrame_kdl_ * F_r_<<endl;
-    cout<<"Ft Frame to Hand frame: "<<ft2refFrame_kdl_<<endl<<endl;
+        LOG_DEBUG("%s: Force in reference frame: %f %f %f \n Torque in reference frame: %f %f %f\n",tmp(0), tmp(1), tmp(2), tmp(3), tmp(4), tmp(5));
+    }
+    else{
+        KDL::Wrench tmp = ft2refFrame_kdl_ * F_r_;
+        KDLWrench2Eigen(tmp -  F_, ctrl_error_);
+
+        LOG_DEBUG("%s: Ref Force in ft frame: %f %f %f \n Ref Torque in ft frame: %f %f %f\n",tmp(0), tmp(1), tmp(2), tmp(3), tmp(4), tmp(5));
+    }
+
+    //Apply contact threshold
+    for(int i = 0; i < 6; i++)
+    {
+        if(ctrl_error_(i) > contact_threshold_(i))
+            ctrl_error_(i) -= contact_threshold_(i);
+        else if(ctrl_error_(i) < -contact_threshold_(i))
+            ctrl_error_(i) += contact_threshold_(i);
+        else
+            ctrl_error_(i) = 0;
+    }
+
+    _ctrl_error.write(ctrl_error_);
 
     ctrl_out_eigen_ = kp_.cwiseProduct(ctrl_error_);
 

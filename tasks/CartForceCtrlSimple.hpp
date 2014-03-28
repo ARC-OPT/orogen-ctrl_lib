@@ -20,6 +20,7 @@ protected:
     base::Vector6d kp_, ctrl_error_, ctrl_out_eigen_;
     base::VectorXd max_ctrl_output_;
     base::Time stamp_;
+    base::Vector6d contact_threshold_;
 
     inline void KDLWrench2Eigen(const KDL::Wrench &in, base::Vector6d &out){
         for(uint i = 0; i < 3; i++){

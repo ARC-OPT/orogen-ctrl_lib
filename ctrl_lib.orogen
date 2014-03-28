@@ -219,18 +219,22 @@ end
 task_context "CartForceCtrlSimple" do 
     needs_configuration
 
+    property("contact_threshold", "base/samples/Wrench").
+       doc("Optional threshold value, below which the controller assumes zero input wrench.
+            This will be applied to the control error in the ctrl output frame.")
+
     property("kp", "base/Vector6d").
        doc("Proportional controller parameters.")
 
     property("max_ctrl_out", "base/VectorXd").
        doc("Maximum controller output. If empty inifinite control output will be allowed.") 
 
-    property("ft_sensor_frame", "std/string", "").
+    property("ft_sensor_frame", "std/string").
        doc("The frame in which the force is measured, i.e. the ft sensor frame. This is 
             the frame in which the wrench input has to be given. If left empty,
             the given reference and actual wrench will be assumed to be in the same coordinate frame.")
 
-    property("reference_frame", "std/string", "").
+    property("reference_frame", "std/string").
        doc("The frame in which the reference force is expressed, i.e. the end effector. If left empty,
             the given reference and actual wrench will be assumed to be in the same coordinate frame.")
 
@@ -249,6 +253,8 @@ task_context "CartForceCtrlSimple" do
 
     output_port("ctrl_out", "base/samples/RigidBodyState").
        doc("Controller output (velocity/angular velocity).")
+
+    output_port("ctrl_error", "base/Vector6d")
     
     transformer do
       transform 'ft_sensor', 'reference'

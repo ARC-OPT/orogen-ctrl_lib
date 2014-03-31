@@ -11,7 +11,7 @@ class JointPosCtrlVelFF : public JointPosCtrlVelFFBase
 {
     friend class JointPosCtrlVelFFBase;
 protected:
-    base::VectorXd kp_;
+    base::VectorXd kp_, kd_;
     base::VectorXd x_, x_r_, v_r_, max_ctrl_out_, ctrl_out_;
     base::samples::Joints cur_, ref_, ctrl_output_, ctrl_error_;
     std::vector<std::string> joint_names_;

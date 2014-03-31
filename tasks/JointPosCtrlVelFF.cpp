@@ -22,11 +22,17 @@ bool JointPosCtrlVelFF::configureHook()
 
     joint_names_ = _joint_names.get();
     kp_ = _kp.get();
+    kd_ = _kd.get();
     max_ctrl_out_ = _max_ctrl_out.get();
 
     if(joint_names_.size() != kp_.size())
     {
         LOG_ERROR("Kp property should have size %i but has size %i", joint_names_.size(), kp_.size());
+        return false;
+    }
+    if(joint_names_.size() != kd_.size())
+    {
+        LOG_ERROR("Kd property should have size %i but has size %i", joint_names_.size(), kd_.size());
         return false;
     }
 
@@ -138,7 +144,7 @@ void JointPosCtrlVelFF::updateHook()
     }
 
     //Control law:
-    ctrl_out_ = v_r_ + kp_.cwiseProduct(x_r_ - x_);
+    ctrl_out_ = kd_.cwiseProduct(v_r_) + kp_.cwiseProduct(x_r_ - x_);
 
     //Apply saturation: ctrl_out_ = ctrl_out_ * min(1, v_max/|ctrl_out_|). Scale all entries of ctrl_out_ appriopriately.
     double eta = 1;

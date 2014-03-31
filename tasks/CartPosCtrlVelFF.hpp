@@ -11,7 +11,7 @@ class CartPosCtrlVelFF : public CartPosCtrlVelFFBase
 {
     friend class CartPosCtrlVelFFBase;
 protected:
-    base::Vector6d kp_;
+    base::Vector6d kp_, kd_;
     base::VectorXd max_ctrl_out_;
     base::Vector6d ctrl_out_;
     base::Vector6d x_r_, x_, v_r_;

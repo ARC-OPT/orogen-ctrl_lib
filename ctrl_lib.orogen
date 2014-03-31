@@ -137,7 +137,7 @@ end
 
 
 # Joint P-controller with velocity feedfoward term:
-#   ctrl_out = v_r + kp*(x_r-x), |ctrl_out| <= max_ctrl_out
+#   ctrl_out = kd*v_r + kp*(x_r-x), |ctrl_out| <= max_ctrl_out
 #
 task_context "JointPosCtrlVelFF" do
     needs_configuration
@@ -151,6 +151,9 @@ task_context "JointPosCtrlVelFF" do
 
     property("kp", "base/VectorXd").
          doc("Proportional controller parameters. Size has to be same as joint names")
+
+    property("kd", "base/VectorXd").
+         doc("Proportional controller parameters. Size has to be same as joint names.")
 
     input_port("setpoint", "base/commands/Joints").
          doc("Reference value for controller. Has to contain at least all names defined by joint_names.")
@@ -172,7 +175,7 @@ end
 
 
 # Cartesian P-controller with velocity feedforward term:
-#   ctrl_out = v_r + kp*(x_r-x), |ctrl_out| <= max_ctrl_out
+#   ctrl_out = kd*v_r + kp*(x_r-x), |ctrl_out| <= max_ctrl_out
 # 
 # where x_r and x describe full 3D poses, respectively, and v_r the reference twist.
 #
@@ -181,6 +184,9 @@ task_context "CartPosCtrlVelFF" do
 
     property("kp", "base/Vector6d").
        doc("Proportional controller parameters.")
+
+    property("kd", "base/Vector6d").
+       doc("Proportional controller parameters for the velocity feed forward term.")
 
     property("max_ctrl_out", "base/VectorXd").
        doc("Maximum controller output.")

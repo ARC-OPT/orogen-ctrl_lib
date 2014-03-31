@@ -24,6 +24,7 @@ bool CartPosCtrlVelFF::configureHook()
         return false;
 
     kp_ = _kp.get();
+    kd_ = _kd.get();
     max_ctrl_out_ = _max_ctrl_out.get();
 
     if(max_ctrl_out_.size() == 0){
@@ -112,7 +113,7 @@ void CartPosCtrlVelFF::updateHook()
     _kp_values.read(kp_);
 
     //Control law: v_r + kp*(x_r - x)
-    ctrl_out_ = v_r_ + kp_.cwiseProduct(x_r_ - x_);
+    ctrl_out_ = kd_.cwiseProduct(v_r_) + kp_.cwiseProduct(x_r_ - x_);
 
     //Apply saturation: ctrl_out = ctrl_out * min(1, max/|ctrl_out|). Scale all entries of ctrl_out appriopriately.
     double eta = 1;

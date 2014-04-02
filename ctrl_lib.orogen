@@ -269,6 +269,9 @@ task_context "CartForceCtrlSimple" do
     output_port("ctrl_out", "base/samples/RigidBodyState").
        doc("Controller output (velocity/angular velocity).")
 
+    output_port("activation", "base/VectorXd").
+       doc("Entries will be 1 in case there is a control output for that variable, or 0")
+
     output_port("ctrl_error", "base/Vector6d")
     
     transformer do

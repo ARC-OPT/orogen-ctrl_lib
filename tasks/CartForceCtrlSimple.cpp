@@ -49,6 +49,8 @@ bool CartForceCtrlSimple::configureHook()
         return false;
     }
 
+    activation_.resize(6);
+
     return true;
 }
 
@@ -60,6 +62,7 @@ bool CartForceCtrlSimple::startHook()
     ctrl_error_.setZero();
     ctrl_out_eigen_.setZero();
     ft2refFrame_kdl_ = KDL::Frame::Identity();
+    activation_.setZero();
 
     return true;
 }
@@ -114,12 +117,15 @@ void CartForceCtrlSimple::updateHook()
     //Apply contact threshold
     for(int i = 0; i < 6; i++)
     {
+        activation_(i) = 1;
         if(ctrl_error_(i) > contact_threshold_(i))
             ctrl_error_(i) -= contact_threshold_(i);
         else if(ctrl_error_(i) < -contact_threshold_(i))
             ctrl_error_(i) += contact_threshold_(i);
-        else
+        else{
             ctrl_error_(i) = 0;
+            activation_(i) = 0;
+        }
     }
 
     _ctrl_error.write(ctrl_error_);
@@ -140,6 +146,8 @@ void CartForceCtrlSimple::updateHook()
 
     ctrl_out_.time = base::Time::now();
     _ctrl_out.write(ctrl_out_);
+
+    _activation.write(activation_);
 }
 
 void CartForceCtrlSimple::errorHook()

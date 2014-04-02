@@ -21,6 +21,7 @@ protected:
     base::VectorXd max_ctrl_output_;
     base::Time stamp_;
     base::Vector6d contact_threshold_;
+    base::VectorXd activation_;
 
     inline void KDLWrench2Eigen(const KDL::Wrench &in, base::Vector6d &out){
         for(uint i = 0; i < 3; i++){

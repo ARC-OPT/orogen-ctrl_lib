@@ -84,62 +84,88 @@ void JointPosCtrlVelFF::updateHook()
         }
         return;
     }
-
-    if(_feedback.read(cur_) == RTT::NoData)
-    {
-        if((base::Time::now() - stamp_).toSeconds() > 1.0)
+    else{
+        for(uint i = 0; i < joint_names_.size(); i++)
         {
-            LOG_DEBUG("%s: No data on feedback point port");
-            stamp_ = base::Time::now();
+            uint idx;
+            try{
+                idx = ref_.mapNameToIndex(joint_names_[i]);
+            }
+            catch(std::exception e){
+                LOG_ERROR("Name %s if not in reference vector", joint_names_[i].c_str());
+                throw std::invalid_argument("Invalid reference input");
+            }
+
+            if(ref_[idx].hasPosition())
+                x_r_(i) = ref_[idx].position;
+            else
+            {
+                x_r_.setZero();
+                x_.setZero();
+                if((base::Time::now() - stamp_).toSeconds() > 2.0)
+                {
+                    LOG_DEBUG("%s: Joint %s has invalid reference position. Disabling feedback control.", this->getName().c_str(), joint_names_[i].c_str());
+                    stamp_ = base::Time::now();
+                }
+            }
+
+            if(ref_[idx].hasSpeed())
+                v_r_(i) = ref_[idx].speed;
         }
-        return;
     }
 
-    for(uint i = 0; i < joint_names_.size(); i++)
+    if(_kp_values.read(kp_) == RTT::NewData)
     {
-        uint idx;
-        try{
-            idx = cur_.mapNameToIndex(joint_names_[i]);
-        }
-        catch(std::exception e){
-            LOG_ERROR("Name %s is not in feedback vector", joint_names_[i].c_str());
-            throw std::invalid_argument("Invalid feedback input");
-        }
-
-        if(!cur_[idx].hasPosition())
-        {
-            LOG_ERROR("%s: Joint %s has invalid feedback position", this->getName().c_str(), joint_names_[i].c_str());
-            throw std::invalid_argument("Invalid feedback input");
-        }
-
-        x_(i) = cur_[idx].position;
-
-        try{
-            idx = ref_.mapNameToIndex(joint_names_[i]);
-        }
-        catch(std::exception e){
-            LOG_ERROR("Name %s if not in reference vector", joint_names_[i].c_str());
-            throw std::invalid_argument("Invalid reference input");
-        }
-
-        if(!ref_[idx].hasPosition())
-        {
-            LOG_ERROR("%s: Joint %s has invalid reference position", this->getName().c_str(), joint_names_[i].c_str());
-            throw std::invalid_argument("Invalid reference input");
-        }
-
-        x_r_(i) = ref_[idx].position;
-
-        if(ref_[idx].hasSpeed())
-            v_r_(i) = ref_[idx].speed;
-    }
-
-    //Read new pid values
-    if(_kp_values.read(kp_) == RTT::NewData){
         if(!kp_.size() != (int)joint_names_.size())
         {
             LOG_ERROR("Kp Values should have size %i but have size %i", joint_names_.size(), kp_.size());
             throw std::invalid_argument("Invalid gain input");
+        }
+    }
+
+    if(_kd_values.read(kd_) == RTT::NewData)
+    {
+        if(!kd_.size() != (int)joint_names_.size())
+        {
+            LOG_ERROR("Kd Values should have size %i but have size %i", joint_names_.size(), kd_.size());
+            throw std::invalid_argument("Invalid gain input");
+        }
+    }
+
+    if(_feedback.read(cur_) == RTT::NoData)
+    {
+        x_r_.setZero();
+        x_.setZero();
+        if((base::Time::now() - stamp_).toSeconds() > 1.0)
+        {
+            LOG_DEBUG("%s: No data on feedback point port. Will disable feedback controller.");
+            stamp_ = base::Time::now();
+        }
+    }
+    else{
+        for(uint i = 0; i < joint_names_.size(); i++)
+        {
+            uint idx;
+            try{
+                idx = cur_.mapNameToIndex(joint_names_[i]);
+            }
+            catch(std::exception e){
+                LOG_ERROR("Name %s is not in feedback vector", joint_names_[i].c_str());
+                throw std::invalid_argument("Invalid feedback input");
+            }
+
+            if(cur_[idx].hasPosition())
+                x_(i) = cur_[idx].position;
+            else
+            {
+                x_r_.setZero();
+                x_.setZero();
+                if((base::Time::now() - stamp_).toSeconds() > 2.0)
+                {
+                    LOG_DEBUG("%s: Joint %s has invalid feedback position. Disabling feedback control.", this->getName().c_str(), joint_names_[i].c_str());
+                    stamp_ = base::Time::now();
+                }
+            }
         }
     }
 

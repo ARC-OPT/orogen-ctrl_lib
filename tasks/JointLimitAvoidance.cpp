@@ -117,8 +117,8 @@ void JointLimitAvoidance::updateHook()
                 else
                     activation_(i) = ((d0 - d_upper)*(d0 - d_upper))/((transition_range_*d0)*(transition_range_*d0));
 
-                LOG_DEBUG("Joint %s within lower activation zone. d_lower: %f, ctrl_out: %f, limited_ctrl_out: %f activation: %f",
-                          limits_.names[i].c_str(), d_upper, -kp_(i) * (d_zero_(i) - d_upper), ctrl_output_[i].speed, activation_(i));
+                //LOG_DEBUG("Joint %s within lower activation zone. d_lower: %f, ctrl_out: %f, limited_ctrl_out: %f activation: %f",
+                //          limits_.names[i].c_str(), d_upper, -kp_(i) * (d_zero_(i) - d_upper), ctrl_output_[i].speed, activation_(i));
             }
             ctrl_error_[i].position = range.max.position - position;
         }
@@ -135,8 +135,8 @@ void JointLimitAvoidance::updateHook()
                 else
                     activation_(i) = ((d0 - d_lower)*(d0 - d_lower))/((transition_range_*d0)*(transition_range_*d0));
 
-                LOG_DEBUG("Joint %s within lower activation zone. d_lower: %f, ctrl_out: %f, limited_ctrl_out: %f activation: %f",
-                          limits_.names[i].c_str(), d_lower, kp_(i) * (d_zero_(i) - d_lower), ctrl_output_[i].speed, activation_(i));
+                //LOG_DEBUG("Joint %s within lower activation zone. d_lower: %f, ctrl_out: %f, limited_ctrl_out: %f activation: %f",
+                //          limits_.names[i].c_str(), d_lower, kp_(i) * (d_zero_(i) - d_lower), ctrl_output_[i].speed, activation_(i));
             }
             ctrl_error_[i].position = position - range.min.position;
         }

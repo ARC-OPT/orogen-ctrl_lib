@@ -53,8 +53,11 @@ task_context "JointRepPotField" do
     port_driven "feedback"
 end
 
-task_context "JointLimitAvoidance" do
 
+#
+# Joint Limit avoidance task, creates repulsive velocties at the joint limits
+#
+task_context "JointLimitAvoidance" do
     needs_configuration
 
     property("joint_limits","base/JointLimits").
@@ -153,7 +156,7 @@ task_context "JointPosCtrlVelFF" do
          doc("Proportional controller parameters. Size has to be same as joint names")
 
     property("kd", "base/VectorXd").
-         doc("Proportional controller parameters. Size has to be same as joint names.")
+         doc("Proportional controller parameters. Size has to be same as joint names")
 
     input_port("setpoint", "base/commands/Joints").
          doc("Reference value for controller. Has to contain at least all names defined by joint_names.")
@@ -162,6 +165,9 @@ task_context "JointPosCtrlVelFF" do
          doc("Current joint state. Has to contain at least all names defined by joint_names.")
 
     input_port("kp_values", "base/VectorXd").
+         doc("Optional port for online setting new gains.")
+
+    input_port("kd_values", "base/VectorXd").
          doc("Optional port for online setting new gains.")
     
     output_port("ctrl_out", "base/commands/Joints").
@@ -172,7 +178,6 @@ task_context "JointPosCtrlVelFF" do
 
     periodic 0.1
 end
-
 
 # Cartesian P-controller with velocity feedforward term:
 #   ctrl_out = kd*v_r + kp*(x_r-x), |ctrl_out| <= max_ctrl_out
@@ -186,7 +191,7 @@ task_context "CartPosCtrlVelFF" do
        doc("Proportional controller parameters.")
 
     property("kd", "base/Vector6d").
-       doc("Proportional controller parameters for the velocity feed forward term.")
+          doc("Proportional Feedforward controller parameters.")
 
     property("max_ctrl_out", "base/VectorXd").
        doc("Maximum controller output.")
@@ -202,6 +207,10 @@ task_context "CartPosCtrlVelFF" do
 
     input_port("kp_values", "base/Vector6d").
        doc("Optional port for online setting new gain values.")
+
+    input_port("kd_values", "base/Vector6d").
+       doc("Optional port for online setting new gain values.")
+
 
     output_port("ctrl_out", "base/samples/RigidBodyState").
        doc("Controller output (velocity/angular velocity).")

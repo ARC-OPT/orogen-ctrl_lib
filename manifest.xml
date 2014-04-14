@@ -8,4 +8,5 @@
   <logo>http://</logo>
   <depend package="control/ctrl_lib" />
   <depend package="control/kdl_conversions" />
+  <depend package="drivers/orogen/transformer" />
 </package>

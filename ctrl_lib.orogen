@@ -282,3 +282,34 @@ task_context "CartForceCtrlSimple" do
     periodic 0.1
 end
 
+# Gaze Controller for e.g. AILA's pan-tilt unit. Temporary hack until we 
+# fixed the problem with the twist computation of the fourlink joint
+task_context "CartGazeCtrl" do
+    needs_configuration
+
+    property("joint_names", "std/vector<std/string>").
+       doc("Joint Names.")
+
+    property("kp", "base/Vector2d").
+       doc("Proportional controller parameters.")
+
+    property("max_ctrl_out", "base/Vector2d").
+       doc("Maximum controller output.")
+
+    property("controlled_in_frame", "std/string").
+       doc("This is the base frame of the controller motion, e.g. the robot's camera frame")
+
+    property("setpoint_frame", "std/string").
+       doc("This is the setpoint frame of the controller motion, e.g. the control target")
+
+    output_port("ctrl_out", "base/commands/Joints").
+       doc("Controller output (angular velocity).")
+    
+    transformer do
+      transform 'controlled_in', 'setpoint'
+      max_latency 0.1
+    end
+
+    periodic 0.1
+end
+

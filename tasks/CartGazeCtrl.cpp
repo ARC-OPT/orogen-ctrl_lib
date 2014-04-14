@@ -5,6 +5,7 @@
 #include <kdl/frames_io.hpp>
 
 using namespace ctrl_lib;
+using namespace std;
 
 CartGazeCtrl::CartGazeCtrl(std::string const& name)
     : CartGazeCtrlBase(name)
@@ -46,7 +47,7 @@ void CartGazeCtrl::updateHook()
     CartGazeCtrlBase::updateHook();
 
     //Get Transforms:
-    if(!_controlled_in2setpoint.get(base::Time::now(), ref_)){
+    if(!_setpoint2controlled_in.get(base::Time::now(), ref_)){
         if((base::Time::now() - stamp_).toSeconds() > 2){
             LOG_DEBUG("%s: No valid transformation available between %s and %s: No setpoint available.",
                       this->getName().c_str(), _controlled_in_frame.get().c_str(), _setpoint_frame.get().c_str());

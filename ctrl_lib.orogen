@@ -306,7 +306,7 @@ task_context "CartGazeCtrl" do
        doc("Controller output (angular velocity).")
     
     transformer do
-      transform 'controlled_in', 'setpoint'
+      transform 'setpoint', 'controlled_in'
       max_latency 0.1
     end
 

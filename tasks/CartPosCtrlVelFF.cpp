@@ -26,17 +26,7 @@ bool CartPosCtrlVelFF::configureHook()
     kp_ = _kp.get();
     kd_ = _kd.get();
     max_ctrl_out_ = _max_ctrl_out.get();
-
-    if(max_ctrl_out_.size() == 0){
-        LOG_DEBUG("No max ctrl output given, will be set to infinity");
-        max_ctrl_out_.resize(6);
-        max_ctrl_out_.setConstant(base::infinity<double>());
-    }
-
-    if(max_ctrl_out_.size() != 6){
-        LOG_ERROR("Max ctrl out should have size 6 but has size %i", max_ctrl_out_.size());
-        return false;
-    }
+    dead_zone_ = _dead_zone.get();
 
     return true;
 }
@@ -125,8 +115,17 @@ void CartPosCtrlVelFF::updateHook()
     _kp_values.read(kp_);
     _kd_values.read(kd_);
 
+    //Comptue control error
+    ctrl_err_ = x_r_ - x_;
+
+    //Apply dead zone
+    for(int i = 0; i < 6; i++){
+        if(fabs(ctrl_err_(i)) < dead_zone_(i))
+            ctrl_err_(i) = 0;
+    }
+
     //Control law: v_r + kp*(x_r - x)
-    ctrl_out_ = kd_.cwiseProduct(v_r_) + kp_.cwiseProduct(x_r_ - x_);
+    ctrl_out_ = kd_.cwiseProduct(v_r_) + kp_.cwiseProduct(ctrl_err_);
 
     //Apply saturation: ctrl_out = ctrl_out * min(1, max/|ctrl_out|). Scale all entries of ctrl_out appriopriately.
     double eta = 1;
@@ -144,8 +143,8 @@ void CartPosCtrlVelFF::updateHook()
     _ctrl_out.write(ctrl_out_rbs_);
 
     //Write debug data
-    pos_ctrl_error_.velocity = (x_r_ - x_).segment(0,3);
-    pos_ctrl_error_.angular_velocity = (x_r_ - x_).segment(3,3);
+    pos_ctrl_error_.velocity = (ctrl_err_).segment(0,3);
+    pos_ctrl_error_.angular_velocity = (ctrl_err_).segment(3,3);
     pos_ctrl_error_.time = base::Time::now();
     _pos_control_error.write(pos_ctrl_error_);
 }

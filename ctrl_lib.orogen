@@ -193,8 +193,11 @@ task_context "CartPosCtrlVelFF" do
     property("kd", "base/Vector6d").
           doc("Proportional Feedforward controller parameters.")
 
-    property("max_ctrl_out", "base/VectorXd").
+    property("max_ctrl_out", "base/Vector6d").
        doc("Maximum controller output.")
+
+    property("dead_zone", "base/Vector6d").
+       doc("Dead zone for each dof. If ctrl error is below that value, no control action takes place for that dof.")
 
     property("controlled_frame_frame", "std/string" ).
        doc("This is the 'end effector' frame of the controlled motion")

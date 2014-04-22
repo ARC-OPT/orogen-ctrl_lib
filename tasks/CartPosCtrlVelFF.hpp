@@ -12,9 +12,10 @@ class CartPosCtrlVelFF : public CartPosCtrlVelFFBase
     friend class CartPosCtrlVelFFBase;
 protected:
     base::Vector6d kp_, kd_;
-    base::VectorXd max_ctrl_out_;
+    base::Vector6d max_ctrl_out_;
+    base::Vector6d dead_zone_;
     base::Vector6d ctrl_out_;
-    base::Vector6d x_r_, x_, v_r_;
+    base::Vector6d x_r_, x_, v_r_, ctrl_err_;
     KDL::Frame ref_kdl_, cur_kdl_;
     base::samples::RigidBodyState ctrl_out_rbs_;
     base::samples::RigidBodyState cur_, ref_, pos_ctrl_error_;

@@ -43,8 +43,8 @@ void CartRepPotField::updateHook()
     CartRepPotFieldBase::updateHook();
 
     //Get Transforms:
-    _controlled_in2rep_field_center.get(base::Time::now(), center_);
-    _controlled_in2controlled_frame.get(base::Time::now(), cur_);
+    _rep_field_center2controlled_in.get(base::Time::now(), center_);
+    _controlled_frame2controlled_in.get(base::Time::now(), cur_);
 
     if(!center_.hasValidPosition()){
         LOG_DEBUG("Transform between controlled_in and rep_field_center has no valid position");

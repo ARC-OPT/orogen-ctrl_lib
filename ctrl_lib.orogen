@@ -127,8 +127,8 @@ task_context "CartRepPotField" do
          doc("Gradient of potential field")
     
     transformer do
-      transform 'controlled_in', 'rep_field_center'
-      transform 'controlled_in', 'controlled_frame'
+      transform 'rep_field_center', 'controlled_in'
+      transform 'controlled_frame', 'controlled_in'
       max_latency 0.1
     end
 
@@ -216,8 +216,8 @@ task_context "CartPosCtrlVelFF" do
        doc("Controller output (velocity/angular velocity).")
     
     transformer do
-      transform 'controlled_in', 'setpoint'
-      transform 'controlled_in', 'controlled_frame'
+      transform 'setpoint', 'controlled_in'
+      transform 'controlled_frame', 'controlled_in'
       max_latency 0.1
     end
 

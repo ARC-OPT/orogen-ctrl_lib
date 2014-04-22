@@ -102,13 +102,13 @@ void CartForceCtrlSimple::updateHook()
 
     //Ctrl law: kp * (F_r - F)
     if(_ctrl_output_in_ref_frame){
-        KDL::Wrench tmp = ft2refFrame_kdl_.Inverse() * F_;
+        KDL::Wrench tmp = ft2refFrame_kdl_ * F_;
         KDLWrench2Eigen(F_r_ -  tmp, ctrl_error_);
 
         LOG_DEBUG("%s: Force in reference frame: %f %f %f \n Torque in reference frame: %f %f %f\n",tmp(0), tmp(1), tmp(2), tmp(3), tmp(4), tmp(5));
     }
     else{
-        KDL::Wrench tmp = ft2refFrame_kdl_ * F_r_;
+        KDL::Wrench tmp = ft2refFrame_kdl_.Inverse() * F_r_;
         KDLWrench2Eigen(tmp -  F_, ctrl_error_);
 
         LOG_DEBUG("%s: Ref Force in ft frame: %f %f %f \n Ref Torque in ft frame: %f %f %f\n",tmp(0), tmp(1), tmp(2), tmp(3), tmp(4), tmp(5));
@@ -117,14 +117,30 @@ void CartForceCtrlSimple::updateHook()
     //Apply contact threshold
     for(int i = 0; i < 6; i++)
     {
-        activation_(i) = 1;
         if(ctrl_error_(i) > contact_threshold_(i))
             ctrl_error_(i) -= contact_threshold_(i);
         else if(ctrl_error_(i) < -contact_threshold_(i))
             ctrl_error_(i) += contact_threshold_(i);
         else{
             ctrl_error_(i) = 0;
-            activation_(i) = 0;
+        }
+    }
+
+    //Set activation: Activate all force or torque dof if one direction is non-zero, since usually we will transform the output into the robot's base frame
+    //where the output might act on more than one direction
+    activation_.setZero();
+    for(int i = 0; i < 3; i++)
+    {
+        if(ctrl_error_(i) != 0){
+            activation_.segment(0,3).setConstant(1);
+            break;
+        }
+    }
+    for(int i = 3; i < 6; i++)
+    {
+        if(ctrl_error_(i) != 0){
+            activation_.segment(3,3).setConstant(1);
+            break;
         }
     }
 

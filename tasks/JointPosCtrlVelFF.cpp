@@ -74,45 +74,44 @@ bool JointPosCtrlVelFF::startHook()
 void JointPosCtrlVelFF::updateHook()
 {
     JointPosCtrlVelFFBase::updateHook();
-
-    if(_setpoint.read(ref_) == RTT::NoData)
+    RTT::FlowStatus stat = _setpoint.read(ref_, true);
+    if(stat == RTT::Never)
     {
-        if((base::Time::now() - stamp_).toSeconds() > 2.0)
-        {
-            LOG_DEBUG("%s: No data on set point port", this->getName().c_str());
-            stamp_ = base::Time::now();
-        }
         return;
     }
-    else{
-        for(uint i = 0; i < joint_names_.size(); i++)
-        {
-            uint idx;
-            try{
-                idx = ref_.mapNameToIndex(joint_names_[i]);
-            }
-            catch(std::exception e){
-                LOG_ERROR("Name %s if not in reference vector", joint_names_[i].c_str());
-                throw std::invalid_argument("Invalid reference input");
-            }
-
-            if(ref_[idx].hasPosition())
-                x_r_(i) = ref_[idx].position;
-            else
-            {
-                x_r_.setZero();
-                x_.setZero();
-                if((base::Time::now() - stamp_).toSeconds() > 2.0)
-                {
-                    LOG_DEBUG("%s: Joint %s has invalid reference position. Disabling feedback control.", this->getName().c_str(), joint_names_[i].c_str());
-                    stamp_ = base::Time::now();
-                }
-            }
-
-            if(ref_[idx].hasSpeed())
-                v_r_(i) = ref_[idx].speed;
-        }
+    if(stat == RTT::NoData)
+    {
+        //FIXME: If really necessary, case condition here if you want to continue processing or not. Default should be: yes, continue control the position
     }
+
+    for(uint i = 0; i < joint_names_.size(); i++)
+    {
+        uint idx;
+        try{
+            idx = ref_.mapNameToIndex(joint_names_[i]);
+        }
+        catch(std::exception e){
+            LOG_ERROR("Name %s if not in reference vector", joint_names_[i].c_str());
+            throw std::invalid_argument("Invalid reference input");
+        }
+
+        if(ref_[idx].hasPosition())
+            x_r_(i) = ref_[idx].position;
+        else
+        {
+            x_r_.setZero();
+            x_.setZero();
+            if((base::Time::now() - stamp_).toSeconds() > 2.0)
+            {
+                LOG_DEBUG("%s: Joint %s has invalid reference position. Disabling feedback control.", this->getName().c_str(), joint_names_[i].c_str());
+                stamp_ = base::Time::now();
+            }
+        }
+
+        if(ref_[idx].hasSpeed())
+            v_r_(i) = ref_[idx].speed;
+    }
+
 
     if(_kp_values.read(kp_) == RTT::NewData)
     {

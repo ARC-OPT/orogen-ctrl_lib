@@ -140,12 +140,16 @@ void CartPosCtrlVelFF::updateHook()
     ctrl_out_rbs_.time = base::Time::now();
     ctrl_out_rbs_.velocity = ctrl_out_.segment(0,3);
     ctrl_out_rbs_.angular_velocity = ctrl_out_.segment(3,3);
+    ctrl_out_rbs_.sourceFrame = this->getName() + "_ctrl_out_" + cur_.sourceFrame;
+    ctrl_out_rbs_.targetFrame = this->getName() + "_ctrl_out_" + ref_.sourceFrame;
     _ctrl_out.write(ctrl_out_rbs_);
 
     //Write debug data
     pos_ctrl_error_.velocity = (ctrl_err_).segment(0,3);
     pos_ctrl_error_.angular_velocity = (ctrl_err_).segment(3,3);
     pos_ctrl_error_.time = base::Time::now();
+    pos_ctrl_error_.sourceFrame = this->getName() + "_ctrl_error_" + cur_.sourceFrame;
+    pos_ctrl_error_.targetFrame = this->getName() + "_ctrl_error_" + ref_.sourceFrame;
     _pos_control_error.write(pos_ctrl_error_);
 }
 

@@ -83,6 +83,7 @@ void CartGazeCtrl::updateHook()
 
     //Convert to RigidBodyState*/
     ctrl_out_cmd_.time = base::Time::now();
+
     _ctrl_out.write(ctrl_out_cmd_);
 
 }

@@ -160,6 +160,8 @@ void CartForceCtrlSimple::updateHook()
     ctrl_out_.velocity = ctrl_out_eigen_.segment(0,3);
     ctrl_out_.angular_velocity = ctrl_out_eigen_.segment(3,3);
 
+    ctrl_out_.sourceFrame = this->getName() + "_ctrl_out_" + ft2refFrame_.sourceFrame;
+    ctrl_out_.targetFrame = this->getName() + "_ctrl_out_" + ft2refFrame_.targetFrame;
     ctrl_out_.time = base::Time::now();
     _ctrl_out.write(ctrl_out_);
 

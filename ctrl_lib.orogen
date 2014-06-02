@@ -299,6 +299,12 @@ task_context "CartGazeCtrl" do
     property("max_ctrl_out", "base/Vector2d").
        doc("Maximum controller output.")
 
+    property("timeout", "double").
+       doc("In Seconds. Bring back the to the configure default setpoint after this amount of time. If this is nan, don`t use timeout.")
+
+    property("default_setpoint", "base/samples/RigidBodyState").
+       doc("Will be set as setpoint in case of timeout. Expressed in 'controlled_in_frame'.")
+
     property("controlled_in_frame", "std/string").
        doc("This is the base frame of the controller motion, e.g. the robot's camera frame")
 
@@ -307,6 +313,8 @@ task_context "CartGazeCtrl" do
 
     output_port("ctrl_out", "base/commands/Joints").
        doc("Controller output (angular velocity).")
+       
+    input_port("joint_state", "base/samples/Joints")
     
     transformer do
       transform 'setpoint', 'controlled_in'

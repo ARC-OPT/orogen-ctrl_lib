@@ -18,6 +18,7 @@ protected:
     base::samples::Joints ctrl_out_cmd_;
     KDL::Twist diff_;
     base::Time stamp_;
+    double timeout_;
 
 public:
     CartGazeCtrl(std::string const& name = "ctrl_lib::CartGazeCtrl");

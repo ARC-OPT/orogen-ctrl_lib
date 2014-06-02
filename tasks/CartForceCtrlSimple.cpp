@@ -78,13 +78,18 @@ void CartForceCtrlSimple::updateHook()
         }
         return;
     }
+    validateWrench(wrench_);
 
     _wrench_out.write(wrench_);
 
     if(_wrench_ref.read(wrench_ref_) == RTT::NoData){
-        wrench_ref_.force.setZero();
-        wrench_ref_.torque.setZero();
+        if((base::Time::now() - stamp_).toSeconds() > 2){
+            LOG_DEBUG("%s: No Data on wrench_ref port", this->getName().c_str());
+            stamp_ = base::Time::now();
+        }
+        return;
     }
+    validateWrench(wrench_ref_);
 
     //Convert to KDL
     kdl_conversions::WrenchToKDLWrench(wrench_ref_, F_r_);
@@ -94,26 +99,14 @@ void CartForceCtrlSimple::updateHook()
     if(_ft_sensor2reference.get(base::Time::now(), ft2refFrame_))
         kdl_conversions::RigidBodyState2KDL(ft2refFrame_, ft2refFrame_kdl_);
 
-    base::Vector3d euler = base::getEuler(ft2refFrame_.orientation);
-    LOG_DEBUG("%s: Ft Frame: Position: %f %f %f, Orientation: %f %f %f",
-              ft2refFrame_.position(0), ft2refFrame_.position(1), ft2refFrame_.position(2),
-              euler(0), euler(1), euler(2));
-
-    LOG_DEBUG("%s: Force: %f %f %f Torque: %f %f %f",F_(0), F_(1), F_(2), F_(3), F_(4), F_(5));
-    LOG_DEBUG("%s: Force_ref: %f %f %f Torque_ref: %f %f %f",F_r_(0), F_r_(1), F_r_(2), F_r_(3), F_r_(4), F_r_(5));
-
     //Ctrl law: kp * (F_r - F)
     if(_ctrl_output_in_ref_frame){
         KDL::Wrench tmp = ft2refFrame_kdl_ * F_;
         KDLWrench2Eigen(F_r_ -  tmp, ctrl_error_);
-
-        LOG_DEBUG("%s: Force in reference frame: %f %f %f \n Torque in reference frame: %f %f %f\n",tmp(0), tmp(1), tmp(2), tmp(3), tmp(4), tmp(5));
     }
     else{
         KDL::Wrench tmp = ft2refFrame_kdl_.Inverse() * F_r_;
         KDLWrench2Eigen(tmp -  F_, ctrl_error_);
-
-        LOG_DEBUG("%s: Ref Force in ft frame: %f %f %f \n Ref Torque in ft frame: %f %f %f\n",tmp(0), tmp(1), tmp(2), tmp(3), tmp(4), tmp(5));
     }
 
     //Apply contact threshold

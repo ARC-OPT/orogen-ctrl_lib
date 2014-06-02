@@ -29,6 +29,15 @@ protected:
             out(i+3) = in.torque(i);
         }
     }
+    void validateWrench(const base::samples::Wrench& w){
+        for(uint i = 0; i < 3; i++){
+            if(base::isNaN(w.force(i)) ||
+                    base::isNaN(w.torque(i))){
+                LOG_ERROR("An entry of controller input is NaN. Aborting...");
+                throw std::invalid_argument("Invalid wrench");
+            }
+        }
+    }
 
 public:
     CartForceCtrlSimple(std::string const& name = "ctrl_lib::CartForceCtrlSimple");

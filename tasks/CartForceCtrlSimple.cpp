@@ -79,6 +79,8 @@ void CartForceCtrlSimple::updateHook()
         return;
     }
 
+    _wrench_out.write(wrench_);
+
     if(_wrench_ref.read(wrench_ref_) == RTT::NoData){
         wrench_ref_.force.setZero();
         wrench_ref_.torque.setZero();

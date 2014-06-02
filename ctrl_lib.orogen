@@ -276,6 +276,9 @@ task_context "CartForceCtrlSimple" do
        doc("Entries will be 1 in case there is a control output for that variable, or 0")
 
     output_port("ctrl_error", "base/Vector6d")
+
+    output_port("wrench_out", "base/samples/Wrench").
+       doc("Actual wrench output.")
     
     transformer do
       transform 'ft_sensor', 'reference'

@@ -74,14 +74,12 @@ bool JointPosCtrlVelFF::startHook()
 void JointPosCtrlVelFF::updateHook()
 {
     JointPosCtrlVelFFBase::updateHook();
-    RTT::FlowStatus stat = _setpoint.read(ref_, true);
-    if(stat == RTT::Never)
-    {
+    if(_setpoint.read(ref_, true) == RTT::NoData){
+        if((base::Time::now() - stamp_).toSeconds() > 2){
+            LOG_DEBUG("%s: No Data on reference port", this->getName().c_str());
+            stamp_ = base::Time::now();
+        }
         return;
-    }
-    if(stat == RTT::NoData)
-    {
-        //FIXME: If really necessary, case condition here if you want to continue processing or not. Default should be: yes, continue control the position
     }
 
     for(uint i = 0; i < joint_names_.size(); i++)

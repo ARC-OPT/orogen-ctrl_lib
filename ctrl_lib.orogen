@@ -41,6 +41,8 @@ task_context "JointRepPotField" do
     input_port("feedback", "base/samples/Joints").
           doc("Current Joint status. Has to contain at least all names defined by joint_names.")
 
+    input_port("kp_values", "base/VectorXd")
+
     output_port("ctrl_out", "base/commands/Joints").
           doc("Controller output (speed).  Will have same size as joint_names.")
 

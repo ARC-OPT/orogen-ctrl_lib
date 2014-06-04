@@ -141,6 +141,8 @@ void CartForceCtrlSimple::updateHook()
 
     _ctrl_error.write(ctrl_error_);
 
+    _kp_values.read(kp_);
+
     ctrl_out_eigen_ = kp_.cwiseProduct(ctrl_error_);
 
     //Apply saturation: ctrl_out = ctrl_out * min(1, max/|ctrl_out|). Scale all entries of ctrl_out appriopriately.

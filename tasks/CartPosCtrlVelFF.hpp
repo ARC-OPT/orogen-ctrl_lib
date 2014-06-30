@@ -19,6 +19,7 @@ protected:
     KDL::Frame ref_kdl_, cur_kdl_;
     base::samples::RigidBodyState ctrl_out_rbs_;
     base::samples::RigidBodyState cur_, ref_, pos_ctrl_error_;
+    KDL::Twist diff_;
 
     base::Time stamp_;
 

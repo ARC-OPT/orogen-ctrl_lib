@@ -50,8 +50,6 @@ bool JointLimitAvoidance::configureHook()
 
     ctrl_output_.resize(limits_.size());
     ctrl_output_.names = limits_.names;
-    ctrl_error_.resize(limits_.size());
-    ctrl_error_.names = limits_.names;
     activation_.resize(limits_.size());
 
     return true;
@@ -63,9 +61,7 @@ bool JointLimitAvoidance::startHook()
         return false;
 
     for(size_t i = 0; i < ctrl_output_.size(); i++)
-        ctrl_output_[i].speed = ctrl_output_[i].effort = 0;
-    for(size_t i = 0; i < ctrl_error_.size(); i++)
-        ctrl_error_[i].position = 0;
+        ctrl_output_[i].speed = 0;
     activation_.setZero();
 
     stamp_ = base::Time::now();
@@ -100,52 +96,32 @@ void JointLimitAvoidance::updateHook()
 
         double d_upper = fabs(range.max.position - position);
         double d_lower = fabs(range.min.position - position);
+        double d = d_upper;
+        int sign = -1;
+        if(d_upper > d_lower){
+            sign = 1;
+            d = d_lower;
+        }
+
         double d0 = d_zero_(i);
         ctrl_output_[i].speed = 0;
         activation_(i) = 0;
 
-        if(d_upper <= d_lower){
-            //activation zone:
-            if(d_upper < d0)
-            {
-                //Control output: Proportional to 1/d and limited by max_ctrl_out
-                ctrl_output_[i].speed = std::max(-kp_(i) * (d_zero_(i) - d_upper)*(d_zero_(i) - d_upper), -max_ctrl_out_(i));
+        if(d < d0) //if within maximum influence distance
+        {
+            //Control output: Proportional to 1/d and limited by max_ctrl_out
+            ctrl_output_[i].speed = std::max(sign * kp_(i) * (d_zero_(i) - d)*(d_zero_(i) - d), -max_ctrl_out_(i));
 
-                //Activation function: piecewise linear profile
-                if(d_upper < (1-transition_range_)*d0)
-                    activation_(i) = 1;
-                else
-                    activation_(i) = ((d0 - d_upper)*(d0 - d_upper))/((transition_range_*d0)*(transition_range_*d0));
-
-                //LOG_DEBUG("Joint %s within lower activation zone. d_lower: %f, ctrl_out: %f, limited_ctrl_out: %f activation: %f",
-                //          limits_.names[i].c_str(), d_upper, -kp_(i) * (d_zero_(i) - d_upper), ctrl_output_[i].speed, activation_(i));
-            }
-            ctrl_error_[i].position = range.max.position - position;
-        }
-        else{
-            //activation zone:
-            if(d_lower < d0)
-            {
-                //Control output: Proportional to d0-d and limited by max_ctrl_out
-                ctrl_output_[i].speed = std::min(kp_(i) * (d_zero_(i) - d_lower)*(d_zero_(i) - d_lower), max_ctrl_out_(i));
-
-                //Activation function: piecewise quadratic profile
-                if(d_lower < (1-transition_range_)*d0)
-                    activation_(i) = 1;
-                else
-                    activation_(i) = ((d0 - d_lower)*(d0 - d_lower))/((transition_range_*d0)*(transition_range_*d0));
-
-                //LOG_DEBUG("Joint %s within lower activation zone. d_lower: %f, ctrl_out: %f, limited_ctrl_out: %f activation: %f",
-                //          limits_.names[i].c_str(), d_lower, kp_(i) * (d_zero_(i) - d_lower), ctrl_output_[i].speed, activation_(i));
-            }
-            ctrl_error_[i].position = position - range.min.position;
+            //Activation function: piecewise linear profile
+            if(d < (1-transition_range_)*d0)
+                activation_(i) = 1;
+            else
+                activation_(i) = ((d0 - d)*(d0 - d))/((transition_range_*d0)*(transition_range_*d0));
         }
     }
 
     ctrl_output_.time = base::Time::now();
-    ctrl_error_.time = base::Time::now();
     _activation.write(activation_);
-    _control_error.write(ctrl_error_);
     _ctrl_out.write(ctrl_output_);
 }
 

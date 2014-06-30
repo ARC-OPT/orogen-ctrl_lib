@@ -41,15 +41,13 @@ bool JointPosCtrlVelFF::configureHook()
         max_ctrl_out_.setConstant(base::infinity<double>());
     }
 
-    if(max_ctrl_out_.size() != joint_names_.size()){
+    if(max_ctrl_out_.size() != (int)joint_names_.size()){
         LOG_ERROR("Max Ctrl out property should have size %i but has size %i", joint_names_.size(), max_ctrl_out_.size());
         return  false;
     }
 
     ctrl_output_.resize(joint_names_.size());
     ctrl_output_.names = joint_names_;
-    ctrl_error_.resize(joint_names_.size());
-    ctrl_error_.names = joint_names_;
     ctrl_out_.resize(joint_names_.size());
     x_r_.resize(joint_names_.size());
     x_.resize(joint_names_.size());
@@ -76,10 +74,17 @@ void JointPosCtrlVelFF::updateHook()
     JointPosCtrlVelFFBase::updateHook();
     if(_setpoint.read(ref_, true) == RTT::NoData){
         if((base::Time::now() - stamp_).toSeconds() > 2){
-            LOG_DEBUG("%s: No Data on reference port", this->getName().c_str());
+            LOG_DEBUG("%s: No Data on setpoint port", this->getName().c_str());
             stamp_ = base::Time::now();
         }
-        return;
+        return; //Don't do anything without setpoint
+    }
+    if(_feedback.read(cur_, true) == RTT::NoData){
+        if((base::Time::now() - stamp_).toSeconds() > 2){
+            LOG_DEBUG("%s: No Data on feedback port", this->getName().c_str());
+            stamp_ = base::Time::now();
+        }
+        return; //Don't do anything without feedback
     }
 
     for(uint i = 0; i < joint_names_.size(); i++)
@@ -95,24 +100,20 @@ void JointPosCtrlVelFF::updateHook()
 
         if(ref_[idx].hasPosition())
             x_r_(i) = ref_[idx].position;
-        else
-        {
-            x_r_.setZero();
-            x_.setZero();
-            if((base::Time::now() - stamp_).toSeconds() > 2.0)
-            {
-                LOG_DEBUG("%s: Joint %s has invalid reference position. Disabling feedback control.", this->getName().c_str(), joint_names_[i].c_str());
-                stamp_ = base::Time::now();
-            }
+        else{
+            LOG_ERROR("%s: Joint %s has invalid reference position.", this->getName().c_str(), joint_names_[i].c_str());
+            throw std::invalid_argument("Invalid reference input");
         }
 
         if(ref_[idx].hasSpeed())
             v_r_(i) = ref_[idx].speed;
+        else{
+            LOG_ERROR("%s: Joint %s has invalid reference velocity.", this->getName().c_str(), joint_names_[i].c_str());
+            throw std::invalid_argument("Invalid reference input");
+        }
     }
 
-
-    if(_kp_values.read(kp_) == RTT::NewData)
-    {
+    if(_kp_values.read(kp_) == RTT::NewData){
         if(!kp_.size() != (int)joint_names_.size())
         {
             LOG_ERROR("Kp Values should have size %i but have size %i", joint_names_.size(), kp_.size());
@@ -120,8 +121,7 @@ void JointPosCtrlVelFF::updateHook()
         }
     }
 
-    if(_kd_values.read(kd_) == RTT::NewData)
-    {
+    if(_kd_values.read(kd_) == RTT::NewData){
         if(!kd_.size() != (int)joint_names_.size())
         {
             LOG_ERROR("Kd Values should have size %i but have size %i", joint_names_.size(), kd_.size());
@@ -129,40 +129,23 @@ void JointPosCtrlVelFF::updateHook()
         }
     }
 
-    if(_feedback.read(cur_) == RTT::NoData)
+    for(uint i = 0; i < joint_names_.size(); i++)
     {
-        x_r_.setZero();
-        x_.setZero();
-        if((base::Time::now() - stamp_).toSeconds() > 1.0)
-        {
-            LOG_DEBUG("%s: No data on feedback point port. Will disable feedback controller.");
-            stamp_ = base::Time::now();
+        uint idx;
+        try{
+            idx = cur_.mapNameToIndex(joint_names_[i]);
         }
-    }
-    else{
-        for(uint i = 0; i < joint_names_.size(); i++)
-        {
-            uint idx;
-            try{
-                idx = cur_.mapNameToIndex(joint_names_[i]);
-            }
-            catch(std::exception e){
-                LOG_ERROR("Name %s is not in feedback vector", joint_names_[i].c_str());
-                throw std::invalid_argument("Invalid feedback input");
-            }
+        catch(std::exception e){
+            LOG_ERROR("Name %s is not in feedback vector", joint_names_[i].c_str());
+            throw std::invalid_argument("Invalid feedback input");
+        }
 
-            if(cur_[idx].hasPosition())
-                x_(i) = cur_[idx].position;
-            else
-            {
-                x_r_.setZero();
-                x_.setZero();
-                if((base::Time::now() - stamp_).toSeconds() > 2.0)
-                {
-                    LOG_DEBUG("%s: Joint %s has invalid feedback position. Disabling feedback control.", this->getName().c_str(), joint_names_[i].c_str());
-                    stamp_ = base::Time::now();
-                }
-            }
+        if(cur_[idx].hasPosition())
+            x_(i) = cur_[idx].position;
+        else
+        {
+            LOG_ERROR("%s: Joint %s has invalid position feedback.", this->getName().c_str(), joint_names_[i].c_str());
+            throw std::invalid_argument("Invalid feedback input");
         }
     }
 
@@ -177,16 +160,11 @@ void JointPosCtrlVelFF::updateHook()
     }
     ctrl_out_ = ctrl_out_ * eta;
 
-
-    for(uint i = 0; i < ctrl_output_.size(); i++){
+    for(uint i = 0; i < ctrl_output_.size(); i++)
         ctrl_output_[i].speed = ctrl_out_(i);
-        ctrl_error_[i].speed = x_r_(i) - x_(i);
-    }
 
     ctrl_output_.time = base::Time::now();
-    ctrl_error_.time = base::Time::now();
     _ctrl_out.write(ctrl_output_);
-    _control_error.write(ctrl_error_);
 }
 
 void JointPosCtrlVelFF::cleanupHook()

@@ -8,20 +8,17 @@
 
 namespace ctrl_lib {
 
-/** Cartesian Force Controller with velocity output ctrl_out = kp * (wrench_ref - wrench)  */
 class CartForceCtrlSimple : public CartForceCtrlSimpleBase
 {
     friend class CartForceCtrlSimpleBase;
 protected:
     base::samples::Wrench wrench_ref_, wrench_;
-    base::samples::RigidBodyState ft2refFrame_, ctrl_out_;
-    KDL::Frame ft2refFrame_kdl_;
+    base::samples::RigidBodyState ft2baseFrame_, ref2baseFrame_, ctrl_out_;
+    KDL::Frame ft2baseFrame_kdl_, ref2baseFrame_kdl_;
     KDL::Wrench F_r_, F_;
     base::Vector6d kp_, ctrl_error_, ctrl_out_eigen_;
-    base::VectorXd max_ctrl_output_;
+    base::Vector6d max_ctrl_output_, dead_zone_, activation_;
     base::Time stamp_;
-    base::Vector6d contact_threshold_;
-    base::VectorXd activation_;
 
     inline void KDLWrench2Eigen(const KDL::Wrench &in, base::Vector6d &out){
         for(uint i = 0; i < 3; i++){

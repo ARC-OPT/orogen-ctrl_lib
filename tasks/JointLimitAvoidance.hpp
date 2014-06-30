@@ -13,7 +13,7 @@ protected:
     base::JointLimits limits_;
     base::VectorXd d_zero_, max_ctrl_out_, kp_;
     double transition_range_;
-    base::samples::Joints feedback_, ctrl_error_;
+    base::samples::Joints feedback_;
     base::commands::Joints ctrl_output_;
     base::Time stamp_;
     base::VectorXd activation_;

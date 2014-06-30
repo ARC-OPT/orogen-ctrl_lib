@@ -57,7 +57,6 @@ void CartPosCtrlVelFF::updateHook()
         }
         return;
     }
-
     if(!_controlled_frame2controlled_in.get(base::Time::now(), cur_)){
         if((base::Time::now() - stamp_).toSeconds() > 2){
             LOG_DEBUG("%s: No valid transformation available between %s and %s.",
@@ -67,55 +66,44 @@ void CartPosCtrlVelFF::updateHook()
         return;
     }
 
+    //Read new controller gain values
+    _kp_values.read(kp_);
+    _kd_values.read(kd_);
+
+    ref_kdl_.Identity();
+    cur_kdl_.Identity();
+
+    //Check valid pose and reference pose
     if(ref_.hasValidPosition() &&
        ref_.hasValidOrientation())
     {
         kdl_conversions::RigidBodyState2KDL(ref_, ref_kdl_);
     }
-    else
-    {
-        LOG_DEBUG("%s: Reference pose (sourceFrame: %s, TargetFrame: %s) has invalid position and/or orientation. Disabling feedback control.",
-                  this->getName().c_str(), ref_.sourceFrame.c_str(), ref_.targetFrame.c_str());
-        ref_kdl_.Identity();
-        cur_kdl_.Identity();
-    }
 
     if(cur_.hasValidPosition() &&
-       cur_.hasValidOrientation())
-    {
+       cur_.hasValidOrientation()){
+
         kdl_conversions::RigidBodyState2KDL(cur_, cur_kdl_);
     }
-    else
-    {
-        LOG_DEBUG("%s: Current pose (sourceFrame: %s, TargetFrame: %s) has invalid position and/or orientation. Disabling feedback control.",
-                  this->getName().c_str(), cur_.sourceFrame.c_str(), cur_.targetFrame.c_str());
-        ref_kdl_.Identity();
-        cur_kdl_.Identity();
-    }
 
+    v_r_.setZero();
 
-    //Use KDL::Diff to get a non-singular orientation error
-    KDL::Twist diff = KDL::diff(cur_kdl_, ref_kdl_);
-
-    //Convert to eigen: Use diff as reference value and set current value to zero
-    x_r_.segment(0,3) << diff.vel(0), diff.vel(1), diff.vel(2);
-    x_r_.segment(3,3) << diff.rot(0), diff.rot(1), diff.rot(2);
-    x_.setZero();
-
+    //Check valid reference twist
     if(ref_.hasValidVelocity() &&
-       ref_.hasValidAngularVelocity())
-    {
+       ref_.hasValidAngularVelocity()){
         v_r_.segment(0,3) = ref_.velocity;
         v_r_.segment(3,3) = ref_.angular_velocity;
     }
-    else
-        v_r_.segment(0,3).setZero();
 
-    //Read new controller gain values
-    _kp_values.read(kp_);
-    _kd_values.read(kd_);
+    //Use KDL::Diff to get a non-singular orientation error
+    diff_ = KDL::diff(cur_kdl_, ref_kdl_);
 
-    //Comptue control error
+    //Convert to eigen: Use diff as reference value and set current value to zero
+    x_r_.segment(0,3) << diff_.vel(0), diff_.vel(1), diff_.vel(2);
+    x_r_.segment(3,3) << diff_.rot(0), diff_.rot(1), diff_.rot(2);
+    x_.setZero();
+
+    //Compute control error
     ctrl_err_ = x_r_ - x_;
 
     //Apply dead zone
@@ -124,7 +112,7 @@ void CartPosCtrlVelFF::updateHook()
             ctrl_err_(i) = 0;
     }
 
-    //Control law: v_r + kp*(x_r - x)
+    //Control law (vel): kd * v_r + kp*(x_r - x)
     ctrl_out_ = kd_.cwiseProduct(v_r_) + kp_.cwiseProduct(ctrl_err_);
 
     //Apply saturation: ctrl_out = ctrl_out * min(1, max/|ctrl_out|). Scale all entries of ctrl_out appriopriately.
@@ -133,10 +121,9 @@ void CartPosCtrlVelFF::updateHook()
         if(ctrl_out_(i) != 0)
             eta = std::min( eta, max_ctrl_out_(i)/fabs(ctrl_out_(i)) );
     }
-
     ctrl_out_ = eta * ctrl_out_;
 
-    //Convert to RigidBodyState*/
+    //Convert to RigidBodyState
     ctrl_out_rbs_.time = base::Time::now();
     ctrl_out_rbs_.velocity = ctrl_out_.segment(0,3);
     ctrl_out_rbs_.angular_velocity = ctrl_out_.segment(3,3);
@@ -144,13 +131,6 @@ void CartPosCtrlVelFF::updateHook()
     ctrl_out_rbs_.targetFrame = this->getName() + "_ctrl_out_" + ref_.sourceFrame;
     _ctrl_out.write(ctrl_out_rbs_);
 
-    //Write debug data
-    pos_ctrl_error_.velocity = (ctrl_err_).segment(0,3);
-    pos_ctrl_error_.angular_velocity = (ctrl_err_).segment(3,3);
-    pos_ctrl_error_.time = base::Time::now();
-    pos_ctrl_error_.sourceFrame = this->getName() + "_ctrl_error_" + cur_.sourceFrame;
-    pos_ctrl_error_.targetFrame = this->getName() + "_ctrl_error_" + ref_.sourceFrame;
-    _pos_control_error.write(pos_ctrl_error_);
 }
 
 void CartPosCtrlVelFF::cleanupHook(){

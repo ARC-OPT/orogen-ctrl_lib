@@ -61,8 +61,7 @@ task_context "JointPosCtrlVelFF" do
    input_port( "setpoint",  "base/commands/Joints" ).doc( "Controller reference. There will ne no control output if no setpoint is given" )
    input_port( "feedback",  "base/commands/Joints" ).doc( "Controller feedback. There will ne no control output if no feedback is given" )
    input_port( "kp_values", "base/VectorXd"        ).doc( "Proportional gain. This port can be used for adaptive control." )
-   input_port( "kd_values", "base/VectorXd"
-   ).doc( "Differential gain. This port can be used for adaptive control." )
+   input_port( "kd_values", "base/VectorXd"        ).doc( "Differential gain. This port can be used for adaptive control." )
 
    output_port( "ctrl_out", "base/commands/Joints" ).doc( "Controller output. Will contain same joints as in joint limits" )
 

@@ -4,44 +4,6 @@ import_types_from "base"
 using_library "kdl_conversions"
 
 #
-# Base for Joint Space controllers
-#
-task_context "JointController" do
-    abstract 
-
-    property "joint_names", "std/vector<std/string>"
-    property "max_ctrl_out", "base/VectorXd"
-    property "dead_zone", "base/VectorXd"
-  
-    input_port "setpoint", "base/commands/Joints"
-    input_port "feedback", "base/commands/Joints"
-    
-    output_port "ctrl_out", "base/commands/Joints"
-end
-
-#
-# Base for Cartesian space controllers
-#
-task_context "CartController" do
-    abstract     
-
-    property "controlled_in_frame",    "std/string"  # This is the base frame of the controller motion, e.g. the robot base frame
-    property "setpoint_frame",         "std/string"  # This is the setpoint frame of the controller motion, e.g. the control target
-    property "controlled_frame_frame", "std/string"  # This is the 'end effector' frame of the controlled motion
-
-    property "max_ctrl_out", "base/Vector6d"
-    property "dead_zone", "base/Vector6d"
-
-    output_port "ctrl_out", "base/samples/RigidBodyState"
-    
-    transformer do
-      transform 'setpoint', 'controlled_in'
-      transform 'controlled_frame', 'controlled_in'
-      max_latency 0.1
-    end
-end
-
-#
 # Joint Limit avoidance task, creates repulsive velocities near the joint limits:
 #
 #    ctrl_out = -kp * (d_zero - d)*(d_zero - d),  if |d| <= d_zero
@@ -55,18 +17,23 @@ end
 #
 task_context "JointLimitAvoidance" do
    needs_configuration
-   subclasses "JointController"
-   
-   property "joint_limits", "base/JointLimits" # Note: Avoidance will be only done for the joints defined in the joint_names property.
-   property "d_zero", "base/VectorXd"          # Maximum influence distance per joint. Has to have same size as joint_names.
-   property "transition_range", "double"       # Transition range in percentage of the maximum influence distance. Has to be within 0..1.
-                                               # Activation function is a piecewise linear function, that increases from 0 to 1.
-                                               # The higher this value, the smaller the incline of the activation function.
-                                               # For transition_range = 0, the activation will be a step function.
-   property "kp", "base/VectorXd"              # Proportional gain. Has to have same size as joint_names property.
 
-   input_port "kp_values",   "base/VectorXd"   # Proportional gain. This port can be used for adaptive control. 
-   output_port "activation", "base/VectorXd"   # Activation function. Will be between 0 and 1 for each joint.    
+   property( "joint_limits",     "base/JointLimits" ).doc( "Joint Limits. Defines the names of the joints used for control." )
+   property( "max_ctrl_out",     "base/VectorXd"    ).doc( "Maximum controller output(saturation). Size has to be same as joint limits." )
+   property( "dead_zone",        "base/VectorXd"    ).doc( "If control error is below this value, there will be zero control output for that variable." )
+   property( "d_zero",           "base/VectorXd"    ).doc( "Maximum influence distance per joint. Has to have same size as joint_names." )
+   property( "kp",               "base/VectorXd"    ).doc( "Proportional gain. Has to have same size as joint_names property." )
+   property( "transition_range", "double"           ).doc( "Transition range in percentage of the maximum influence distance. Has to be within 0..1.
+                                                            Activation function is a piecewise linear function, that increases from 0 to 1.
+                                                            The higher this value, the smaller the incline of the activation function.
+                                                            For transition_range = 0, the activation will be a step function." )
+
+   input_port( "setpoint",  "base/commands/Joints" ).doc( "Controller reference. There will ne no control output if no setpoint is given" )
+   input_port( "feedback",  "base/commands/Joints" ).doc( "Controller feedback. There will ne no control output if no feedback is given" )
+   input_port( "kp_values", "base/VectorXd"        ).doc( "Proportional gain. This port can be used for adaptive control." )
+
+   output_port( "activation", "base/VectorXd"        ).doc( "Activation function. Will be between 0 and 1 for each joint." )
+   output_port( "ctrl_out",   "base/commands/Joints" ).doc( "Controller output. Will contain same joints as in joint limits" )
 
    port_driven "feedback"
 end
@@ -83,14 +50,21 @@ end
 #              a_r       = Acceleration Setpoint 
 #
 task_context "JointPosCtrlVelFF" do
-   subclasses "JointController"
    needs_configuration
 
-   property "kp", "base/VectorXd" # Proportional gain. Has to have same size as joint_names property.
-   property "kd", "base/VectorXd" # Differential gain. Has to have same size as joint_names property.
+   property( "joint_names",  "std/vector<std/string>" ).doc( "Joint name vector. Determines the joints used in this controller" )
+   property( "max_ctrl_out", "base/VectorXd"          ).doc( "Maximum controller output(saturation). Size has to be same as joint limits." )
+   property( "dead_zone",    "base/VectorXd"          ).doc( "If control error is below this value, there will be zero control output for that variable." )
+   property( "kp",           "base/VectorXd"          ).doc( "Proportional gain. Has to have same size as joint_names property." )
+   property( "kd",           "base/VectorXd"          ).doc( "Differential gain. Has to have same size as joint_names property." )
 
-   input_port "kp_values", "base/VectorXd"   # Proportional gain. This port can be used for adaptive control. 
-   input_port "kd_values", "base/VectorXd"   # Differential gain. This port can be used for adaptive control. 
+   input_port( "setpoint",  "base/commands/Joints" ).doc( "Controller reference. There will ne no control output if no setpoint is given" )
+   input_port( "feedback",  "base/commands/Joints" ).doc( "Controller feedback. There will ne no control output if no feedback is given" )
+   input_port( "kp_values", "base/VectorXd"        ).doc( "Proportional gain. This port can be used for adaptive control." )
+   input_port( "kd_values", "base/VectorXd"
+   ).doc( "Differential gain. This port can be used for adaptive control." )
+
+   output_port( "ctrl_out", "base/commands/Joints" ).doc( "Controller output. Will contain same joints as in joint limits" )
 
    periodic 0.1
 end
@@ -107,14 +81,26 @@ end
 #              v_r       = Twist Setpoint and Actual twist
 #
 task_context "CartPosCtrlVelFF" do
-    subclasses "CartController"
     needs_configuration
 
-    property "kp", "base/Vector6d" # Proportional controller parameters. 
-    property "kd", "base/Vector6d" # Differential controller parameters. 
+    property( "controlled_in_frame",    "std/string"    ).doc( "This is the base frame of the controller motion, e.g. the robot base frame" )
+    property( "setpoint_frame",         "std/string"    ).doc( "This is the setpoint frame of the controller motion, e.g. the control target" )
+    property( "controlled_frame_frame", "std/string"    ).doc( "This is the 'end effector' frame of the controlled motion" )
+    property( "max_ctrl_out",           "base/Vector6d" ).doc( "Maximum Controller output(saturation)" )
+    property( "dead_zone",              "base/Vector6d" ).doc( "If control error is below this value, there will be zero control output for that variable." )
+    property( "kp",                     "base/Vector6d" ).doc( "Proportional controller parameters." )
+    property( "kd",                     "base/Vector6d" ).doc( "Differential controller parameters." )
 
-    input_port "kp_values", "base/Vector6d" # Proportional gain. This port can be used for adaptive control. 
-    input_port "kd_values", "base/Vector6d" # Differential gain. This port can be used for adaptive control. 
+    input_port( "kp_values", "base/Vector6d" ).doc( "Proportional gain. This port can be used for adaptive control." )
+    input_port( "kd_values", "base/Vector6d" ).doc( "Differential gain. This port can be used for adaptive control." )
+
+    output_port( "ctrl_out", "base/samples/RigidBodyState" ).doc( "Controller output." )
+
+    transformer do
+      transform 'setpoint', 'controlled_in'
+      transform 'controlled_frame', 'controlled_in'
+      max_latency 0.1
+    end
 
     periodic 0.1
 end
@@ -129,17 +115,28 @@ end
 #  
 #     |ctrl_out| <= max_ctrl_out
 #
-task_context "CartForceCtrlSimple" do    
-    subclasses "CartController" 
+task_context "CartForceCtrlSimple" do
     needs_configuration
 
-    property "kp", "base/Vector6d" # Proportional controller parameters.
+    property( "controlled_in_frame",    "std/string"    ).doc( "This is the base frame of the controller motion, e.g. the robot base frame" )
+    property( "setpoint_frame",         "std/string"    ).doc( "This is the setpoint frame of the controller motion, e.g. the control target" )
+    property( "controlled_frame_frame", "std/string"    ).doc( "This is the 'end effector' frame of the controlled motion" )
+    property( "max_ctrl_out",           "base/Vector6d" ).doc( "Maximum Controller output(saturation)" )
+    property( "dead_zone",              "base/Vector6d" ).doc( "If control error is below this value, there will be zero control output for that variable." )
+    property( "kp",                     "base/Vector6d" ).doc( "Proportional controller parameters." )
    
-    input_port "kp_values", "base/Vector6d"        # Proportional gain. This port can be used for adaptive control. 
-    input_port "wrench_ref", "base/samples/Wrench" # Reference wrench
-    input_port "wrench", "base/samples/Wrench"     # Reference wrench
+    input_port( "kp_values",  "base/Vector6d"        ).doc( "Proportional gain. This port can be used for adaptive control." )
+    input_port( "wrench_ref", "base/samples/Wrench"  ).doc( "Reference wrench" )
+    input_port( "wrench",     "base/samples/Wrench"  ).doc( "Reference wrench" )
 
-    output_port "activation", "base/VectorXd" # Entries will be 1 in case there is a control output for that variable, or 0
+    output_port( "activation", "base/VectorXd"               ).doc( "Entries will be 1 in case there is a control output for that variable, or 0" )
+    output_port( "ctrl_out",   "base/samples/RigidBodyState" ).doc( "Controller output." )
+
+    transformer do
+      transform 'setpoint', 'controlled_in'
+      transform 'controlled_frame', 'controlled_in'
+      max_latency 0.1
+    end
 
     periodic 0.1
 end

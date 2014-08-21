@@ -2,6 +2,7 @@ name "ctrl_lib"
 
 import_types_from "base"
 using_library "kdl_conversions"
+using_library "kdl_parser"
 
 #
 # Joint Limit avoidance task, creates repulsive velocities near the joint limits:
@@ -136,6 +137,28 @@ task_context "CartForceCtrlSimple" do
       transform 'controlled_frame', 'controlled_in'
       max_latency 0.1
     end
+
+    periodic 0.1
+end
+
+#
+# Outputs the gradient of the manipulability measure in joint space grad m = kp * (d/dq)( sqrt(det(J*J_T)) ), where J is the Jacobian associated with
+# the frames controlled_in_frame (root) and controlled_frame_frame (tip)
+#
+task_context "ManipulabilityGradientCtrl" do
+    needs_configuration
+ 
+    property( "urdf",                   "std/string"   ).doc( "Path to urdf model")
+    property( "controlled_in_frame",    "std/string"   ).doc( "This is the base frame of the controller motion, e.g. the robot base frame" )
+    property( "controlled_frame_frame", "std/string"   ).doc( "This is the 'end effector' frame of the controlled motion" )
+    property( "delta_q",                "double"       ).doc( "Joint angle delta used for computing the gradient of the manipulability function" )
+    property( "kp",                     "base/VectorXd").doc( "Proportional gain vector. Has to have same size as number of joints in kinematic chain" )
+     
+    input_port( "joint_state", "base/samples/Joints").doc( "Current joint state upon which the Jacobian are computed")
+
+    output_port( "ctrl_out", "base/commands/Joints").doc( "Controller output" ) 
+    output_port( "sample_time", "double").doc( "Computation time for on control cycle" )
+    output_port( "manipulability", "double").doc( "Manipulability index for the current configuration" )
 
     periodic 0.1
 end

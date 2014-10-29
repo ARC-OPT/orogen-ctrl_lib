@@ -21,7 +21,6 @@ task_context "JointLimitAvoidance" do
 
    property( "joint_limits",     "base/JointLimits" ).doc( "Joint Limits. Defines the names of the joints used for control." )
    property( "max_ctrl_out",     "base/VectorXd"    ).doc( "Maximum controller output(saturation). Size has to be same as joint limits." )
-   property( "dead_zone",        "base/VectorXd"    ).doc( "If control error is below this value, there will be zero control output for that variable." )
    property( "d_zero",           "base/VectorXd"    ).doc( "Maximum influence distance per joint. Has to have same size as joint_names." )
    property( "kp",               "base/VectorXd"    ).doc( "Proportional gain. Has to have same size as joint_names property." )
    property( "transition_range", "double"           ).doc( "Transition range in percentage of the maximum influence distance. Has to be within 0..1.

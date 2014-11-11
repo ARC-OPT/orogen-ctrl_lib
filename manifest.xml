@@ -6,6 +6,7 @@
   <license></license>
   <url>http://</url>
   <logo>http://</logo>
+  <tags>stable</tags>
   <depend package="control/kdl_conversions" />
   <depend package="drivers/orogen/transformer" />
 </package>

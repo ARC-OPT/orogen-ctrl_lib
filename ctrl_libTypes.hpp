@@ -9,6 +9,9 @@
  */
 
 namespace ctrl_lib {
+
+enum camera_axis{x_axis, y_axis, z_axis};
+
 }
 
 #endif

@@ -13,9 +13,10 @@ class CartGazeCtrl : public CartGazeCtrlBase
 protected:
 
     std::vector<std::string> joint_names_;
-    base::Vector2d kp_, max_ctrl_out_, ctrl_out_;
+    base::Vector3d kp_, max_ctrl_out_;
+    camera_axis camera_axis_;
     base::samples::RigidBodyState ref_;
-    base::samples::Joints ctrl_out_cmd_;
+    base::samples::RigidBodyState ctrl_out_rbs_;
     KDL::Twist diff_;
     base::Time stamp_;
     double timeout_;

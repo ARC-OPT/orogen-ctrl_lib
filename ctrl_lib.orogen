@@ -1,6 +1,7 @@
 name "ctrl_lib"
 
 import_types_from "base"
+import_types_from "ctrl_libTypes.hpp"
 using_library "kdl_conversions"
 using_library "kdl_parser"
 
@@ -162,42 +163,40 @@ task_context "ManipulabilityGradientCtrl" do
     periodic 0.1
 end
 
-# Gaze Controller for e.g. AILA's pan-tilt unit. Temporary hack until we 
-# fixed the problem with the twist computation of the fourlink joint
+#
+# To be used as gaze controller for a pan tilt unit. Used to control the orientation of camera_frame, so that
+# the camera_axis points to a certain position in space, expressed by object_frame.
+#
 task_context "CartGazeCtrl" do
     needs_configuration
+    runtime_states 'WAITING_FOR_TRANSFORM_OBJECT2CAMERA'
 
-    property("joint_names", "std/vector<std/string>").
-       doc("Joint Names.")
+    property("kp", "base/Vector3d").
+       doc("Proportional controller parameters. Only the axes that are NOT defined as camera axis are used to control the orientation of the camera frame")
 
-    property("kp", "base/Vector2d").
-       doc("Proportional controller parameters.")
-
-    property("max_ctrl_out", "base/Vector2d").
+    property("max_ctrl_out", "base/Vector3d").
        doc("Maximum controller output.")
 
-    property("timeout", "double").
-       doc("In Seconds. Bring back the to the configure default setpoint after this amount of time. If this is nan, don`t use timeout.")
+    #property("camera_axis", "ctrl_lib/camera_axis", :z_axis).
+    #   doc("Define the camera optical axis")
 
-    property("default_setpoint", "base/samples/RigidBodyState").
-       doc("Will be set as setpoint in case of timeout. Expressed in 'controlled_in_frame'.")
-
-    property("controlled_in_frame", "std/string").
+    property("camera_frame", "std/string").
        doc("This is the base frame of the controller motion, e.g. the robot's camera frame")
 
-    property("setpoint_frame", "std/string").
+    property("object_frame", "std/string").
        doc("This is the setpoint frame of the controller motion, e.g. the control target")
 
-    output_port("ctrl_out", "base/commands/Joints").
-       doc("Controller output (angular velocity).")
-       
-    input_port("joint_state", "base/samples/Joints")
-    
+    output_port("ctrl_out", "base/samples/RigidBodyState").
+       doc("Controller output.")
+
     transformer do
-      transform 'setpoint', 'controlled_in'
+      transform 'object', 'camera'
       max_latency 0.1
     end
 
     periodic 0.1
 end
 
+#typekit do
+#  export_types "ctrl_lib/camera_axis"
+#end

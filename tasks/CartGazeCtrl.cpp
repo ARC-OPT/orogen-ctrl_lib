@@ -28,7 +28,11 @@ bool CartGazeCtrl::configureHook()
 
     kp_ = _kp.get();
     max_ctrl_out_ = _max_ctrl_out.get();
-    camera_axis_ = z_axis;// _camera_axis.get();
+    camera_axis_ = z_axis;//_camera_axis.get();
+    detection_timeout_ = _detection_timeout.get();
+    dead_zone_ = _dead_zone.get();
+    object_frame_ = _object_frame.get();
+    camera_frame_ = _camera_frame.get();
 
     return true;
 }
@@ -46,26 +50,40 @@ void CartGazeCtrl::updateHook()
 {
     CartGazeCtrlBase::updateHook();
 
-    //Get Transforms:
-    if(!_object2camera.get(base::Time::now(), ref_)){
-        if((base::Time::now() - stamp_).toSeconds() > 2){
-            LOG_DEBUG("%s: No valid transformation available between %s and %s: No setpoint available.",
-                      this->getName().c_str(), _controlled_in_frame.get().c_str(), _setpoint_frame.get().c_str());
-            stamp_ = base::Time::now();
+    //Get Transform
+    bool has_transform = _object2camera.get(base::Time::now(), object2camera_);
+
+    base::Time cur = base::Time::now();
+
+    //if there is no transform available OR the difference between transform timestamp and current time is bigger
+    //than detection_timeout, write zero velocities to port and go into NO_OBJECT_TRANSFORM state
+    if(!has_transform || (cur - object2camera_.time).toSeconds() > detection_timeout_)
+    {
+        if((cur-stamp_).toSeconds() > 2) //Only print warn msg every 2 seconds
+        {
+            LOG_WARN("%s: No valid transformation available between %s and %s: No setpoint available.",
+                      this->getName().c_str(), object_frame_.c_str(), camera_frame_.c_str());
         }
-        if(state() != WAITING_FOR_TRANSFORM_OBJECT2CAMERA)
-            state(WAITING_FOR_TRANSFORM_OBJECT2CAMERA);
+
+        stamp_ = cur;
+
+        ctrl_out_rbs_.angular_velocity.setZero();
+        ctrl_out_rbs_.time = cur;
+        _ctrl_out.write(ctrl_out_rbs_);
+
+        if(state() != NO_OBJECT_TRANSFORM) //only set NO_OBJECT_TRANSFORM state if we are NOT in NO_OBJECT_TRANSFORM state
+            state(NO_OBJECT_TRANSFORM);
         return;
     }
 
     if(state() != RUNNING)
         state(RUNNING);
 
-    //Make sure transforms are valid:
-    if(!ref_.hasValidPosition())
+    //Make sure transform is valid:
+    if(!object2camera_.hasValidPosition())
     {
         LOG_ERROR("%s: Reference pose (sourceFrame: %s, TargetFrame: %s) has invalid position.",
-                  this->getName().c_str(), ref_.sourceFrame.c_str(), ref_.targetFrame.c_str());
+                  this->getName().c_str(), object2camera_.sourceFrame.c_str(), object2camera_.targetFrame.c_str());
         throw std::invalid_argument("Invalid transform");
     }
 
@@ -83,27 +101,30 @@ void CartGazeCtrl::updateHook()
         break;
     }
     case z_axis:{
-        ctrl_out_rbs_.angular_velocity(0) = kp_(0) * atan2(-ref_.position(1), ref_.position(2)); //x-axis angular error: phi_x = atan2(-dy, dz)
-        ctrl_out_rbs_.angular_velocity(1) = kp_(1) * atan2(ref_.position(0), ref_.position(2)); //y-axis angular error: phi_y = atan2(dx, dz)
+        ctrl_out_rbs_.angular_velocity(0) = kp_(0) * atan2(-object2camera_.position(1), object2camera_.position(2)); //x-axis angular error: phi_x = atan2(-dy, dz)
+        ctrl_out_rbs_.angular_velocity(1) = kp_(1) * atan2(object2camera_.position(0), object2camera_.position(2)); //y-axis angular error: phi_y = atan2(dx, dz)
         ctrl_out_rbs_.angular_velocity(2) = 0;
         break;
     }
-
     }
 
-    //Apply saturation: ctrl_out = ctrl_out * min(1, max/|ctrl_out|). Scale all entries of ctrl_out appriopriately.
+    //Apply dead zone
+    for(int i = 0; i < 3; i++){
+        if(fabs(ctrl_out_rbs_.angular_velocity(i)) < dead_zone_(i))
+            ctrl_out_rbs_.angular_velocity(i) = 0;
+    }
+
+    //Apply controller saturation: ctrl_out = ctrl_out * min(1, max/|ctrl_out|). Scale all entries of ctrl_out appriopriately.
     double eta = 1;
     for(int i = 0; i < 3; i++){
         if(ctrl_out_rbs_.angular_velocity(i) != 0)
             eta = std::min( eta, max_ctrl_out_(i)/fabs(ctrl_out_rbs_.angular_velocity(i)) );
     }
-
     for(int i = 0; i < 3; i++)
         ctrl_out_rbs_.angular_velocity(i) = eta * ctrl_out_rbs_.angular_velocity(i);
 
-    //Convert to RigidBodyState*/
+    //Write to port
     ctrl_out_rbs_.time = base::Time::now();
-
     _ctrl_out.write(ctrl_out_rbs_);
 
 }

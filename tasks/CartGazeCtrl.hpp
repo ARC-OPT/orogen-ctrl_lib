@@ -12,14 +12,14 @@ class CartGazeCtrl : public CartGazeCtrlBase
     friend class CartGazeCtrlBase;
 protected:
 
-    std::vector<std::string> joint_names_;
-    base::Vector3d kp_, max_ctrl_out_;
+    base::Vector3d kp_, max_ctrl_out_, dead_zone_;
     camera_axis camera_axis_;
-    base::samples::RigidBodyState ref_;
+    base::samples::RigidBodyState object2camera_;
     base::samples::RigidBodyState ctrl_out_rbs_;
-    KDL::Twist diff_;
     base::Time stamp_;
-    double timeout_;
+    double detection_timeout_;
+
+    std::string object_frame_, camera_frame_;
 
 public:
     CartGazeCtrl(std::string const& name = "ctrl_lib::CartGazeCtrl");

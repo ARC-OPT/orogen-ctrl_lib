@@ -165,11 +165,11 @@ end
 
 #
 # To be used as gaze controller for a pan tilt unit. Used to control the orientation of camera_frame, so that
-# the camera_axis points to a certain position in space, expressed by object_frame.
+# the camera_axis points to a certain object in space, expressed by object_frame.
 #
 task_context "CartGazeCtrl" do
     needs_configuration
-    runtime_states 'WAITING_FOR_TRANSFORM_OBJECT2CAMERA'
+    runtime_states 'NO_OBJECT_TRANSFORM'
 
     property("kp", "base/Vector3d").
        doc("Proportional controller parameters. Only the axes that are NOT defined as camera axis are used to control the orientation of the camera frame")
@@ -177,14 +177,20 @@ task_context "CartGazeCtrl" do
     property("max_ctrl_out", "base/Vector3d").
        doc("Maximum controller output.")
 
+    property("dead_zone", "base/Vector3d").
+       doc("If control error is below this value, don't do anything.")
+
     #property("camera_axis", "ctrl_lib/camera_axis", :z_axis).
     #   doc("Define the camera optical axis")
 
     property("camera_frame", "std/string").
-       doc("This is the base frame of the controller motion, e.g. the robot's camera frame")
+       doc("Name of the camera frame")
 
     property("object_frame", "std/string").
-       doc("This is the setpoint frame of the controller motion, e.g. the control target")
+       doc("Name of the object frame the camera should point at")
+
+    property("detection_timeout", "double", 0.2).
+       doc("If no new object pose arrives for this amount of time, the object is assumed to be lost and the control output is set to zero")
 
     output_port("ctrl_out", "base/samples/RigidBodyState").
        doc("Controller output.")
@@ -196,7 +202,3 @@ task_context "CartGazeCtrl" do
 
     periodic 0.1
 end
-
-#typekit do
-#  export_types "ctrl_lib/camera_axis"
-#end

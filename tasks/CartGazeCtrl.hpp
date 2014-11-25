@@ -12,10 +12,10 @@ class CartGazeCtrl : public CartGazeCtrlBase
     friend class CartGazeCtrlBase;
 protected:
 
-    base::Vector3d kp_, max_ctrl_out_, dead_zone_;
+    base::Vector2d kp_, max_ctrl_out_, dead_zone_;
     camera_axis camera_axis_;
     base::samples::RigidBodyState object2camera_;
-    base::samples::RigidBodyState ctrl_out_rbs_;
+    base::commands::Joints ctrl_out_;
     base::Time stamp_;
     double detection_timeout_;
 

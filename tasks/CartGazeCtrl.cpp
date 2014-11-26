@@ -28,19 +28,11 @@ bool CartGazeCtrl::configureHook()
 
     kp_ = _kp.get();
     max_ctrl_out_ = _max_ctrl_out.get();
+    camera_axis_ = _camera_axis.get();
     detection_timeout_ = _detection_timeout.get();
     dead_zone_ = _dead_zone.get();
     object_frame_ = _object_frame.get();
     camera_frame_ = _camera_frame.get();
-
-    std::vector<std::string> joint_names = _joint_names.get();
-    if(joint_names.size() != 2){
-        LOG_ERROR("Size of joint names property has to be 2!");
-        return false;
-    }
-
-    ctrl_out_.resize(joint_names.size());
-    ctrl_out_.names = joint_names;
 
     return true;
 }
@@ -49,8 +41,8 @@ bool CartGazeCtrl::startHook()
     if (! CartGazeCtrlBase::startHook())
         return false;
 
-    for(uint i = 0; ctrl_out_.size(); i++)
-        ctrl_out_[i].speed = 0;
+    ctrl_out_.velocity.setZero();
+    ctrl_out_.angular_velocity.setZero();
 
     return true;
 }
@@ -75,8 +67,7 @@ void CartGazeCtrl::updateHook()
 
         stamp_ = cur;
 
-        for(uint i = 0; ctrl_out_.size(); i++)
-            ctrl_out_[i].speed = 0;
+        ctrl_out_.angular_velocity.setZero();
         ctrl_out_.time = cur;
         _ctrl_out.write(ctrl_out_);
 
@@ -96,24 +87,32 @@ void CartGazeCtrl::updateHook()
         throw std::invalid_argument("Invalid transform");
     }
 
-    ctrl_out_[0].speed = kp_(0) * atan2(-object2camera_.position(1), object2camera_.position(2)); //x-axis angular error: phi_x = atan2(-dy, dz)
-    ctrl_out_[1].speed = kp_(1) * atan2(object2camera_.position(0), object2camera_.position(2)); //y-axis angular error: phi_y = atan2(dx, dz)
-
+    switch(camera_axis_)
+    {
+    case x_axis: throw std::invalid_argument("Not implemented yet"); break;
+    case y_axis: throw std::invalid_argument("Not implemented yet"); break;
+    case z_axis: {
+        ctrl_out_.angular_velocity(0) = kp_(1) * atan2(object2camera_.position(0), object2camera_.position(2)); //y-axis angular error: phi_y = atan2(dx, dz)
+        ctrl_out_.angular_velocity(1) = kp_(0) * atan2(-object2camera_.position(1), object2camera_.position(2)); //x-axis angular error: phi_x = atan2(-dy, dz)
+        break;
+    }
+    default: throw std::invalid_argument("Invalid camera axis");
+    }
 
     //Apply dead zone
-    for(uint i = 0; ctrl_out_.size(); i++){
-        if(fabs(ctrl_out_[i].speed) < dead_zone_(i))
-            ctrl_out_[i].speed = 0;
+    for(uint i = 0; i < 3; i++){
+        if(fabs(ctrl_out_.angular_velocity(i)) < dead_zone_(i))
+            ctrl_out_.angular_velocity(i) = 0;
     }
 
     //Apply controller saturation: ctrl_out = ctrl_out * min(1, max/|ctrl_out|). Scale all entries of ctrl_out appriopriately.
     double eta = 1;
-    for(uint i = 0; ctrl_out_.size(); i++){
-        if(ctrl_out_[i].speed != 0)
-            eta = std::min( eta, max_ctrl_out_(i)/fabs(ctrl_out_[i].speed) );
+    for(uint i = 0; i < 3; i++){
+        if(ctrl_out_.angular_velocity(i) != 0)
+            eta = std::min( eta, max_ctrl_out_(i)/fabs(ctrl_out_.angular_velocity(i)) );
     }
-    for(uint i = 0; ctrl_out_.size(); i++)
-        ctrl_out_[i].speed = eta * ctrl_out_[i].speed;
+    for(uint i = 0; i < 3; i++)
+        ctrl_out_.angular_velocity(i) = eta * ctrl_out_.angular_velocity(i);
 
     //Write to port
     ctrl_out_.time = base::Time::now();

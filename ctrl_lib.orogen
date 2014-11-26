@@ -171,28 +171,28 @@ task_context "CartGazeCtrl" do
     needs_configuration
     runtime_states 'NO_OBJECT_TRANSFORM'
 
-    property("joint_names", "std/vector<std/string>").
-       doc("Joint names to be used in ctrl output. Size has to be 2")
-
-    property("kp", "base/Vector2d").
+    property("kp", "base/Vector3d").
        doc("Proportional controller parameters. Only the axes that are NOT defined as camera axis are used to control the orientation of the camera frame")
 
-    property("max_ctrl_out", "base/Vector2d").
+    property("max_ctrl_out", "base/Vector3d").
        doc("Maximum controller output.")
 
-    property("dead_zone", "base/Vector2d").
+    property("dead_zone", "base/Vector3d").
        doc("If control error is below this value, don't do anything.")
 
     property("camera_frame", "std/string").
        doc("Name of the camera frame")
 
+    property("camera_axis", "ctrl_lib/camera_axis", :z_axis).
+       doc("Optical axis of the camera frame")
+
     property("object_frame", "std/string").
-    doc("Name of the object frame the camera should point at")
+       doc("Name of the object frame the camera should point at")
 
- property("detection_timeout", "double", 0.2).
-    doc("If no new object pose arrives for this amount of time, the object is assumed to be lost and the control output is set to zero")
+    property("detection_timeout", "double", 0.2).
+       doc("If no new object pose arrives for this amount of time, the object is assumed to be lost and the control output is set to zero")
 
-    output_port("ctrl_out", "base/commands/Joints").
+    output_port("ctrl_out", "base/samples/RigidBodyState").
        doc("Controller output.")
 
     transformer do

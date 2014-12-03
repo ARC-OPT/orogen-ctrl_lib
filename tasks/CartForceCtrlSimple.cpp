@@ -70,7 +70,7 @@ void CartForceCtrlSimple::updateHook()
 
     _kp_values.read(kp_);
 
-    if(!_controlled_frame2controlled_in.get(base::Time::now(), ft2baseFrame_)){
+    if(!_wrench2controlled_in.get(base::Time::now(), ft2baseFrame_)){
         if((base::Time::now() - stamp_).toSeconds() > 2){
             LOG_DEBUG("%s: Missing transform from force sensor to base frame", this->getName().c_str());
             stamp_ = base::Time::now();
@@ -80,7 +80,7 @@ void CartForceCtrlSimple::updateHook()
     else
         kdl_conversions::RigidBodyState2KDL(ft2baseFrame_, ft2baseFrame_kdl_);
 
-    if(!_setpoint2controlled_in.get(base::Time::now(), ref2baseFrame_)){
+    if(!_wrench_ref2controlled_in.get(base::Time::now(), ref2baseFrame_)){
         if((base::Time::now() - stamp_).toSeconds() > 2){
             LOG_DEBUG("%s: Missing transform from force sensor to base frame", this->getName().c_str());
             stamp_ = base::Time::now();

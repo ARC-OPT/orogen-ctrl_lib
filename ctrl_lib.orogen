@@ -118,12 +118,18 @@ end
 task_context "CartForceCtrlSimple" do
     needs_configuration
 
-    property( "controlled_in_frame",    "std/string"    ).doc( "This is the base frame of the controller motion, e.g. the robot base frame" )
-    property( "setpoint_frame",         "std/string"    ).doc( "This is the setpoint frame of the controller motion, e.g. the control target" )
-    property( "controlled_frame_frame", "std/string"    ).doc( "This is the 'end effector' frame of the controlled motion" )
-    property( "max_ctrl_out",           "base/Vector6d" ).doc( "Maximum Controller output(saturation)" )
-    property( "dead_zone",              "base/Vector6d" ).doc( "If control error is below this value, there will be zero control output for that variable." )
-    property( "kp",                     "base/Vector6d" ).doc( "Proportional controller parameters." )
+    property( "wrench_frame", "std/string").
+        doc( "This is the frame with respect to which the current wrench (on the wrench port) is defined" )
+    property( "wrench_ref_frame","std/string").
+        doc( "This is the frame with respect to which the reference wrench is defined" )
+    property( "controlled_in_frame",   "std/string").
+        doc( "This is the frame in which the control action takes place. Both, the reference and the actual wrench will be transformed into this frame. Thus, the control output (twist) will be defined in this frame" )
+    property( "max_ctrl_out",   "base/Vector6d" ).
+        doc( "Maximum Controller output(saturation)" )
+    property( "dead_zone",  "base/Vector6d" ).
+        doc( "If control error is below this value, there will be zero control output for that variable." )
+    property( "kp", "base/Vector6d" ).
+        doc( "Proportional controller parameters." )
    
     input_port( "kp_values",  "base/Vector6d"        ).doc( "Proportional gain. This port can be used for adaptive control." )
     input_port( "wrench_ref", "base/samples/Wrench"  ).doc( "Reference wrench" )
@@ -133,8 +139,8 @@ task_context "CartForceCtrlSimple" do
     output_port( "ctrl_out",   "base/samples/RigidBodyState" ).doc( "Controller output." )
 
     transformer do
-      transform 'setpoint', 'controlled_in'
-      transform 'controlled_frame', 'controlled_in'
+      transform 'wrench', 'controlled_in'
+      transform 'wrench_ref', 'controlled_in'
       max_latency 0.1
     end
 

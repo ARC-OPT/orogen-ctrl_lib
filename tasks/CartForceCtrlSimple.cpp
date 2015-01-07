@@ -51,6 +51,10 @@ void CartForceCtrlSimple::updateHook()
     CartForceCtrlSimpleBase::updateHook();
 
     if(_wrench.read(wrench_) == RTT::NoData){
+
+        if(state() != NO_WRENCH_ON_PORT)
+            state(NO_WRENCH_ON_PORT);
+
         if((base::Time::now() - stamp_).toSeconds() > 2){
             LOG_DEBUG("%s: No Data on wrench port", this->getName().c_str());
             stamp_ = base::Time::now();
@@ -60,6 +64,10 @@ void CartForceCtrlSimple::updateHook()
     validateWrench(wrench_);
 
     if(_wrench_ref.read(wrench_ref_) == RTT::NoData){
+
+        if(state() != NO_REF_WRENCH_ON_PORT)
+            state(NO_REF_WRENCH_ON_PORT);
+
         if((base::Time::now() - stamp_).toSeconds() > 2){
             LOG_DEBUG("%s: No Data on wrench_ref port", this->getName().c_str());
             stamp_ = base::Time::now();
@@ -71,6 +79,10 @@ void CartForceCtrlSimple::updateHook()
     _kp_values.read(kp_);
 
     if(!_wrench2controlled_in.get(base::Time::now(), ft2baseFrame_)){
+
+        if(state() != NO_FT_SENSOR_TRANSFORM)
+            state(NO_FT_SENSOR_TRANSFORM);
+
         if((base::Time::now() - stamp_).toSeconds() > 2){
             LOG_DEBUG("%s: Missing transform from force sensor to base frame", this->getName().c_str());
             stamp_ = base::Time::now();
@@ -81,6 +93,10 @@ void CartForceCtrlSimple::updateHook()
         kdl_conversions::RigidBodyState2KDL(ft2baseFrame_, ft2baseFrame_kdl_);
 
     if(!_wrench_ref2controlled_in.get(base::Time::now(), ref2baseFrame_)){
+
+        if(state() != NO_SETPOINT_TRANSFORM)
+            state(NO_SETPOINT_TRANSFORM);
+
         if((base::Time::now() - stamp_).toSeconds() > 2){
             LOG_DEBUG("%s: Missing transform from force sensor to base frame", this->getName().c_str());
             stamp_ = base::Time::now();
@@ -89,6 +105,8 @@ void CartForceCtrlSimple::updateHook()
     }
     else
         kdl_conversions::RigidBodyState2KDL(ref2baseFrame_, ref2baseFrame_kdl_);
+
+    state(RUNNING);
 
     //Convert to KDL
     kdl_conversions::WrenchToKDLWrench(wrench_ref_, F_r_);

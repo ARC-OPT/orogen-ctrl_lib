@@ -83,6 +83,8 @@ end
 task_context "CartPosCtrlVelFF" do
     needs_configuration
 
+    runtime_states "NO_SETPOINT_TRANSFORM", "NO_END_EFFECTOR_TRANSFORM"
+
     property( "controlled_in_frame",    "std/string"    ).doc( "This is the base frame of the controller motion, e.g. the robot base frame" )
     property( "setpoint_frame",         "std/string"    ).doc( "This is the setpoint frame of the controller motion, e.g. the control target" )
     property( "controlled_frame_frame", "std/string"    ).doc( "This is the 'end effector' frame of the controlled motion" )
@@ -117,6 +119,8 @@ end
 #
 task_context "CartForceCtrlSimple" do
     needs_configuration
+
+    runtime_states "NO_WRENCH_ON_PORT", "NO_REF_WRENCH_ON_PORT", "NO_SETPOINT_TRANSFORM", "NO_FT_SENSOR_TRANSFORM"
 
     property( "wrench_frame", "std/string").
         doc( "This is the frame with respect to which the current wrench (on the wrench port) is defined" )

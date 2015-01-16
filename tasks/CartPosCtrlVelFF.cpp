@@ -116,6 +116,9 @@ void CartPosCtrlVelFF::updateHook()
     //Compute control error
     ctrl_err_ = x_r_ - x_;
 
+    _position_error.write(sqrt(ctrl_err_(0)*ctrl_err_(0) + ctrl_err_(1)*ctrl_err_(1) + ctrl_err_(2)*ctrl_err_(2)));
+    _orientation_error.write(sqrt(ctrl_err_(3)*ctrl_err_(3) + ctrl_err_(4)*ctrl_err_(4) + ctrl_err_(5)*ctrl_err_(5)));
+
     //Apply dead zone
     for(int i = 0; i < 6; i++){
         if(fabs(ctrl_err_(i)) < dead_zone_(i))

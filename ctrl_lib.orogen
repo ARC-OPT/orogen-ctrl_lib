@@ -81,6 +81,7 @@ end
 #              v_r       = Twist Setpoint and Actual twist
 #
 task_context "CartPosCtrlVelFF" do
+    abstract
     needs_configuration
 
     runtime_states "NO_SETPOINT_TRANSFORM", "NO_END_EFFECTOR_TRANSFORM"
@@ -100,13 +101,23 @@ task_context "CartPosCtrlVelFF" do
     output_port( "orientation_error", "double" ).doc( "Control orientation error." )
     output_port( "ctrl_out", "base/samples/RigidBodyState" ).doc( "Controller output." )
 
+    periodic 0.1
+end
+
+task_context "CartPosCtrlVelFFPort" do
+    subclasses "CartPosCtrlVelFF"
+    input_port("setpoint", "base/samples/RigidBodyState")
+    input_port("status", "base/samples/RigidBodyState")
+end
+
+task_context "CartPosCtrlVelFFTransformer" do
+    subclasses "CartPosCtrlVelFF"
+
     transformer do
       transform 'setpoint', 'controlled_in'
       transform 'controlled_frame', 'controlled_in'
       max_latency 0.1
     end
-
-    periodic 0.1
 end
 
 #

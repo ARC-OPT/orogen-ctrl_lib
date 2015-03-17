@@ -52,6 +52,7 @@ bool JointPosCtrlVelFF::configureHook()
     x_r_.resize(joint_names_.size());
     x_.resize(joint_names_.size());
     v_r_.resize(joint_names_.size());
+    x_err_.resize(joint_names_.size());
 
     return true;
 }
@@ -61,6 +62,7 @@ bool JointPosCtrlVelFF::startHook()
     if (! JointPosCtrlVelFFBase::startHook())
         return false;
 
+    x_err_.setZero();
     ctrl_out_.setZero();
     v_r_.setZero();
     x_.setZero();
@@ -150,7 +152,8 @@ void JointPosCtrlVelFF::updateHook()
     }
 
     //Control law:
-    ctrl_out_ = kd_.cwiseProduct(v_r_) + kp_.cwiseProduct(x_r_ - x_);
+    x_err_ = x_r_ - x_;
+    ctrl_out_ = kd_.cwiseProduct(v_r_) + kp_.cwiseProduct(x_err_);
 
     //Apply saturation: ctrl_out_ = ctrl_out_ * min(1, v_max/|ctrl_out_|). Scale all entries of ctrl_out_ appriopriately.
     double eta = 1;
@@ -165,6 +168,7 @@ void JointPosCtrlVelFF::updateHook()
 
     ctrl_output_.time = base::Time::now();
     _ctrl_out.write(ctrl_output_);
+    _ctrl_error.write(x_err_);
 }
 
 void JointPosCtrlVelFF::cleanupHook()

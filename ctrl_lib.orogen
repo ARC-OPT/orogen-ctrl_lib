@@ -65,6 +65,7 @@ task_context "JointPosCtrlVelFF" do
    input_port( "kd_values", "base/VectorXd"        ).doc( "Differential gain. This port can be used for adaptive control." )
 
    output_port( "ctrl_out", "base/commands/Joints" ).doc( "Controller output. Will contain same joints as in joint limits" )
+   output_port( "ctrl_error", "base/VectorXd" ).doc( "Control Error." )
 
    periodic 0.1
 end
@@ -116,7 +117,7 @@ task_context "CartPosCtrlVelFFTransformer" do
     transformer do
       transform 'setpoint', 'controlled_in'
       transform 'controlled_frame', 'controlled_in'
-      max_latency 0.1
+      max_latency 0.5
     end
 end
 

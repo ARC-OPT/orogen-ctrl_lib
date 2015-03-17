@@ -97,6 +97,8 @@ task_context "CartPosCtrlVelFF" do
     input_port( "kp_values", "base/Vector6d" ).doc( "Proportional gain. This port can be used for adaptive control." )
     input_port( "kd_values", "base/Vector6d" ).doc( "Differential gain. This port can be used for adaptive control." )
 
+    output_port( "position_error", "double" ).doc( "Control position error." )
+    output_port( "orientation_error", "double" ).doc( "Control orientation error." )
     output_port( "ctrl_out", "base/samples/RigidBodyState" ).doc( "Controller output." )
 
     transformer do

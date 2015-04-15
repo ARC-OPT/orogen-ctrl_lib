@@ -110,8 +110,7 @@ void JointPosCtrlVelFF::updateHook()
         if(ref_[idx].hasSpeed())
             v_r_(i) = ref_[idx].speed;
         else{
-            LOG_ERROR("%s: Joint %s has invalid reference velocity.", this->getName().c_str(), joint_names_[i].c_str());
-            throw std::invalid_argument("Invalid reference input");
+            v_r_(i) = 0.0;
         }
     }
 

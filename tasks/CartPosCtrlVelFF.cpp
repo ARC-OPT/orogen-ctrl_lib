@@ -44,42 +44,8 @@ bool CartPosCtrlVelFF::startHook(){
     return true;
 }
 
-void CartPosCtrlVelFF::updateHook()
+void CartPosCtrlVelFF::control_step_and_write()
 {
-    CartPosCtrlVelFFBase::updateHook();
-
-    //Get Transforms:
-    if(!_setpoint2controlled_in.get(base::Time::now(), ref_)){
-
-        if(state() != NO_SETPOINT_TRANSFORM)
-            state(NO_SETPOINT_TRANSFORM);
-
-        if((base::Time::now() - stamp_).toSeconds() > 2){
-            LOG_DEBUG("%s: No valid transformation available between %s and %s: No setpoint available.",
-                      this->getName().c_str(), _controlled_in_frame.get().c_str(), _setpoint_frame.get().c_str());
-            stamp_ = base::Time::now();
-        }
-        return;
-    }
-    if(!_controlled_frame2controlled_in.get(base::Time::now(), cur_)){
-
-        if(state() != NO_END_EFFECTOR_TRANSFORM)
-            state(NO_END_EFFECTOR_TRANSFORM);
-
-        if((base::Time::now() - stamp_).toSeconds() > 2){
-            LOG_DEBUG("%s: No valid transformation available between %s and %s.",
-                      this->getName().c_str(), _controlled_in_frame.get().c_str(), _controlled_frame_frame.get().c_str());
-            stamp_ = base::Time::now();
-        }
-        return;
-    }
-
-    state(RUNNING);
-
-    //Read new controller gain values
-    _kp_values.read(kp_);
-    _kd_values.read(kd_);
-
     ref_kdl_.Identity();
     cur_kdl_.Identity();
 
@@ -143,7 +109,16 @@ void CartPosCtrlVelFF::updateHook()
     ctrl_out_rbs_.sourceFrame = this->getName() + "_ctrl_out_" + cur_.sourceFrame;
     ctrl_out_rbs_.targetFrame = this->getName() + "_ctrl_out_" + ref_.sourceFrame;
     _ctrl_out.write(ctrl_out_rbs_);
+}
 
+void CartPosCtrlVelFF::updateHook()
+{
+    CartPosCtrlVelFFBase::updateHook();
+
+
+    //Read new controller gain values
+    _kp_values.read(kp_);
+    _kd_values.read(kd_);
 }
 
 void CartPosCtrlVelFF::cleanupHook(){

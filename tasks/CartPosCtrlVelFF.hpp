@@ -30,6 +30,7 @@ public:
     bool configureHook();
     bool startHook();
     void updateHook();
+    void control_step_and_write();
     void errorHook(){CartPosCtrlVelFFBase::errorHook();}
     void stopHook(){CartPosCtrlVelFFBase::stopHook();}
     void cleanupHook();

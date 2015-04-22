@@ -33,6 +33,7 @@ task_context "JointLimitAvoidance" do
    input_port( "feedback",  "base/commands/Joints" ).doc( "Controller feedback. There will ne no control output if no feedback is given" )
    input_port( "kp_values", "base/VectorXd"        ).doc( "Proportional gain. This port can be used for adaptive control." )
 
+   output_port( "d",   "base/VectorXd")
    output_port( "activation", "base/VectorXd"        ).doc( "Activation function. Will be between 0 and 1 for each joint." )
    output_port( "ctrl_out",   "base/commands/Joints" ).doc( "Controller output. Will contain same joints as in joint limits" )
 

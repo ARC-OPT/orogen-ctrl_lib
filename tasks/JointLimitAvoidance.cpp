@@ -51,6 +51,7 @@ bool JointLimitAvoidance::configureHook()
     ctrl_output_.resize(limits_.size());
     ctrl_output_.names = limits_.names;
     activation_.resize(limits_.size());
+    d_.resize(limits_.size());
 
     return true;
 }
@@ -107,6 +108,8 @@ void JointLimitAvoidance::updateHook()
         ctrl_output_[i].speed = 0;
         activation_(i) = 0;
 
+        d_(i) = d;
+
         if(d < d0) //if within maximum influence distance
         {
             //Control output: Proportional to 1/d and limited by max_ctrl_out
@@ -120,6 +123,7 @@ void JointLimitAvoidance::updateHook()
         }
     }
 
+    _d.write(d_);
     ctrl_output_.time = base::Time::now();
     _activation.write(activation_);
     _ctrl_out.write(ctrl_output_);

@@ -11,7 +11,7 @@ class JointLimitAvoidance : public JointLimitAvoidanceBase
     friend class JointLimitAvoidanceBase;
 protected:
     base::JointLimits limits_;
-    base::VectorXd d_zero_, max_ctrl_out_, kp_;
+    base::VectorXd d_zero_, max_ctrl_out_, kp_, d_;
     double transition_range_;
     base::samples::Joints feedback_;
     base::commands::Joints ctrl_output_;

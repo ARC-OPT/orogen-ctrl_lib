@@ -4,6 +4,8 @@
 #define CTRL_LIB_JOINTLIMITAVOIDANCE_TASK_HPP
 
 #include "ctrl_lib/JointLimitAvoidanceBase.hpp"
+#include <base/commands/Joints.hpp>
+
 namespace ctrl_lib {
 
 class JointLimitAvoidance : public JointLimitAvoidanceBase

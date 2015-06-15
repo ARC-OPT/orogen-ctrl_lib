@@ -5,6 +5,7 @@
 
 #include "ctrl_lib/ManipulabilityGradientCtrlBase.hpp"
 #include <kdl/chainjnttojacsolver.hpp>
+#include <base/commands/Joints.hpp>
 
 namespace ctrl_lib {
 

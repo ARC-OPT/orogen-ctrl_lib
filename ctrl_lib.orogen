@@ -1,229 +1,138 @@
 name "ctrl_lib"
 
-import_types_from "base"
+using_library "ctrl_lib"
 import_types_from "ctrl_libTypes.hpp"
-using_library "kdl_conversions"
-using_library "kdl_parser"
+import_types_from "base"
 
 #
-# Joint Limit avoidance task, creates repulsive velocities near the joint limits:
+# ctrlOutput: y = ar + kd(vr - v) + kp(xr - x) 
 #
-#    ctrl_out = -kp * (d_zero - d)*(d_zero - d),  if |d| <= d_zero
+#      where: abs(xr - x) >= eMin and y <= yMax
+# 
+#      with:  x, xr - actual and reference position
+#             v, vr - actual and reference velocity
+#             ar    - Reference acceleration
+#             eMin  - Minimum control error (dead zone)
+#             yMax  - Maximum control output (saturation)
+#             kp    - Proportional gain
+#             kd    - Derivative gain
 #
-#    activation = 1, if |d| < (1-transition_range)*d_zero
-#               = ((d_zero - d)*(d_zero - d))/((transition_range * d_zero) * (transition_range * d_zero)), if (1-transition_range)*d_zero < |d| < d_zero
-#               = 0, else
-#    
-#    with |ctrl_out| <= max_ctrl_out
-#             d       = Distance to the closest joint limit for one joint
+task_context "PositionControllerBase" do abstract
+   needs_configuration
+   runtime_states "NO_SETPOINT", "NO_FEEDBACK"
+
+   property("kp",            "base/VectorXd").doc("Proportional gain.")
+   property("kd",            "base/VectorXd").doc("Derivative gain.")
+   property("maxCtrlOutput", "base/VectorXd").doc("Maximum control output (saturation). If one output value exceeds maximum, all other values will be scaled accordingly. Default is infinite.")
+   property("deadZone",      "base/VectorXd").doc("Minimum control error (dead zone). If one value falls below minimum, it will be set to zero. Default is zero.")
+
+   input_port("kpNew",             "base/VectorXd").doc("Set new proportional gain here.")
+   input_port("kdNew",             "base/VectorXd").doc("Set new derivative gain here.")
+   input_port("maxCtrlOutputNew", "base/VectorXd").doc("Set new maximum control output here.")
+   input_port("deadZoneNew",      "base/VectorXd").doc("Set new dead zone here.")
+
+   output_port("ctrlError", "base/VectorXd").doc("Current position control error (xr - x).")  
+
+   periodic 0.01
+end
+
+
 #
-task_context "JointLimitAvoidance" do
+# Implementation of PositionControlFeedForward in joint space
+# 
+task_context "JointPositionController" do subclasses "PositionControllerBase"
    needs_configuration
 
-   property( "joint_limits",     "base/JointLimits" ).doc( "Joint Limits. Defines the names of the joints used for control." )
-   property( "max_ctrl_out",     "base/VectorXd"    ).doc( "Maximum controller output(saturation). Size has to be same as joint limits." )
-   property( "d_zero",           "base/VectorXd"    ).doc( "Maximum influence distance per joint. Has to have same size as joint_names." )
-   property( "kp",               "base/VectorXd"    ).doc( "Proportional gain. Has to have same size as joint_names property." )
-   property( "transition_range", "double"           ).doc( "Transition range in percentage of the maximum influence distance. Has to be within 0..1.
-                                                            Activation function is a piecewise linear function, that increases from 0 to 1.
-                                                            The higher this value, the smaller the incline of the activation function.
-                                                            For transition_range = 0, the activation will be a step function." )
+   property("jointNames", "std/vector<std/string>").doc("Joints used by this controller (in this order)")
+   input_port("setpoint", "base/commands/Joints"  ).doc("Setpoint of the controller. Joints will be mapped internally.")
+   input_port("feedback", "base/samples/Joints"   ).doc("Feedback term of the controller.")
+     
+   output_port("ctrlOutput", "base/commands/Joints").doc("Control output.")
 
-   input_port( "setpoint",  "base/commands/Joints" ).doc( "Controller reference. There will ne no control output if no setpoint is given" )
-   input_port( "feedback",  "base/commands/Joints" ).doc( "Controller feedback. There will ne no control output if no feedback is given" )
-   input_port( "kp_values", "base/VectorXd"        ).doc( "Proportional gain. This port can be used for adaptive control." )
-
-   output_port( "d",   "base/VectorXd")
-   output_port( "activation", "base/VectorXd"        ).doc( "Activation function. Will be between 0 and 1 for each joint." )
-   output_port( "ctrl_out",   "base/commands/Joints" ).doc( "Controller output. Will contain same joints as in joint limits" )
-
-   port_driven "feedback"
+   periodic 0.01
 end
 
+
 #
-# Joint PD-controller with velocity and acceleration feedfoward term:
+# Implementation of PositionControlFeedForward in Cartesian space
 # 
-#   ctrl_out(vel) = kd * v_r + kp * (x_r-x)
-#   ctrl_out(acc) = a_r + kd * (v_r - v) + kp * (x_r-x)
-#
-#      with  |ctrl_out| <= max_ctrl_out
-#              x_r, x    = Position Setpoint and Actual position
-#              v_r, v    = Velocity Setpoint and Actual velocity
-#              a_r       = Acceleration Setpoint 
-#
-task_context "JointPosCtrlVelFF" do
+task_context "CartesianPositionController" do subclasses "PositionControllerBase"
    needs_configuration
 
-   property( "joint_names",  "std/vector<std/string>" ).doc( "Joint name vector. Determines the joints used in this controller" )
-   property( "max_ctrl_out", "base/VectorXd"          ).doc( "Maximum controller output(saturation). Size has to be same as joint limits." )
-   property( "dead_zone",    "base/VectorXd"          ).doc( "If control error is below this value, there will be zero control output for that variable." )
-   property( "kp",           "base/VectorXd"          ).doc( "Proportional gain. Has to have same size as joint_names property." )
-   property( "kd",           "base/VectorXd"          ).doc( "Differential gain. Has to have same size as joint_names property." )
+   input_port("setpoint", "base/samples/RigidBodyState").doc("Setpoint of the controller.")
+   input_port("feedback", "base/samples/RigidBodyState").doc("Feedback term of the controller.")
 
-   input_port( "setpoint",  "base/commands/Joints" ).doc( "Controller reference. There will ne no control output if no setpoint is given" )
-   input_port( "feedback",  "base/commands/Joints" ).doc( "Controller feedback. There will ne no control output if no feedback is given" )
-   input_port( "kp_values", "base/VectorXd"        ).doc( "Proportional gain. This port can be used for adaptive control." )
-   input_port( "kd_values", "base/VectorXd"        ).doc( "Differential gain. This port can be used for adaptive control." )
+   output_port("ctrlOutput", "base/commands/Joints").doc("Control output.")
 
-   output_port( "ctrl_out", "base/commands/Joints" ).doc( "Controller output. Will contain same joints as in joint limits" )
-   output_port( "ctrl_error", "base/VectorXd" ).doc( "Control Error." )
-
-   periodic 0.1
+   periodic 0.01
 end
 
 
 #
-# Cartesian PD-controller with velocity feedforward term. Ctrl output will be given
-# wrt. controlled_in_frame
+# ctrlOutput: grad = (x - x0) / ||d||^{M+1}, ||d|| <= dMax
+#                  =                      0, else  
+#                y = kp * grad
+#
+#      where: abs(grad) >= eMin and y <= yMax
 # 
-#   ctrl_out(vel) = kd * v_r + kp * (x_r-x)
+#      with:  x    - actual position
+#             x0   - Potential field center
+#             d    - distance to center ( = |x-x0|)
+#             M    - order of the field
+#             dMax - Maximum influence distance of the field
+#             eMin  - Minimum control error (dead zone)
+#             yMax  - Maximum control output (saturation)
+#             kp    - Proportional gain
 #
-#      with  |ctrl_out| <= max_ctrl_out
-#              x_r, x    = Pose Setpoint and Actual pose
-#              v_r       = Twist Setpoint and Actual twist
+# Note that the gradients of all potential fields will be summed up. 
 #
-task_context "CartPosCtrlVelFF" do
-    abstract
-    needs_configuration
+task_context "RadialPotentialFields" do abstract
+   needs_configuration
+   runtime_states "NO_FEEDBACK"
 
-    runtime_states "NO_SETPOINT_TRANSFORM", "NO_END_EFFECTOR_TRANSFORM"
+   property("dMax",          "base/VectorXd"             ).doc("Maximum influence distance of the potential fields. One entry per pot. field.")
+   property("order",         "double", 1                 ).doc("Order of the potential field. If M = 0 y = const, if M = 1, grad ~ 1/d. If M = 2, grad ~ 1/d^2 and so on.")
+   property("x0",            "std/vector<base/VectorXd>").doc("Initial center of the potential fields. Outer vector: One entry per pot. field. Inner vector: One entry per dimension.")
+   property("kp",            "base/VectorXd"             ).doc("Proportional gain. Size has to be the same as dimension of the fields.")
+   property("maxCtrlOutput", "base/VectorXd"             ).doc("Maximum control output (saturation). Default is infinite.")
+   property("deadZone",      "base/VectorXd"             ).doc("Minimum control error, i.e. the dead zone. Default will be 0.")
 
-    property( "controlled_in_frame",    "std/string"    ).doc( "This is the base frame of the controller motion, e.g. the robot base frame" )
-    property( "setpoint_frame",         "std/string"    ).doc( "This is the setpoint frame of the controller motion, e.g. the control target" )
-    property( "controlled_frame_frame", "std/string"    ).doc( "This is the 'end effector' frame of the controlled motion" )
-    property( "max_ctrl_out",           "base/Vector6d" ).doc( "Maximum Controller output(saturation)" )
-    property( "dead_zone",              "base/Vector6d" ).doc( "If control error is below this value, there will be zero control output for that variable." )
-    property( "kp",                     "base/Vector6d" ).doc( "Proportional controller parameters." )
-    property( "kd",                     "base/Vector6d" ).doc( "Differential controller parameters." )
+   input_port("kpNew",            "base/VectorXd").doc("Set new proportional gain here.")
+   input_port("maxCtrlOutputNew", "base/VectorXd").doc("Set new maximum control output here")
+   input_port("deadZoneNew",      "base/VectorXd").doc("Set new dead zone here")
 
-    input_port( "kp_values", "base/Vector6d" ).doc( "Proportional gain. This port can be used for adaptive control." )
-    input_port( "kd_values", "base/Vector6d" ).doc( "Differential gain. This port can be used for adaptive control." )
-
-    output_port( "position_error", "double" ).doc( "Control position error." )
-    output_port( "orientation_error", "double" ).doc( "Control orientation error." )
-    output_port( "ctrl_out", "base/samples/RigidBodyState" ).doc( "Controller output." )
-
-    periodic 0.1
+   periodic 0.01   
 end
 
-task_context "CartPosCtrlVelFFPort" do
-    subclasses "CartPosCtrlVelFF"
-    input_port("setpoint", "base/samples/RigidBodyState")
-    input_port("status", "base/samples/RigidBodyState")
+
+#
+# Implementation of RadialPotentialFields in Cartesian space. Dimension of all fields has to be 3!
+#
+task_context "CartesianRadialPotentialFields" do subclasses "RadialPotentialFields"
+   needs_configuration
+
+   input_port("setpoint", "base/samples/RigidBodyState"            ).doc("Setpoint of the controller. In this case interpreted as centers of the potential fields.")
+   input_port("feedback", "std/vector<base/samples/RigidBodyState>").doc("Feedback term of the controller.")
+
+   output_port("ctrlOutput", "base/commands/Joints").doc("Control output.")
+
+   periodic 0.01   
 end
 
-task_context "CartPosCtrlVelFFTransformer" do
-    subclasses "CartPosCtrlVelFF"
 
-    transformer do
-      transform 'setpoint', 'controlled_in'
-      transform 'controlled_frame', 'controlled_in'
-      max_latency 0.5
-    end
+#
+# Implementation of RadialPotentialFields in joint space. Each joint will have its own potential field. 
+#
+task_context "JointRadialPotentialFields" do subclasses "RadialPotentialFields"
+   needs_configuration
+
+   property("jointNames", "std/vector<std/string>").doc("Joints used by this controller (in this order). Size has to be same of 2x the number of potential fields.")
+
+   input_port("setpoint", "base/commands/Joints"            ).doc("Setpoint of the controller. In this case interpreted as centers of the potential fields.")
+   input_port("feedback", "std/vector<base/samples/Joints>" ).doc("Feedback term of the controller.")
+     
+   output_port("ctrlOutput", "base/commands/Joints").doc("Control output as velocity. Value will be NaN if outside influence distance of potential field.")
+
+   periodic 0.01   
 end
 
-#
-# Simple Cartesian Force Controller with velocity output. 
-# Note: Input wrench will be transformed
-# from "controlled_frame_frame" to "controlled_in_frame", input wrench_ref will be transformed
-# from "setpoint_frame" to "controlled_in_frame". Ctrl_out will be given in controlled_in_frame
-#
-#    ctrl_out = kp * (wrench_ref - wrench)
-#  
-#     |ctrl_out| <= max_ctrl_out
-#
-task_context "CartForceCtrlSimple" do
-    needs_configuration
-
-    runtime_states "NO_WRENCH_ON_PORT", "NO_REF_WRENCH_ON_PORT", "NO_SETPOINT_TRANSFORM", "NO_FT_SENSOR_TRANSFORM"
-
-    property( "wrench_frame", "std/string").
-        doc( "This is the frame with respect to which the current wrench (on the wrench port) is defined" )
-    property( "wrench_ref_frame","std/string").
-        doc( "This is the frame with respect to which the reference wrench is defined" )
-    property( "controlled_in_frame",   "std/string").
-        doc( "This is the frame in which the control action takes place. Both, the reference and the actual wrench will be transformed into this frame. Thus, the control output (twist) will be defined in this frame" )
-    property( "max_ctrl_out",   "base/Vector6d" ).
-        doc( "Maximum Controller output(saturation)" )
-    property( "dead_zone",  "base/Vector6d" ).
-        doc( "If control error is below this value, there will be zero control output for that variable." )
-    property( "kp", "base/Vector6d" ).
-        doc( "Proportional controller parameters." )
-   
-    input_port( "kp_values",  "base/Vector6d"        ).doc( "Proportional gain. This port can be used for adaptive control." )
-    input_port( "wrench_ref", "base/samples/Wrench"  ).doc( "Reference wrench" )
-    input_port( "wrench",     "base/samples/Wrench"  ).doc( "Reference wrench" )
-
-    output_port( "activation", "base/VectorXd"               ).doc( "Entries will be 1 in case there is a control output for that variable, or 0" )
-    output_port( "ctrl_out",   "base/samples/RigidBodyState" ).doc( "Controller output." )
-
-    transformer do
-      transform 'wrench', 'controlled_in'
-      transform 'wrench_ref', 'controlled_in'
-      max_latency 0.1
-    end
-
-    periodic 0.1
-end
-
-#
-# Outputs the gradient of the manipulability measure in joint space grad m = kp * (d/dq)( sqrt(det(J*J_T)) ), where J is the Jacobian associated with
-# the frames controlled_in_frame (root) and controlled_frame_frame (tip)
-#
-task_context "ManipulabilityGradientCtrl" do
-    needs_configuration
- 
-    property( "urdf",                   "std/string"   ).doc( "Path to urdf model")
-    property( "controlled_in_frame",    "std/string"   ).doc( "This is the base frame of the controller motion, e.g. the robot base frame" )
-    property( "controlled_frame_frame", "std/string"   ).doc( "This is the 'end effector' frame of the controlled motion" )
-    property( "delta_q",                "double"       ).doc( "Joint angle delta used for computing the gradient of the manipulability function" )
-    property( "kp",                     "base/VectorXd").doc( "Proportional gain vector. Has to have same size as number of joints in kinematic chain" )
-
-    input_port( "joint_state", "base/samples/Joints").doc( "Current joint state upon which the Jacobian are computed")
-
-    output_port( "ctrl_out", "base/commands/Joints").doc( "Controller output" ) 
-    output_port( "sample_time", "double").doc( "Computation time for on control cycle" )
-    output_port( "manipulability", "double").doc( "Manipulability index for the current configuration" )
-
-    periodic 0.1
-end
-
-#
-# To be used as gaze controller for a pan tilt unit. Used to control the orientation of camera_frame, so that
-# the camera_axis points to a certain object in space, expressed by object_frame.
-#
-task_context "CartGazeCtrl" do
-    needs_configuration
-    runtime_states 'NO_OBJECT_TRANSFORM'
-
-    property("kp", "base/Vector3d").
-       doc("Proportional controller parameters. Only the axes that are NOT defined as camera axis are used to control the orientation of the camera frame")
-
-    property("max_ctrl_out", "base/Vector3d").
-       doc("Maximum controller output.")
-
-    property("dead_zone", "base/Vector3d").
-       doc("If control error is below this value, don't do anything.")
-
-    property("camera_frame", "std/string").
-       doc("Name of the camera frame")
-
-    property("camera_axis", "ctrl_lib/camera_axis", :z_axis).
-       doc("Optical axis of the camera frame")
-
-    property("object_frame", "std/string").
-       doc("Name of the object frame the camera should point at")
-
-    property("detection_timeout", "double", 0.2).
-       doc("If no new object pose arrives for this amount of time, the object is assumed to be lost and the control output is set to zero")
-
-    output_port("ctrl_out", "base/samples/RigidBodyState").
-       doc("Controller output.")
-
-    transformer do
-      transform 'object', 'camera'
-      max_latency 0.1
-    end
-
-    periodic 0.1
-end

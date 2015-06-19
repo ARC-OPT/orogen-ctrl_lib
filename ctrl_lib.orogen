@@ -5,59 +5,50 @@ import_types_from "ctrl_libTypes.hpp"
 import_types_from "base"
 
 #
-# ctrlOutput: y = ar + kd(vr - v) + kp(xr - x) 
+# Base task for all controllers
 #
-#      where: abs(xr - x) >= eMin and y <= yMax
-# 
-#      with:  x, xr - actual and reference position
-#             v, vr - actual and reference velocity
-#             ar    - Reference acceleration
-#             eMin  - Minimum control error (dead zone)
-#             yMax  - Maximum control output (saturation)
-#             kp    - Proportional gain
-#             kd    - Derivative gain
-#
-task_context "PositionControllerBase" do abstract
+task_context "ControllerTask" do abstract
    needs_configuration
    runtime_states "NO_SETPOINT", "NO_FEEDBACK"
 
-   property("kp",            "base/VectorXd").doc("Proportional gain.")
-   property("kd",            "base/VectorXd").doc("Derivative gain.")
-   property("maxCtrlOutput", "base/VectorXd").doc("Maximum control output (saturation). If one output value exceeds maximum, all other values will be scaled accordingly. Default is infinite.")
-   property("deadZone",      "base/VectorXd").doc("Minimum control error (dead zone). If one value falls below minimum, it will be set to zero. Default is zero.")
+   property("propGain",         "base/VectorXd").doc("Proportional gain.")
+   property("maxControlOutput", "base/VectorXd").doc("Maximum control output (saturation). If one output value exceeds maximum, all other values will be scaled accordingly. Default is infinite.")
+   property("deadZone",         "base/VectorXd").doc("Minimum control error (dead zone). If one value falls below minimum, it will be set to zero. Default is zero.")
 
-   input_port("kpNew",             "base/VectorXd").doc("Set new proportional gain here.")
-   input_port("kdNew",             "base/VectorXd").doc("Set new derivative gain here.")
-   input_port("maxCtrlOutputNew", "base/VectorXd").doc("Set new maximum control output here.")
-   input_port("deadZoneNew",      "base/VectorXd").doc("Set new dead zone here.")
+   input_port("newPropGain",         "base/VectorXd").doc("Set new proportional gain here.")
+   input_port("newMaxControlOutput", "base/VectorXd").doc("Set new maximum control output here.")
+   input_port("newDeadZone",         "base/VectorXd").doc("Set new dead zone here.")
 
-   output_port("ctrlError", "base/VectorXd").doc("Current position control error (xr - x).")  
+   output_port("controlError",     "base/VectorXd").doc("Current control error")
+   output_port("controlOutputRaw", "base/VectorXd").doc("Raw control output")
 
    periodic 0.01
 end
 
-
 #
-# Implementation of PositionControlFeedForward in joint space
-# 
-task_context "JointPositionController" do subclasses "PositionControllerBase"
+# Implementation of PositionControlFeedForward in joint space. See ctrl_lib/PositionControlFeedForward.hpp for details
+#
+task_context "JointPositionController" do subclasses "ControllerTask"
    needs_configuration
 
+   property("derivGain",  "base/VectorXd").doc("Derivative gain.")
    property("jointNames", "std/vector<std/string>").doc("Joints used by this controller (in this order)")
+
    input_port("setpoint", "base/commands/Joints"  ).doc("Setpoint of the controller. Joints will be mapped internally.")
    input_port("feedback", "base/samples/Joints"   ).doc("Feedback term of the controller.")
-     
+
    output_port("ctrlOutput", "base/commands/Joints").doc("Control output.")
 
    periodic 0.01
 end
 
-
 #
 # Implementation of PositionControlFeedForward in Cartesian space
 # 
-task_context "CartesianPositionController" do subclasses "PositionControllerBase"
+task_context "CartesianPositionController" do subclasses "ControllerTask"
    needs_configuration
+
+   property("derivGain",  "base/VectorXd").doc("Derivative gain.")
 
    input_port("setpoint", "base/samples/RigidBodyState").doc("Setpoint of the controller.")
    input_port("feedback", "base/samples/RigidBodyState").doc("Feedback term of the controller.")
@@ -67,65 +58,16 @@ task_context "CartesianPositionController" do subclasses "PositionControllerBase
    periodic 0.01
 end
 
-
 #
-# ctrlOutput: grad = (x - x0) / ||d||^{M+1}, ||d|| <= dMax
-#                  =                      0, else  
-#                y = kp * grad
+# Implementation of RadialPotentialFields in joint space. Each joint will have its own potential field. See ctrl_lib/RadialPotentialField.hpp and
+# ctrl_lib/MultiPotentialFields.hpp for details
 #
-#      where: abs(grad) >= eMin and y <= yMax
-# 
-#      with:  x    - actual position
-#             x0   - Potential field center
-#             d    - distance to center ( = |x-x0|)
-#             M    - order of the field
-#             dMax - Maximum influence distance of the field
-#             eMin  - Minimum control error (dead zone)
-#             yMax  - Maximum control output (saturation)
-#             kp    - Proportional gain
-#
-# Note that the gradients of all potential fields will be summed up. 
-#
-task_context "RadialPotentialFields" do abstract
-   needs_configuration
-   runtime_states "NO_FEEDBACK"
-
-   property("dMax",          "base/VectorXd"             ).doc("Maximum influence distance of the potential fields. One entry per pot. field.")
-   property("order",         "double", 1                 ).doc("Order of the potential field. If M = 0 y = const, if M = 1, grad ~ 1/d. If M = 2, grad ~ 1/d^2 and so on.")
-   property("x0",            "std/vector<base/VectorXd>").doc("Initial center of the potential fields. Outer vector: One entry per pot. field. Inner vector: One entry per dimension.")
-   property("kp",            "base/VectorXd"             ).doc("Proportional gain. Size has to be the same as dimension of the fields.")
-   property("maxCtrlOutput", "base/VectorXd"             ).doc("Maximum control output (saturation). Default is infinite.")
-   property("deadZone",      "base/VectorXd"             ).doc("Minimum control error, i.e. the dead zone. Default will be 0.")
-
-   input_port("kpNew",            "base/VectorXd").doc("Set new proportional gain here.")
-   input_port("maxCtrlOutputNew", "base/VectorXd").doc("Set new maximum control output here")
-   input_port("deadZoneNew",      "base/VectorXd").doc("Set new dead zone here")
-
-   periodic 0.01   
-end
-
-
-#
-# Implementation of RadialPotentialFields in Cartesian space. Dimension of all fields has to be 3!
-#
-task_context "CartesianRadialPotentialFields" do subclasses "RadialPotentialFields"
+task_context "JointRadialPotentialFields" do subclasses "ControllerTask"
    needs_configuration
 
-   input_port("setpoint", "base/samples/RigidBodyState"            ).doc("Setpoint of the controller. In this case interpreted as centers of the potential fields.")
-   input_port("feedback", "std/vector<base/samples/RigidBodyState>").doc("Feedback term of the controller.")
-
-   output_port("ctrlOutput", "base/commands/Joints").doc("Control output.")
-
-   periodic 0.01   
-end
-
-
-#
-# Implementation of RadialPotentialFields in joint space. Each joint will have its own potential field. 
-#
-task_context "JointRadialPotentialFields" do subclasses "RadialPotentialFields"
-   needs_configuration
-
+   property("maxInfluenceDistance", "base/VectorXd"            ).doc("Maximum influence distance of the potential fields. One entry per pot. field.")
+   property("order",                "double", 1                ).doc("Order of the potential field. If M = 0 y = const, if M = 1, grad ~ 1/d. If M = 2, grad ~ 1/d^2 and so on.")
+   property("potFieldCenters",      "std/vector<base/VectorXd>").doc("Initial center of the potential fields. Outer vector: One entry per pot. field. Inner vector: One entry per dimension.")
    property("jointNames", "std/vector<std/string>").doc("Joints used by this controller (in this order). Size has to be same of 2x the number of potential fields.")
 
    input_port("setpoint", "base/commands/Joints"            ).doc("Setpoint of the controller. In this case interpreted as centers of the potential fields.")
@@ -134,5 +76,24 @@ task_context "JointRadialPotentialFields" do subclasses "RadialPotentialFields"
    output_port("ctrlOutput", "base/commands/Joints").doc("Control output as velocity. Value will be NaN if outside influence distance of potential field.")
 
    periodic 0.01   
+end
+
+#
+# Implementation of RadialPotentialFields in Cartesian space. Dimension of all fields has to be 3! See ctrl_lib/RadialPotentialField.hpp and
+# ctrl_lib/MultiPotentialFields.hpp for details
+#
+task_context "CartesianRadialPotentialFields" do subclasses "ControllerTask"
+   needs_configuration
+
+   property("maxInfluenceDistance", "base/VectorXd"            ).doc("Maximum influence distance of the potential fields. One entry per pot. field.")
+   property("order",                "double", 1                ).doc("Order of the potential field. If M = 0 y = const, if M = 1, grad ~ 1/d. If M = 2, grad ~ 1/d^2 and so on.")
+   property("potFieldCenters",      "std/vector<base/VectorXd>").doc("Initial center of the potential fields. Outer vector: One entry per pot. field. Inner vector: One entry per dimension.")
+
+   input_port("setpoint", "base/samples/RigidBodyState"            ).doc("Setpoint of the controller. In this case interpreted as centers of the potential fields.")
+   input_port("feedback", "std/vector<base/samples/RigidBodyState>").doc("Feedback term of the controller.")
+
+   output_port("ctrlOutput", "base/samples/RigidBodyState").doc("Control output.")
+
+   periodic 0.01
 end
 

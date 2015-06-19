@@ -12,7 +12,8 @@ namespace ctrl_lib {
      * Essential interfaces are operations, data flow ports and properties. These interfaces have been defined using the oroGen specification.
      * In order to modify the interfaces you should (re)use oroGen and rely on the associated workflow.
      * 
-Implementation of RadialPotentialFields in Cartesian space. Dimension of all fields has to be 3!
+Implementation of RadialPotentialFields in Cartesian space. Dimension of all fields has to be 3! See ctrl_lib/RadialPotentialField.hpp and
+ctrl_lib/MultiPotentialFields.hpp for details
 
      * \details
      * The name of a TaskContext is primarily defined via:

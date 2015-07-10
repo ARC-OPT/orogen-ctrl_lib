@@ -40,9 +40,9 @@ void ControllerTask::updateHook()
 {
     ControllerTaskBase::updateHook();
 
-    _newPropGain.read(controller->kp);
-    _newMaxControlOutput.read(controller->yMax);
-    _newDeadZone.read(controller->eMin);
+    _newPropGain.read((base::VectorXd&)controller->kp);
+    _newMaxControlOutput.read((base::VectorXd&)controller->yMax);
+    _newDeadZone.read((base::VectorXd&)controller->eMin);
 
     if(!readSetpoints() && state() != NO_SETPOINT)
         state(NO_SETPOINT);

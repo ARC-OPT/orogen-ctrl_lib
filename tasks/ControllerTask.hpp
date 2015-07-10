@@ -37,6 +37,12 @@ protected:
 
     Eigen::VectorXd y;
 
+    /** This computes the twist that rotates and translates a frame with poseA onto a frame with poseB*/
+    void diff(const base::samples::RigidBodyState poseA, const base::samples::RigidBodyState poseB, Eigen::VectorXd& twist){
+
+    }
+
+
 public:
     ControllerTask(std::string const& name = "ctrl_lib::ControllerTask");
     ControllerTask(std::string const& name, RTT::ExecutionEngine* engine);

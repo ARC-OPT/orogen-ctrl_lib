@@ -4,6 +4,8 @@
 #define CTRL_LIB_JOINTRADIALPOTENTIALFIELDS_TASK_HPP
 
 #include "ctrl_lib/JointRadialPotentialFieldsBase.hpp"
+#include <base/commands/Joints.hpp>
+#include <base/Logging.hpp>
 
 namespace ctrl_lib {
 
@@ -35,6 +37,22 @@ protected:
     virtual bool readFeedback();
     virtual void writeControlOutput(const Eigen::VectorXd &y);
 
+    base::commands::Joints setpoint;
+    base::commands::Joints feedback;
+    Eigen::VectorXd positions;
+    base::commands::Joints controlOutput;
+
+    inline void extractPositions(const base::commands::Joints &command, const std::vector<std::string> jointNames, Eigen::VectorXd& positions){
+        positions.resize(jointNames.size());
+        for(size_t i  = 0; i < jointNames.size(); i++){
+            const base::JointState &cmd = command.getElementByName(jointNames[i]);
+            if(!cmd.hasPosition()){ //Throw here, since we always need valid positions for this controller
+                LOG_ERROR("Element %s has no valid position value!", jointNames[i].c_str());
+                throw std::invalid_argument("Invalid position value");
+            }
+            positions(i) = cmd.position;
+        }
+    }
 
 public:
     JointRadialPotentialFields(std::string const& name = "ctrl_lib::JointRadialPotentialFields");

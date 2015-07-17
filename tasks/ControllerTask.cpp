@@ -1,6 +1,7 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "ControllerTask.hpp"
+#include <ctrl_lib/Controller.hpp>
 
 using namespace ctrl_lib;
 
@@ -44,11 +45,18 @@ void ControllerTask::updateHook()
     _newMaxControlOutput.read((base::VectorXd&)controller->yMax);
     _newDeadZone.read((base::VectorXd&)controller->eMin);
 
-    if(!readSetpoints() && state() != NO_SETPOINT)
-        state(NO_SETPOINT);
-    else if(!readFeedback() && state() != NO_FEEDBACK)
-        state(NO_FEEDBACK);
+    if(!readSetpoints()){
+        if(state() != NO_SETPOINT)
+            state(NO_SETPOINT);
+    }
+    else if(!readFeedback()){
+        if(state() != NO_FEEDBACK)
+            state(NO_FEEDBACK);
+    }
     else{
+        if(state() != RUNNING)
+            state(RUNNING);
+
         controller->update(y);
         _controlError.write(controller->e);
         _controlOutputRaw.write(y);

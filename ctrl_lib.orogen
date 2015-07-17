@@ -36,7 +36,7 @@ task_context "JointPositionController" do subclasses "ControllerTask"
    input_port("setpoint", "base/commands/Joints"  ).doc("Setpoint of the controller. Joints will be mapped internally.")
    input_port("feedback", "base/samples/Joints"   ).doc("Feedback term of the controller.")
 
-   output_port("ctrlOutput", "base/commands/Joints").doc("Control output.")
+   output_port("controlOutput", "base/commands/Joints").doc("Control output as velocity.")
 
    periodic 0.01
 end
@@ -50,27 +50,27 @@ task_context "CartesianPositionController" do subclasses "ControllerTask"
    input_port("setpoint", "base/samples/RigidBodyState").doc("Setpoint of the controller.")
    input_port("feedback", "base/samples/RigidBodyState").doc("Feedback term of the controller.")
 
-   output_port("ctrlOutput", "base/samples/RigidBodyState").doc("Control output.")
+   output_port("controlOutput", "base/samples/RigidBodyState").doc("Control output as velocity.")
 
    periodic 0.01
 end
 
 #
 # Implementation of RadialPotentialFields in joint space. Each joint will have one 1-dimensional potential field.
-# See ctrl_lib/RadialPotentialField.hpp and ctrl_lib/MultiPotentialFields.hpp for details
+# See ctrl_lib/RadialPotentialField.hpp and ctrl_lib/MultiPotentialFields1D.hpp for details
 #
 task_context "JointRadialPotentialFields" do subclasses "ControllerTask"
    needs_configuration
 
-   property("maxInfluenceDistance", "base/VectorXd"            ).doc("Maximum influence distance of the potential fields oer joint. For N joints, this vector has to have size N.")
-   property("order",                "double", 1                ).doc("Order of the potential field. If M = 0 y = const, if M = 1, grad ~ 1/d. If M = 2, grad ~ 1/d^2 and so on.")
-   property("potFieldCenters",      "std/vector<base/VectorXd>").doc("Initial center of the potential fields. For N joints this has to have size NxM, where M can be 1 or 2.")
-   property("jointNames",           "std/vector<std/string>"   ).doc("Joints used by this controller (in this order).")
+   property("maxInfluenceDistance", "base/VectorXd"          ).doc("Maximum influence distance of the potential fields oer joint. For N joints, this vector has to have size N.")
+   property("order",                "double", 1              ).doc("Order of the potential field. If M = 0 controlOutput = const, if M = 1, controlOutput ~ 1/d. If M = 2, controlOutput ~ 1/d^2 and so on.")
+   property("potFieldCenters",      "base/VectorXd"          ).doc("Initial center of the potential fields. For N joints this has to have size N.")
+   property("jointNames",           "std/vector<std/string>" ).doc("Joints used by this controller (ctrlOutput will be in this order).")
 
    input_port("setpoint", "base/commands/Joints").doc("Setpoint of the controller. In this case interpreted as new centers of the potential fields.")
    input_port("feedback", "base/samples/Joints" ).doc("Feedback term of the controller.")
      
-   output_port("ctrlOutput", "base/commands/Joints").doc("Control output as velocity. Value will be NaN if outside influence distance of potential field.")
+   output_port("controlOutput", "base/commands/Joints").doc("Control output as velocity.")
 
    periodic 0.01   
 end
@@ -83,13 +83,13 @@ task_context "CartesianRadialPotentialFields" do subclasses "ControllerTask"
    needs_configuration
 
    property("maxInfluenceDistance", "base/VectorXd"            ).doc("Maximum influence distance of the potential fields. For N fields, this vector has to have size N!")
-   property("order",                "double", 1                ).doc("Order of the potential field. If M = 0 y = const, if M = 1, grad ~ 1/d. If M = 2, grad ~ 1/d^2 and so on.")
+   property("order",                "double", 1                ).doc("Order of the potential field. If M = 0 controlOutput = const, if M = 1, controlOutput ~ 1/d. If M = 2, controlOutput ~ 1/d^2 and so on.")
    property("potFieldCenters",      "std/vector<base/VectorXd>").doc("Initial centers of the potential fields. For N fields, this has to have size Nx3")
 
    input_port("setpoint", "std/vector<base/samples/RigidBodyState>").doc("Setpoint of the controller. In this case interpreted as new centers of the potential fields.")
-   input_port("feedback", "base/samples/RigidBodyState"            ).doc("Feedback term of the controller.")
+   input_port("feedback", "base/samples/RigidBodyState"            ).doc("Feedback term of the controller. Actual pose of the controlled frame.")
 
-   output_port("ctrlOutput", "base/samples/RigidBodyState").doc("Control output.")
+   output_port("controlOutput", "base/samples/RigidBodyState").doc("Control output as velocity.")
 
    periodic 0.01
 end

@@ -17,6 +17,7 @@ CartesianPositionController::~CartesianPositionController(){
 }
 
 bool CartesianPositionController::configureHook(){
+    //Cartesian position controller will have 6 dimensions
     controller = new PositionControlFeedForward(6);
 
     if (! CartesianPositionControllerBase::configureHook())
@@ -51,7 +52,8 @@ bool CartesianPositionController::readFeedback(){
         // cannot deal with full poses
         xr.segment(0,3) = setpoint.position - feedback.position;
         xr.segment(3,3) = orientationError.axis()* orientationError.angle();
-        x.resize(6,0.0);
+        x.resize(6);
+        x.setZero();
         return true;
     }
 }
@@ -59,7 +61,8 @@ bool CartesianPositionController::readFeedback(){
 void CartesianPositionController::writeControlOutput(const Eigen::VectorXd &y){
     controlOutput.velocity = y.segment(0,3);
     controlOutput.angular_velocity = y.segment(3,3);
-    _ctrlOutput.write(controlOutput);
+    controlOutput.time = base::Time::now();
+    _controlOutput.write(controlOutput);
 }
 
 void CartesianPositionController::updateHook(){

@@ -56,7 +56,8 @@ bool JointPositionController::readFeedback(){
 void JointPositionController::writeControlOutput(const Eigen::VectorXd &y){
     for(size_t i = 0; i < jointNames.size(); i++)
         controlOutput[i].speed = y(i);
-    _ctrlOutput.write(controlOutput);
+    controlOutput.time = base::Time::now();
+    _controlOutput.write(controlOutput);
 }
 
 void JointPositionController::updateHook(){

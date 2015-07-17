@@ -71,7 +71,8 @@ bool CartesianRadialPotentialFields::readFeedback(){
 void CartesianRadialPotentialFields::writeControlOutput(const Eigen::VectorXd &y){
     for(uint i = 0; i < 3; i++)
         controlOutput.velocity(i) = y(i);
-    _ctrlOutput.write(controlOutput);
+    controlOutput.time = base::Time::now();
+    _controlOutput.write(controlOutput);
 }
 
 void CartesianRadialPotentialFields::updateHook(){

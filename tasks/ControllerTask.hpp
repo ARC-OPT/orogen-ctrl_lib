@@ -4,9 +4,10 @@
 #define CTRL_LIB_CONTROLLERTASK_TASK_HPP
 
 #include "ctrl_lib/ControllerTaskBase.hpp"
-#include <ctrl_lib/Controller.hpp>
 
 namespace ctrl_lib {
+
+class Controller;
 
 /*! \class ControllerTask
      * \brief The task context provides and requires services. It uses an ExecutionEngine to perform its functions.
@@ -31,17 +32,14 @@ protected:
 
     Controller* controller;
 
+    /** Implement in base class. Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
     virtual bool readSetpoints() = 0;
+    /** Implement in base class. Read all feedback value of the controller. Return false if there is no feedback, true otherwise */
     virtual bool readFeedback() = 0;
+    /** Write the output of the controller to a port */
     virtual void writeControlOutput(const Eigen::VectorXd &y) = 0;
 
-    Eigen::VectorXd y;
-
-    /** This computes the twist that rotates and translates a frame with poseA onto a frame with poseB*/
-    void diff(const base::samples::RigidBodyState poseA, const base::samples::RigidBodyState poseB, Eigen::VectorXd& twist){
-
-    }
-
+    Eigen::VectorXd y; /** Control output */
 
 public:
     ControllerTask(std::string const& name = "ctrl_lib::ControllerTask");

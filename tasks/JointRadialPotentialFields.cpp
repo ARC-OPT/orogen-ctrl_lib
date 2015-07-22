@@ -23,20 +23,33 @@ bool JointRadialPotentialFields::configureHook(){
     base::VectorXd maxInfluenceDistance = _maxInfluenceDistance.get();
     base::VectorXd potFieldCenters = _potFieldCenters.get();
 
-    assert(jointNames.size() == maxInfluenceDistance.size());
-    assert(jointNames.size() == potFieldCenters.size());
+    if(potFieldCenters.size() != jointNames.size()){
+        LOG_ERROR("potFieldCenters vector must have same lenght as jointNames vector");
+        return false;
+    }
+    // If maximum influence distance is not set, the default (inf) will be used in the potential field. So
+    // also check here whether size is zero
+    if(maxInfluenceDistance.size() != 0 && maxInfluenceDistance.size() != jointNames.size()){
+        LOG_ERROR("maxInfluenceDistance vector must have same length as jointNames vector");
+        return false;
+    }
 
+    controlOutput.resize(jointNames.size());
+    controlOutput.names = jointNames;
+
+    // Create a single 1-dimensional potential field per joint:
     std::vector<PotentialField*> multiFields;
     for(size_t i = 0; i < jointNames.size(); i++)
     {
-        assert(potFieldCenters[i].size() == 1);
-        RadialRepulsivePotentialField* field = new RadialRepulsivePotentialField(jointNames.size());
-        field->dMax = maxInfluenceDistance(i);
+        RadialRepulsivePotentialField* field = new RadialRepulsivePotentialField(1);
+        if(maxInfluenceDistance.size() != 0) // Only set maxInfluenceDistance if a value has been configured, otherwise default (inf) will be used
+            field->dMax = maxInfluenceDistance(i);
         field->x0.resize(1);
         field->x0(0) = potFieldCenters(i);
         field->M = _order.get();
         multiFields.push_back(field);
     }
+    // The Controller contains all potential fields:
     controller = new MultiPotentialFields1D(multiFields, jointNames.size());
 
     if (! JointRadialPotentialFieldsBase::configureHook())
@@ -52,16 +65,16 @@ bool JointRadialPotentialFields::startHook(){
 }
 
 bool JointRadialPotentialFields::readSetpoints(){
-    if(_setpoint.read(setpoint) == RTT::NoData)
-        return false;
-    else{
+    if(_setpoint.readNewest(setpoint) == RTT::NewData){
         extractPositions(setpoint, jointNames, positions);
         MultiPotentialFields1D* multiFieldCtrl = (MultiPotentialFields1D*)controller;
 
-        for(size_t i = 0; i < jointNames.size(); i++)
+        for(size_t i = 0; i < jointNames.size(); i++){
+            multiFieldCtrl->fields[i]->x0.resize(1);
             multiFieldCtrl->fields[i]->x0(0) = positions(i);
-        return true;
+        }
     }
+    return true; //Always return true here, since we don't necessarily need a setpoint (could be fixed by configuration)
 }
 
 bool JointRadialPotentialFields::readFeedback(){
@@ -71,8 +84,10 @@ bool JointRadialPotentialFields::readFeedback(){
         extractPositions(feedback, jointNames, positions);
         MultiPotentialFields1D* multiFieldCtrl = (MultiPotentialFields1D*)controller;
 
-        for(size_t i = 0; i < jointNames.size(); i++)
+        for(size_t i = 0; i < jointNames.size(); i++){
+            multiFieldCtrl->fields[i]->x.resize(1);
             multiFieldCtrl->fields[i]->x(0) = positions(i);
+        }
         return true;
     }
 }

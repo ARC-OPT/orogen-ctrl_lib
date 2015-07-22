@@ -90,6 +90,7 @@ task_context "CartesianRadialPotentialFields" do subclasses "ControllerTask"
    input_port("feedback", "base/samples/RigidBodyState"            ).doc("Feedback term of the controller. Actual pose of the controlled frame.")
 
    output_port("controlOutput", "base/samples/RigidBodyState").doc("Control output as velocity.")
+   output_port("gradients", "std/vector<base/VectorXd>").doc("Debug output: Gradient for each of the potential fields")
 
    periodic 0.01
 end

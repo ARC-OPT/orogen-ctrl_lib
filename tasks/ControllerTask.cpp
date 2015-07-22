@@ -25,8 +25,10 @@ bool ControllerTask::configureHook()
         return false;
 
     controller->kp = _propGain.get();
-    controller->yMax = _maxControlOutput.get();
-    controller->eMin = _deadZone.get();
+    if(_maxControlOutput.get().size() != 0)
+        controller->yMax = _maxControlOutput.get();
+    if(_deadZone.get().size() != 0)
+        controller->eMin = _deadZone.get();
 
     return true;
 }

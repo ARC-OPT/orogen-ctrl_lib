@@ -17,7 +17,7 @@ CartesianPositionController::~CartesianPositionController(){
 }
 
 bool CartesianPositionController::configureHook(){
-    //Cartesian position controller will have 6 dimensions
+    //Cartesian position controller will have 6 dimensions (x,y,z,rotX,rotY,rotZ)
     controller = new PositionControlFeedForward(6);
 
     if (! CartesianPositionControllerBase::configureHook())
@@ -32,24 +32,27 @@ bool CartesianPositionController::startHook(){
 }
 
 bool CartesianPositionController::readSetpoints(){
-    if(_setpoint.read(setpoint) == RTT::NoData)
+    if(_setpoint.readNewest(setpoint) == RTT::NoData)
         return false;
     else
         return true;
 }
 
 bool CartesianPositionController::readFeedback(){
-    if(_feedback.read(feedback) == RTT::NoData)
+    if(_feedback.readNewest(feedback) == RTT::NoData)
         return false;
     else{
         Eigen::VectorXd& xr = ((PositionControlFeedForward*)controller)->xr;
         Eigen::VectorXd& x = ((PositionControlFeedForward*)controller)->x;
 
-        // Compute orientation error using angle-axis representation
+        // Compute orientation error as quaternion
         orientationError = setpoint.orientation * feedback.orientation.inverse();
 
         // Set reference value to control error and actual value to zero, since the controller
-        // cannot deal with full poses
+        // cannot deal with full poses. Use angle-axis representation to compute the orientation-error
+        // as xyz-rotation, since the controller cannot deal with full poses. This will give the
+        // rotational velocity in 3D space that rotates the actual pose (feedback) onto the setpoint
+        xr.resize(6);
         xr.segment(0,3) = setpoint.position - feedback.position;
         xr.segment(3,3) = orientationError.axis()* orientationError.angle();
         x.resize(6);

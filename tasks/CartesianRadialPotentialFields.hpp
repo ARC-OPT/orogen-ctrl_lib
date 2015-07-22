@@ -32,6 +32,7 @@ protected:
 
     base::samples::RigidBodyState controlOutput, feedback;
     std::vector<base::samples::RigidBodyState> setpoint;
+    std::vector<base::VectorXd> gradients;
 
     virtual bool readSetpoints();
     virtual bool readFeedback();

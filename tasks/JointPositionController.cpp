@@ -35,7 +35,7 @@ bool JointPositionController::startHook(){
 }
 
 bool JointPositionController::readSetpoints(){
-    if(_setpoint.read(setpoint) == RTT::NoData)
+    if(_setpoint.readNewest(setpoint) == RTT::NoData)
         return false;
     else{
         extractPositions(setpoint, jointNames, ((PositionControlFeedForward*)controller)->xr);
@@ -45,7 +45,7 @@ bool JointPositionController::readSetpoints(){
 }
 
 bool JointPositionController::readFeedback(){
-    if(_feedback.read(feedback) == RTT::NoData)
+    if(_feedback.readNewest(feedback) == RTT::NoData)
         return false;
     else{
         extractPositions(feedback, jointNames, ((PositionControlFeedForward*)controller)->x);

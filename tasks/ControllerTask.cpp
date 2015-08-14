@@ -6,12 +6,14 @@
 using namespace ctrl_lib;
 
 ControllerTask::ControllerTask(std::string const& name)
-    : ControllerTaskBase(name)
+    : ControllerTaskBase(name),
+      controller(0)
 {
 }
 
 ControllerTask::ControllerTask(std::string const& name, RTT::ExecutionEngine* engine)
-    : ControllerTaskBase(name, engine)
+    : ControllerTaskBase(name, engine),
+      controller(0)
 {
 }
 

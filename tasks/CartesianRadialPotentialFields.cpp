@@ -20,59 +20,70 @@ CartesianRadialPotentialFields::~CartesianRadialPotentialFields(){
 
 bool CartesianRadialPotentialFields::configureHook(){
 
-    std::vector<base::VectorXd> potFieldCenters = _potFieldCenters.get();
-    Eigen::VectorXd maxInfluenceDistance = _maxInfluenceDistance.get();
+    std::vector<std::string> fieldNames = _fieldNames.get();
+    potFieldCenters = _potFieldCenters.get();
+    maxInfluenceDistance = _maxInfluenceDistance.get();
+    potFieldOrder = _order.get();
 
-    // If maximum influence distance is not set, the default (inf) will be used in the potential field. So,
-    // also check whether size is zero here
-    if(maxInfluenceDistance.size() != 0 && maxInfluenceDistance.size() != potFieldCenters.size()){
-        LOG_ERROR("maxInfluenceDistance vector must have same length as potFieldCenters vector");
+    if(fieldNames.size() != 3){
+        LOG_ERROR("Size of field name vector should be 3, but is %i", fieldNames.size());
         return false;
     }
 
     //Create potential fields. All fields will have dimension 3 here!
     std::vector<PotentialField*> multiFields;
     for(uint i = 0; i < potFieldCenters.size(); i++)
-    {
-        if(potFieldCenters[i].size() != 3){
-            LOG_ERROR("Dimension of all potential fields must be 3 for this controller");
-            return false;
-        }
-        RadialRepulsivePotentialField* field = new RadialRepulsivePotentialField(3);
+        multiFields.push_back(new RadialRepulsivePotentialField(3));
 
-        if(maxInfluenceDistance.size() != 0)  // Only set maxInfluenceDistance if a value has been configured, otherwise default (inf) will be used
-            field->dMax = maxInfluenceDistance(i);
-        field->x0 = potFieldCenters[i];
-        field->M = _order.get();
-        multiFields.push_back(field);
-    }
     // The Controller contains all potential fields:
     controller = new MultiPotentialFields(multiFields, 3);
+
+    setMaxInfluenceDistance(maxInfluenceDistance);
+    setOrder(potFieldOrder);
+    setPotentialFieldCenters(potFieldCenters);
 
     if (! CartesianRadialPotentialFieldsBase::configureHook())
         return false;
     return true;
 }
 
-bool CartesianRadialPotentialFields::startHook()
-{
+bool CartesianRadialPotentialFields::startHook(){
     if (! CartesianRadialPotentialFieldsBase::startHook())
         return false;
     return true;
 }
 
+void CartesianRadialPotentialFields::updateHook(){
+    CartesianRadialPotentialFieldsBase::updateHook();
+}
+
+void CartesianRadialPotentialFields::errorHook(){
+    CartesianRadialPotentialFieldsBase::errorHook();
+}
+
+void CartesianRadialPotentialFields::stopHook(){
+    CartesianRadialPotentialFieldsBase::stopHook();
+}
+
+void CartesianRadialPotentialFields::cleanupHook(){
+    MultiPotentialFields* multiFieldCtrl = (MultiPotentialFields*)controller;
+    for(size_t i = 0; i < multiFieldCtrl->fields.size(); i++)
+        delete multiFieldCtrl->fields[i];
+    delete controller;
+    controller = 0;
+    CartesianRadialPotentialFieldsBase::cleanupHook();
+}
+
 bool CartesianRadialPotentialFields::readSetpoints(){
-    if(_setpoint.readNewest(setpoint) == RTT::NewData){
+    if(_setpoint.readNewest(potFieldCenters) == RTT::NewData)
+        setPotentialFieldCenters(potFieldCenters);
 
-        MultiPotentialFields* multiFieldCtrl = (MultiPotentialFields*)controller;
-        if(setpoint.size() != multiFieldCtrl->fields.size()){
-            LOG_ERROR("Size of setpoint vector is %i, but this controller has %i potential fields", setpoint.size(), multiFieldCtrl->fields.size());
-            return false;
-        }
+    if(_newMaxInfluenceDistance.read(maxInfluenceDistance) == RTT::NewData)
+        setMaxInfluenceDistance(maxInfluenceDistance);
 
-        for(size_t i = 0; i < multiFieldCtrl->fields.size(); i++)
-            multiFieldCtrl->fields[i]->x0 = setpoint[i].position;
-    }
+    if(_newOrder.read(potFieldOrder) == RTT::NewData)
+        setOrder(potFieldOrder);
+
     return true; //Always return true here, since we don't necessarily need a setpoint (could be fixed by configuration)
 }
 
@@ -103,22 +114,42 @@ void CartesianRadialPotentialFields::writeControlOutput(const Eigen::VectorXd &y
     _controlOutput.write(controlOutput);
 }
 
-void CartesianRadialPotentialFields::updateHook(){
-    CartesianRadialPotentialFieldsBase::updateHook();
+void CartesianRadialPotentialFields::setMaxInfluenceDistance(const base::VectorXd& distance){
+
+    assert(controller != 0);
+
+    // If maximum influence distance is not set, the default (inf) will be used in the potential field. So,
+    // only do sth. if the size is not zero
+    if(distance.size() == 0){
+
+        MultiPotentialFields* multiFieldCtrl = (MultiPotentialFields*)controller;
+        if(distance.size() != (int)multiFieldCtrl->fields.size()){
+            LOG_ERROR("maxInfluenceDistance vector must have same length as number of potential fields");
+            throw std::invalid_argument("Invalid input");
+        }
+        for(size_t i = 0; i < multiFieldCtrl->fields.size(); i++)
+            multiFieldCtrl->fields[i]->dMax = distance(i);
+    }
 }
 
-void CartesianRadialPotentialFields::errorHook(){
-    CartesianRadialPotentialFieldsBase::errorHook();
-}
+void CartesianRadialPotentialFields::setOrder(const double order){
 
-void CartesianRadialPotentialFields::stopHook(){
-    CartesianRadialPotentialFieldsBase::stopHook();
-}
-
-void CartesianRadialPotentialFields::cleanupHook(){
+    assert(controller != 0);
     MultiPotentialFields* multiFieldCtrl = (MultiPotentialFields*)controller;
     for(size_t i = 0; i < multiFieldCtrl->fields.size(); i++)
-        delete multiFieldCtrl->fields[i];
-    delete controller;
-    CartesianRadialPotentialFieldsBase::cleanupHook();
+        multiFieldCtrl->fields[i]->M = order;
 }
+
+void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<base::samples::RigidBodyState> &centers){
+
+    assert(controller != 0);
+
+    MultiPotentialFields* multiFieldCtrl = (MultiPotentialFields*)controller;
+    if(centers.size() != multiFieldCtrl->fields.size()){
+        LOG_ERROR("Pot. Field Center vector must have same length as number of potential fields");
+        throw std::invalid_argument("Invalid input");
+    }
+    for(size_t i = 0; i < multiFieldCtrl->fields.size(); i++)
+        multiFieldCtrl->fields[i]->x0 = centers[i].position;
+}
+

@@ -31,12 +31,18 @@ class CartesianRadialPotentialFields : public CartesianRadialPotentialFieldsBase
 protected:
 
     base::samples::RigidBodyState controlOutput, feedback;
-    std::vector<base::samples::RigidBodyState> setpoint;
+    std::vector<base::samples::RigidBodyState> potFieldCenters;
     std::vector<base::VectorXd> gradients;
+    base::VectorXd maxInfluenceDistance;
+    double potFieldOrder;
 
     virtual bool readSetpoints();
     virtual bool readFeedback();
     virtual void writeControlOutput(const Eigen::VectorXd &y);
+
+    void setMaxInfluenceDistance(const base::VectorXd& maxInfluenceDistance);
+    void setOrder(const double order);
+    void setPotentialFieldCenters(const std::vector<base::samples::RigidBodyState> &centers);
 
 public:
     CartesianRadialPotentialFields(std::string const& name = "ctrl_lib::CartesianRadialPotentialFields");

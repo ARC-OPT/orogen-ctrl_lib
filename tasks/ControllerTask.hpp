@@ -40,6 +40,7 @@ protected:
     virtual void writeControlOutput(const Eigen::VectorXd &y) = 0;
 
     Eigen::VectorXd y; /** Control output */
+    std::vector<std::string> fieldNames;
 
 public:
     ControllerTask(std::string const& name = "ctrl_lib::ControllerTask");

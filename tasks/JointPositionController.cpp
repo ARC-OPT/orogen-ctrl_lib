@@ -17,7 +17,7 @@ JointPositionController::~JointPositionController(){
 }
 
 bool JointPositionController::configureHook(){
-    jointNames = _jointNames.get();
+    jointNames = _fieldNames.get();
     controller = new PositionControlFeedForward(jointNames.size());
     controlOutput.resize(jointNames.size());
     controlOutput.names = jointNames;

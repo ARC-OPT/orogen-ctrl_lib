@@ -2,6 +2,7 @@
 
 #include "CartesianPositionController.hpp"
 #include <ctrl_lib/PositionControlFeedForward.hpp>
+#include <base/Logging.hpp>
 
 using namespace ctrl_lib;
 
@@ -17,8 +18,14 @@ CartesianPositionController::~CartesianPositionController(){
 }
 
 bool CartesianPositionController::configureHook(){
-    //Cartesian position controller will have 6 dimensions (x,y,z,rotX,rotY,rotZ)
-    controller = new PositionControlFeedForward(6);
+    std::vector<std::string> fieldNames = _fieldNames.get();
+
+    //Cartesian position controller has to have 6 dimensions (x,y,z,rotX,rotY,rotZ)
+    if(fieldNames.size() != 6){
+        LOG_ERROR("Size of field name vector should be 6, but is %i", fieldNames.size());
+        return false;
+    }
+    controller = new PositionControlFeedForward(fieldNames.size());
 
     if (! CartesianPositionControllerBase::configureHook())
         return false;

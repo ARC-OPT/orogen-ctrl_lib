@@ -78,33 +78,42 @@ void CartForceCtrlSimple::updateHook()
 
     _kp_values.read(kp_);
 
-    if(!_wrench2controlled_in.get(base::Time::now(), ft2baseFrame_)){
+    if(_wrench_frame.get().compare(_controlled_in_frame.get()) == 0)
+        ft2baseFrame_kdl_ = KDL::Frame::Identity();
+    else{
+        if(!_wrench2controlled_in.get(base::Time::now(), ft2baseFrame_)){
 
-        if(state() != NO_FT_SENSOR_TRANSFORM)
-            state(NO_FT_SENSOR_TRANSFORM);
+                if(state() != NO_FT_SENSOR_TRANSFORM)
+                    state(NO_FT_SENSOR_TRANSFORM);
 
-        if((base::Time::now() - stamp_).toSeconds() > 2){
-            LOG_DEBUG("%s: Missing transform from force sensor to base frame", this->getName().c_str());
-            stamp_ = base::Time::now();
-        }
-        return;
+                if((base::Time::now() - stamp_).toSeconds() > 2){
+                    LOG_DEBUG("%s: Missing transform from force sensor to base frame", this->getName().c_str());
+                    stamp_ = base::Time::now();
+                }
+                return;
+            }
+            else
+                kdl_conversions::RigidBodyState2KDL(ft2baseFrame_, ft2baseFrame_kdl_);
     }
-    else
-        kdl_conversions::RigidBodyState2KDL(ft2baseFrame_, ft2baseFrame_kdl_);
 
-    if(!_wrench_ref2controlled_in.get(base::Time::now(), ref2baseFrame_)){
 
-        if(state() != NO_SETPOINT_TRANSFORM)
-            state(NO_SETPOINT_TRANSFORM);
+    if(_wrench_ref_frame.get().compare(_controlled_in_frame.get()) == 0)
+        ref2baseFrame_kdl_ = KDL::Frame::Identity();
+    else{
+        if(!_wrench_ref2controlled_in.get(base::Time::now(), ref2baseFrame_)){
 
-        if((base::Time::now() - stamp_).toSeconds() > 2){
-            LOG_DEBUG("%s: Missing transform from force sensor to base frame", this->getName().c_str());
-            stamp_ = base::Time::now();
+            if(state() != NO_SETPOINT_TRANSFORM)
+                state(NO_SETPOINT_TRANSFORM);
+
+            if((base::Time::now() - stamp_).toSeconds() > 2){
+                LOG_DEBUG("%s: Missing transform from force sensor to base frame", this->getName().c_str());
+                stamp_ = base::Time::now();
+            }
+            return;
         }
-        return;
+        else
+            kdl_conversions::RigidBodyState2KDL(ref2baseFrame_, ref2baseFrame_kdl_);
     }
-    else
-        kdl_conversions::RigidBodyState2KDL(ref2baseFrame_, ref2baseFrame_kdl_);
 
     state(RUNNING);
 

@@ -49,6 +49,8 @@ bool JointPositionController::readFeedback(){
         return false;
     else{
         extractPositions(feedback, jointNames, ((PositionControlFeedForward*)controller)->x);
+
+        _currentFeedback.write(feedback);
         return true;
     }
 }

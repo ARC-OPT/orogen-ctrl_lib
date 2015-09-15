@@ -35,10 +35,21 @@ bool CartesianPositionController::configureHook(){
 bool CartesianPositionController::startHook(){
     if (! CartesianPositionControllerBase::startHook())
         return false;
+
+    setpoint.invalidatePosition();
+    setpoint.invalidateOrientation();
+    setpoint.invalidateVelocity();
+
     return true;
 }
 
 bool CartesianPositionController::readSetpoints(){
+    _setpoint.readNewest(setpoint);
+    if(!setpoint.hasValidPosition() || !setpoint.hasValidOrientation())
+        return false;
+    else
+        return true;
+
     if(_setpoint.readNewest(setpoint) == RTT::NoData)
         return false;
     else
@@ -64,6 +75,8 @@ bool CartesianPositionController::readFeedback(){
         xr.segment(3,3) = orientationError.axis()* orientationError.angle();
         x.resize(6);
         x.setZero();
+
+        _currentFeedback.write(feedback);
         return true;
     }
 }

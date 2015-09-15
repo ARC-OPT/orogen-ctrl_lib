@@ -94,6 +94,8 @@ bool CartesianRadialPotentialFields::readFeedback(){
         MultiPotentialFields* multiFieldCtrl = (MultiPotentialFields*)controller;
         for(size_t i = 0; i < multiFieldCtrl->fields.size(); i++)
             multiFieldCtrl->fields[i]->x = feedback.position;
+
+        _currentFeedback.write(feedback);
         return true;
     }
 }

@@ -110,6 +110,8 @@ bool JointRadialPotentialFields::readFeedback(){
 
             multiFieldCtrl->fields[i]->x.resize(1);
             multiFieldCtrl->fields[i]->x(0) = cmd.position;
+
+            _currentFeedback.write(feedback);
         }
         return true;
     }
@@ -129,7 +131,7 @@ void JointRadialPotentialFields::setMaxInfluenceDistance(const base::VectorXd &d
 
     // If maximum influence distance is not set, the default (inf) will be used in the potential field. So,
     // only do sth. if the size is not zero
-    if(distance.size() == 0){
+    if(distance.size() != 0){
 
         MultiPotentialFields1D* multiFieldCtrl = (MultiPotentialFields1D*)controller;
         if(distance.size() != (int)multiFieldCtrl->fields.size()){

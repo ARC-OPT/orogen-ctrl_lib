@@ -45,9 +45,13 @@ void ControllerTask::updateHook()
 {
     ControllerTaskBase::updateHook();
 
-    _newPropGain.read((base::VectorXd&)controller->kp);
-    _newMaxControlOutput.read((base::VectorXd&)controller->yMax);
-    _newDeadZone.read((base::VectorXd&)controller->eMin);
+    _newPropGain.readNewest((base::VectorXd&)controller->kp);
+    _newMaxControlOutput.readNewest((base::VectorXd&)controller->yMax);
+    _newDeadZone.readNewest((base::VectorXd&)controller->eMin);
+
+    _currentPropGain.write(controller->kp);
+    _currentDeadZone.write(controller->eMin);
+    _currentMaxControlOutput.write(controller->yMax);
 
     if(!readSetpoints()){
         if(state() != NO_SETPOINT)
@@ -62,8 +66,10 @@ void ControllerTask::updateHook()
             state(RUNNING);
 
         controller->update(y);
+
         _controlError.write(controller->e);
         _controlOutputRaw.write(y);
+
         writeControlOutput(y);
     }
 }

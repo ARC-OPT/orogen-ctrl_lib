@@ -20,8 +20,11 @@ task_context "ControllerTask" do abstract
    input_port("newMaxControlOutput", "base/VectorXd").doc("Set new maximum control output here.")
    input_port("newDeadZone",         "base/VectorXd").doc("Set new dead zone here.")
 
-   output_port("controlError",     "base/VectorXd").doc("Current control error")
-   output_port("controlOutputRaw", "base/VectorXd").doc("Raw control output")
+   output_port("currentPropGain",         "base/VectorXd").doc("Current proportional gain used")
+   output_port("currentMaxControlOutput", "base/VectorXd").doc("Current max ctrl output gain used")
+   output_port("currentDeadZone",         "base/VectorXd").doc("Current dead zone used")
+   output_port("controlError",            "base/VectorXd").doc("Current control error")
+   output_port("controlOutputRaw",        "base/VectorXd").doc("Raw control output")
 
    periodic 0.01
 end
@@ -35,7 +38,8 @@ task_context "JointPositionController" do subclasses "ControllerTask"
    input_port("setpoint", "base/commands/Joints"  ).doc("Setpoint of the controller. Joints will be mapped internally.")
    input_port("feedback", "base/samples/Joints"   ).doc("Feedback term of the controller.")
 
-   output_port("controlOutput", "base/commands/Joints").doc("Control output as velocity.")
+   output_port("controlOutput",   "base/commands/Joints").doc("Control output as velocity.")
+   output_port("currentFeedback", "base/samples/Joints" ).doc("Current feedback term.")
 
    periodic 0.01
 end
@@ -49,7 +53,8 @@ task_context "CartesianPositionController" do subclasses "ControllerTask"
    input_port("setpoint", "base/samples/RigidBodyState").doc("Setpoint of the controller.")
    input_port("feedback", "base/samples/RigidBodyState").doc("Feedback term of the controller.")
 
-   output_port("controlOutput", "base/samples/RigidBodyState").doc("Control output as velocity.")
+   output_port("controlOutput",   "base/samples/RigidBodyState" ).doc("Control output as velocity.")
+   output_port("currentFeedback", "base/samples/RigidBodyState" ).doc("Current feedback term.")
 
    periodic 0.01
 end
@@ -70,7 +75,8 @@ task_context "JointRadialPotentialFields" do subclasses "ControllerTask"
    input_port("setpoint",                "base/commands/Joints").doc("Setpoint of the controller. In this case interpreted as new centers of the potential fields.")
    input_port("feedback",                "base/samples/Joints" ).doc("Feedback term of the controller.")
      
-   output_port("controlOutput", "base/commands/Joints").doc("Control output as velocity.")
+   output_port("controlOutput",   "base/commands/Joints").doc("Control output as velocity.")
+   output_port("currentFeedback", "base/samples/Joints" ).doc("Current feedback term.")
 
    periodic 0.01   
 end
@@ -91,8 +97,9 @@ task_context "CartesianRadialPotentialFields" do subclasses "ControllerTask"
    input_port("setpoint",                "std/vector<base/samples/RigidBodyState>").doc("Setpoint of the controller. In this case interpreted as new centers of the potential fields.")
    input_port("feedback",                "base/samples/RigidBodyState"            ).doc("Feedback term of the controller. Actual pose of the controlled frame.")
 
-   output_port("controlOutput", "base/samples/RigidBodyState").doc("Control output as velocity.")
-   output_port("gradients", "std/vector<base/VectorXd>").doc("Debug output: Gradient for each of the potential fields")
+   output_port("controlOutput",   "base/samples/RigidBodyState" ).doc("Control output as velocity.")
+   output_port("gradients",       "std/vector<base/VectorXd>"   ).doc("Debug output: Gradient for each of the potential fields")
+   output_port("currentFeedback", "base/samples/RigidBodyState" ).doc("Current feedback term.")
 
    periodic 0.01
 end

@@ -19,25 +19,25 @@ JointRadialPotentialFields::~JointRadialPotentialFields(){
 
 bool JointRadialPotentialFields::configureHook(){
 
-    jointNames = _fieldNames.get();
-    maxInfluenceDistance = _maxInfluenceDistance.get();
-    potFieldCenters = _potFieldCenters.get();
-    potFieldOrder = _order.get();
+    field_names = _field_names.get();
+    influence_distance = _initial_influence_distance.get();
+    pot_field_centers = _pot_field_centers.get();
+    order = _order.get();
 
     // Create a single 1-dimensional potential field per joint:
     std::vector<PotentialField*> multiFields;
-    for(size_t i = 0; i < jointNames.size(); i++)
+    for(size_t i = 0; i < field_names.size(); i++)
         multiFields.push_back(new RadialRepulsivePotentialField(1));
 
     // The Controller contains all potential fields:
-    controller = new MultiPotentialFields1D(multiFields, jointNames.size());
+    controller = new MultiPotentialFields1D(multiFields, field_names.size());
 
-    setMaxInfluenceDistance(maxInfluenceDistance);
-    setPotFieldCenters(potFieldCenters);
-    setOrder(potFieldOrder);
+    setMaxInfluenceDistance(influence_distance);
+    setPotFieldCenters(pot_field_centers);
+    setOrder(order);
 
-    controlOutput.resize(jointNames.size());
-    controlOutput.names = jointNames;
+    control_output.resize(field_names.size());
+    control_output.names = field_names;
 
     if (! JointRadialPotentialFieldsBase::configureHook())
         return false;
@@ -76,14 +76,11 @@ void JointRadialPotentialFields::cleanupHook(){
 
 bool JointRadialPotentialFields::readSetpoints(){
 
-    if(_setpoint.readNewest(potFieldCenters) == RTT::NewData)
-        setPotFieldCenters(potFieldCenters);
+    if(_setpoint.readNewest(pot_field_centers) == RTT::NewData)
+        setPotFieldCenters(pot_field_centers);
 
-    if(_newMaxInfluenceDistance.read(maxInfluenceDistance) == RTT::NewData)
-        setMaxInfluenceDistance(maxInfluenceDistance);
-
-    if(_newOrder.read(potFieldOrder) == RTT::NewData)
-        setOrder(potFieldOrder);
+    if(_influence_distance.read(influence_distance) == RTT::NewData)
+        setMaxInfluenceDistance(influence_distance);
 
     return true; //Always return true here, since we don't necessarily need a setpoint (could be fixed by configuration)
 }
@@ -94,35 +91,40 @@ bool JointRadialPotentialFields::readFeedback(){
         return false;
     else{
         MultiPotentialFields1D* multiFieldCtrl = (MultiPotentialFields1D*)controller;
-        base::JointState cmd;
-        for(size_t i = 0; i < jointNames.size(); i++){
+        base::JointState status;
+        multiFieldCtrl->feedback.resize(field_names.size());
+        for(size_t i = 0; i < field_names.size(); i++){
             try{
-                cmd = feedback.getElementByName(jointNames[i]);
-                if(!cmd.hasPosition()){ //Throw here, since we always need valid positions for this controller
-                    LOG_ERROR("Element %s has no valid position value!", jointNames[i].c_str());
+                status = feedback.getElementByName(field_names[i]);
+                if(!status.hasPosition()){ //Throw here, since we always need valid positions for this controller
+                    LOG_ERROR("Element %s has no valid position value!", field_names[i].c_str());
                     throw std::invalid_argument("Invalid position value");
                 }
             }
             catch(std::exception e){
-                LOG_ERROR("Feedback vector does not contain element %s", jointNames[i].c_str());
+                LOG_ERROR("Feedback vector does not contain element %s", field_names[i].c_str());
                 throw e;
             }
 
-            multiFieldCtrl->fields[i]->x.resize(1);
-            multiFieldCtrl->fields[i]->x(0) = cmd.position;
-
-            _currentFeedback.write(feedback);
+            multiFieldCtrl->feedback(i) = status.position;
         }
         return true;
     }
 }
 
-void JointRadialPotentialFields::writeControlOutput(const Eigen::VectorXd &y){
-    for(size_t i = 0; i < jointNames.size(); i++){
-        controlOutput[i].speed = y(i);
+void JointRadialPotentialFields::writeControlOutput(const Eigen::VectorXd &ctrl_output_raw){
+    for(size_t i = 0; i < field_names.size(); i++){
+        control_output[i].speed = ctrl_output_raw(i);
     }
-    controlOutput.time = base::Time::now();
-    _controlOutput.write(controlOutput);
+    //Write gradients of all potential fields on debug port
+    MultiPotentialFields1D* multiFieldCtrl = (MultiPotentialFields1D*)controller;
+    gradients.resize(multiFieldCtrl->fields.size());
+    for(size_t i = 0; i < multiFieldCtrl->fields.size(); i++)
+        gradients[i] = multiFieldCtrl->gradients[i];
+    _gradients.write(gradients);
+
+    control_output.time = base::Time::now();
+    _control_output.write(control_output);
 }
 
 void JointRadialPotentialFields::setMaxInfluenceDistance(const base::VectorXd &distance){
@@ -139,7 +141,7 @@ void JointRadialPotentialFields::setMaxInfluenceDistance(const base::VectorXd &d
             throw std::invalid_argument("Invalid input");
         }
         for(size_t i = 0; i < multiFieldCtrl->fields.size(); i++)
-            multiFieldCtrl->fields[i]->dMax = distance(i);
+            multiFieldCtrl->fields[i]->influence_distance = distance(i);
     }
 }
 
@@ -152,10 +154,8 @@ void JointRadialPotentialFields::setPotFieldCenters(const base::commands::Joints
         LOG_ERROR("Pot. Field Center vector must have same length as number of potential fields");
         throw std::invalid_argument("Invalid input");
     }
-    for(size_t i = 0; i < multiFieldCtrl->fields.size(); i++){
-        multiFieldCtrl->fields[i]->x0.resize(1);
-        multiFieldCtrl->fields[i]->x0(0) = centers[i].position;
-    }
+    for(size_t i = 0; i < multiFieldCtrl->fields.size(); i++)
+        multiFieldCtrl->setpoint[i] = centers[i].position;
 }
 
 void JointRadialPotentialFields::setOrder(const double order){
@@ -163,5 +163,5 @@ void JointRadialPotentialFields::setOrder(const double order){
     assert(controller != 0);
     MultiPotentialFields1D* multiFieldCtrl = (MultiPotentialFields1D*)controller;
     for(size_t i = 0; i < multiFieldCtrl->fields.size(); i++)
-        multiFieldCtrl->fields[i]->M = order;
+        multiFieldCtrl->fields[i]->order = order;
 }

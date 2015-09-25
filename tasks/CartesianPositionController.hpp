@@ -29,13 +29,13 @@ class CartesianPositionController : public CartesianPositionControllerBase
     friend class CartesianPositionControllerBase;
 protected:
 
-    std::vector<std::string> jointNames;
-    base::samples::RigidBodyState setpoint, controlOutput, feedback;
-    Eigen::AngleAxisd orientationError;
+    std::vector<std::string> joint_names;
+    base::samples::RigidBodyState setpoint, control_output, feedback;
+    Eigen::AngleAxisd orientation_error;
 
     virtual bool readSetpoints();
     virtual bool readFeedback();
-    virtual void writeControlOutput(const Eigen::VectorXd &y);
+    virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw);
 
 public:
     CartesianPositionController(std::string const& name = "ctrl_lib::CartesianPositionController");

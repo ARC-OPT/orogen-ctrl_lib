@@ -30,13 +30,12 @@ class JointPositionController : public JointPositionControllerBase
     friend class JointPositionControllerBase;
 protected:
 
-    std::vector<std::string> jointNames;
-    base::commands::Joints setpoint, controlOutput;
+    base::commands::Joints setpoint, control_output;
     base::samples::Joints feedback;
 
     virtual bool readSetpoints();
     virtual bool readFeedback();
-    virtual void writeControlOutput(const Eigen::VectorXd &y);
+    virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw);
 
     inline void extractPositions(const base::commands::Joints &command, const std::vector<std::string> jointNames, Eigen::VectorXd& positions){
         positions.resize(jointNames.size());

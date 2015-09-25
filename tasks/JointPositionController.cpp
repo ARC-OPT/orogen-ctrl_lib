@@ -17,10 +17,11 @@ JointPositionController::~JointPositionController(){
 }
 
 bool JointPositionController::configureHook(){
-    jointNames = _fieldNames.get();
-    controller = new PositionControlFeedForward(jointNames.size());
-    controlOutput.resize(jointNames.size());
-    controlOutput.names = jointNames;
+
+    field_names = _field_names.get();
+    controller = new PositionControlFeedForward(field_names.size());
+    control_output.resize(field_names.size());
+    control_output.names = field_names;
 
     if (! JointPositionControllerBase::configureHook())
         return false;
@@ -38,8 +39,8 @@ bool JointPositionController::readSetpoints(){
     if(_setpoint.readNewest(setpoint) == RTT::NoData)
         return false;
     else{
-        extractPositions(setpoint, jointNames, ((PositionControlFeedForward*)controller)->xr);
-        extractSpeeds(setpoint, jointNames, ((PositionControlFeedForward*)controller)->vr);
+        extractPositions(setpoint, field_names, controller->setpoint);
+        extractSpeeds(setpoint, field_names, ((PositionControlFeedForward*)controller)->feed_forward_vel);
         return true;
     }
 }
@@ -48,18 +49,16 @@ bool JointPositionController::readFeedback(){
     if(_feedback.readNewest(feedback) == RTT::NoData)
         return false;
     else{
-        extractPositions(feedback, jointNames, ((PositionControlFeedForward*)controller)->x);
-
-        _currentFeedback.write(feedback);
+        extractPositions(feedback, field_names, controller->feedback);
         return true;
     }
 }
 
-void JointPositionController::writeControlOutput(const Eigen::VectorXd &y){
-    for(size_t i = 0; i < jointNames.size(); i++)
-        controlOutput[i].speed = y(i);
-    controlOutput.time = base::Time::now();
-    _controlOutput.write(controlOutput);
+void JointPositionController::writeControlOutput(const Eigen::VectorXd &ctrl_output_raw){
+    for(size_t i = 0; i < field_names.size(); i++)
+        control_output[i].speed = ctrl_output_raw(i);
+    control_output.time = base::Time::now();
+    _control_output.write(control_output);
 }
 
 void JointPositionController::updateHook(){

@@ -2,6 +2,7 @@
 
 #include "ControllerTask.hpp"
 #include <ctrl_lib/Controller.hpp>
+#include <base/Logging.hpp>
 
 using namespace ctrl_lib;
 
@@ -26,11 +27,28 @@ bool ControllerTask::configureHook()
     if (! ControllerTaskBase::configureHook())
         return false;
 
-    controller->kp = _propGain.get();
-    if(_maxControlOutput.get().size() != 0)
-        controller->yMax = _maxControlOutput.get();
-    if(_deadZone.get().size() != 0)
-        controller->eMin = _deadZone.get();
+    field_names = _field_names.get();
+    controller->prop_gain = _initial_prop_gain.get();
+    if(controller->prop_gain.size() != field_names.size()){
+        LOG_ERROR("%s: Initial proportional Gain should have size %i, but has size %i",
+                  this->getName().c_str(), field_names.size(), controller->prop_gain.size());
+        return false;
+    }
+
+    controller->max_control_output = _initial_max_control_output.get();
+    if(controller->max_control_output.size() != field_names.size()){
+        LOG_ERROR("%s: Initial max control output should have size %i, but has size %i",
+                  this->getName().c_str(), field_names.size(), controller->max_control_output.size());
+        return false;
+    }
+
+    controller->dead_zone = _initial_dead_zone.get();
+    if(controller->dead_zone.size() != field_names.size()){
+        LOG_ERROR("%s: Initial dead zone should have size %i, but has size %i",
+                  this->getName().c_str(), field_names.size(), controller->dead_zone.size());
+        return false;
+    }
+
 
     return true;
 }
@@ -45,33 +63,37 @@ void ControllerTask::updateHook()
 {
     ControllerTaskBase::updateHook();
 
-    _newPropGain.readNewest((base::VectorXd&)controller->kp);
-    _newMaxControlOutput.readNewest((base::VectorXd&)controller->yMax);
-    _newDeadZone.readNewest((base::VectorXd&)controller->eMin);
+    _prop_gain.readNewest((base::VectorXd&)controller->prop_gain);
+    _max_control_output.readNewest((base::VectorXd&)controller->max_control_output);
+    _dead_zone.readNewest((base::VectorXd&)controller->dead_zone);
 
-    _currentPropGain.write(controller->kp);
-    _currentDeadZone.write(controller->eMin);
-    _currentMaxControlOutput.write(controller->yMax);
+    _current_prop_gain.write(controller->prop_gain);
+    _current_max_control_output.write(controller->max_control_output);
+    _current_dead_zone.write(controller->dead_zone);
+
+    if(!readFeedback()){
+        if(state() != NO_FEEDBACK)
+            state(NO_FEEDBACK);
+        return;
+    }
+    else
+        _current_feedback.write(controller->feedback);
 
     if(!readSetpoints()){
         if(state() != NO_SETPOINT)
             state(NO_SETPOINT);
+        return;
     }
-    else if(!readFeedback()){
-        if(state() != NO_FEEDBACK)
-            state(NO_FEEDBACK);
-    }
-    else{
-        if(state() != RUNNING)
-            state(RUNNING);
 
-        controller->update(y);
+    if(state() != RUNNING)
+        state(RUNNING);
 
-        _controlError.write(controller->e);
-        _controlOutputRaw.write(y);
+    controller->update(control_output);
 
-        writeControlOutput(y);
-    }
+    _current_setpoint.write(controller->setpoint);
+    _current_control_error.write(controller->control_error);
+
+    writeControlOutput(control_output);
 }
 void ControllerTask::errorHook()
 {

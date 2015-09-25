@@ -20,30 +20,31 @@ CartesianRadialPotentialFields::~CartesianRadialPotentialFields(){
 
 bool CartesianRadialPotentialFields::configureHook(){
 
-    std::vector<std::string> fieldNames = _fieldNames.get();
-    potFieldCenters = _potFieldCenters.get();
-    maxInfluenceDistance = _maxInfluenceDistance.get();
-    potFieldOrder = _order.get();
-
-    if(fieldNames.size() != 3){
-        LOG_ERROR("Size of field name vector should be 3, but is %i", fieldNames.size());
+    field_names = _field_names.get();
+    if(field_names.size() != 3){
+        LOG_ERROR("Size of field name vector should be 3, but is %i", field_names.size());
         return false;
     }
 
+    pot_field_centers = _pot_field_centers.get();
+    influence_distance = _initial_influence_distance.get();
+    order = _order.get();
+
     //Create potential fields. All fields will have dimension 3 here!
     std::vector<PotentialField*> multiFields;
-    for(uint i = 0; i < potFieldCenters.size(); i++)
+    for(uint i = 0; i < pot_field_centers.size(); i++)
         multiFields.push_back(new RadialRepulsivePotentialField(3));
 
     // The Controller contains all potential fields:
     controller = new MultiPotentialFields(multiFields, 3);
 
-    setMaxInfluenceDistance(maxInfluenceDistance);
-    setOrder(potFieldOrder);
-    setPotentialFieldCenters(potFieldCenters);
+    setMaxInfluenceDistance(influence_distance);
+    setOrder(order);
+    setPotentialFieldCenters(pot_field_centers);
 
     if (! CartesianRadialPotentialFieldsBase::configureHook())
         return false;
+
     return true;
 }
 
@@ -75,14 +76,11 @@ void CartesianRadialPotentialFields::cleanupHook(){
 }
 
 bool CartesianRadialPotentialFields::readSetpoints(){
-    if(_setpoint.readNewest(potFieldCenters) == RTT::NewData)
-        setPotentialFieldCenters(potFieldCenters);
+    if(_setpoint.readNewest(pot_field_centers) == RTT::NewData)
+        setPotentialFieldCenters(pot_field_centers);
 
-    if(_newMaxInfluenceDistance.read(maxInfluenceDistance) == RTT::NewData)
-        setMaxInfluenceDistance(maxInfluenceDistance);
-
-    if(_newOrder.read(potFieldOrder) == RTT::NewData)
-        setOrder(potFieldOrder);
+    if(_influence_distance.read(influence_distance) == RTT::NewData)
+        setMaxInfluenceDistance(influence_distance);
 
     return true; //Always return true here, since we don't necessarily need a setpoint (could be fixed by configuration)
 }
@@ -91,19 +89,16 @@ bool CartesianRadialPotentialFields::readFeedback(){
     if(_feedback.read(feedback) == RTT::NoData)
         return false;
     else{
-        MultiPotentialFields* multiFieldCtrl = (MultiPotentialFields*)controller;
-        for(size_t i = 0; i < multiFieldCtrl->fields.size(); i++)
-            multiFieldCtrl->fields[i]->x = feedback.position;
-
-        _currentFeedback.write(feedback);
+        for(size_t i = 0; i < controller->dimension; i++)
+            controller->feedback = feedback.position;
         return true;
     }
 }
 
-void CartesianRadialPotentialFields::writeControlOutput(const Eigen::VectorXd &y){
+void CartesianRadialPotentialFields::writeControlOutput(const Eigen::VectorXd &ctrl_output_raw){
     //Control output will only have linear components, since radial fields cannot generate rotational components
     for(uint i = 0; i < 3; i++)
-        controlOutput.velocity(i) = y(i);
+        control_output.velocity(i) = ctrl_output_raw(i);
 
     //Write gradients of all potential fields on debug port
     MultiPotentialFields* multiFieldCtrl = (MultiPotentialFields*)controller;
@@ -112,8 +107,8 @@ void CartesianRadialPotentialFields::writeControlOutput(const Eigen::VectorXd &y
         gradients[i] = multiFieldCtrl->gradients[i];
     _gradients.write(gradients);
 
-    controlOutput.time = base::Time::now();
-    _controlOutput.write(controlOutput);
+    control_output.time = base::Time::now();
+    _control_output.write(control_output);
 }
 
 void CartesianRadialPotentialFields::setMaxInfluenceDistance(const base::VectorXd& distance){
@@ -130,7 +125,7 @@ void CartesianRadialPotentialFields::setMaxInfluenceDistance(const base::VectorX
             throw std::invalid_argument("Invalid input");
         }
         for(size_t i = 0; i < multiFieldCtrl->fields.size(); i++)
-            multiFieldCtrl->fields[i]->dMax = distance(i);
+            multiFieldCtrl->fields[i]->influence_distance = distance(i);
     }
 }
 
@@ -139,7 +134,7 @@ void CartesianRadialPotentialFields::setOrder(const double order){
     assert(controller != 0);
     MultiPotentialFields* multiFieldCtrl = (MultiPotentialFields*)controller;
     for(size_t i = 0; i < multiFieldCtrl->fields.size(); i++)
-        multiFieldCtrl->fields[i]->M = order;
+        multiFieldCtrl->fields[i]->order = order;
 }
 
 void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<base::samples::RigidBodyState> &centers){
@@ -152,6 +147,6 @@ void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<
         throw std::invalid_argument("Invalid input");
     }
     for(size_t i = 0; i < multiFieldCtrl->fields.size(); i++)
-        multiFieldCtrl->fields[i]->x0 = centers[i].position;
+        multiFieldCtrl->fields[i]->pot_field_center = centers[i].position;
 }
 

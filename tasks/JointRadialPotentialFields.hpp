@@ -31,17 +31,16 @@ class JointRadialPotentialFields : public JointRadialPotentialFieldsBase
     friend class JointRadialPotentialFieldsBase;
 protected:
 
-    std::vector<std::string> jointNames;
-
     virtual bool readSetpoints();
     virtual bool readFeedback();
-    virtual void writeControlOutput(const Eigen::VectorXd &y);
+    virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw);
 
-    base::commands::Joints potFieldCenters;
+    base::commands::Joints pot_field_centers;
     base::samples::Joints feedback;
-    base::VectorXd maxInfluenceDistance;
-    base::commands::Joints controlOutput;
-    double potFieldOrder;
+    base::VectorXd influence_distance;
+    base::commands::Joints control_output;
+    std::vector<base::VectorXd> gradients;
+    double order;
 
     void setMaxInfluenceDistance(const base::VectorXd& distance);
     void setPotFieldCenters(const base::commands::Joints& centers);

@@ -37,10 +37,10 @@ protected:
     /** Implement in base class. Read all feedback value of the controller. Return false if there is no feedback, true otherwise */
     virtual bool readFeedback() = 0;
     /** Write the output of the controller to a port */
-    virtual void writeControlOutput(const Eigen::VectorXd &y) = 0;
+    virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw) = 0;
 
-    Eigen::VectorXd y; /** Control output */
-    std::vector<std::string> fieldNames;
+    Eigen::VectorXd control_output; /** Control output */
+    std::vector<std::string> field_names;
 
 public:
     ControllerTask(std::string const& name = "ctrl_lib::ControllerTask");

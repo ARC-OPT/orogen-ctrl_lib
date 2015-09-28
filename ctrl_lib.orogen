@@ -21,13 +21,17 @@ task_context "ProportionalControllerTask" do abstract
    input_port("max_control_output", "base/VectorXd").doc("Set new maximum control output here.")
    input_port("dead_zone",          "base/VectorXd").doc("Set new dead zone here.")
 
+   output_port("current_feedback",      "base/VectorXd").doc("Current feedback vector.")
+   output_port("current_setpoint",      "base/VectorXd").doc("Current setpoint vector.")
+   output_port("current_control_error", "base/VectorXd").doc("Current control error.")
+
    periodic 0.01
 end
 
 #
 # Implementation of PositionControlFeedForward in joint space. See ctrl_lib/PositionControlFeedForward.hpp for details
 #
-task_context "JointPositionController" do subclasses "ControllerTask"
+task_context "JointPositionController" do subclasses "ProportionalControllerTask"
    needs_configuration
 
    property("initial_setpoint", "base/commands/Joints").doc("Initial setpoint. If empty, controller will wait for input from setpoint port.")
@@ -36,8 +40,6 @@ task_context "JointPositionController" do subclasses "ControllerTask"
    input_port("feedback", "base/samples/Joints"   ).doc("Feedback term of the controller.")
 
    output_port("control_output",   "base/commands/Joints").doc("Control output as velocity.")
-   output_port("control_error",    "base/VectorXd").doc("Current control error.")
-   output_port("current_feedback",    "base/VectorXd").doc("Current feedback vector.")
 
    periodic 0.01
 end
@@ -45,7 +47,7 @@ end
 #
 # Implementation of PositionControlFeedForward in Cartesian space
 # 
-task_context "CartesianPositionController" do subclasses "ControllerTask"
+task_context "CartesianPositionController" do subclasses "ProportionalControllerTask"
    needs_configuration
 
    property("initial_setpoint", "base/samples/RigidBodyState").doc("Initial setpoint. If empty, controller will wait for input from setpoint port")
@@ -54,8 +56,6 @@ task_context "CartesianPositionController" do subclasses "ControllerTask"
    input_port("feedback", "base/samples/RigidBodyState").doc("Feedback term of the controller.")
 
    output_port("control_output",   "base/samples/RigidBodyState" ).doc("Control output as velocity.")
-   output_port("control_error",    "base/VectorXd").doc("Current control error.")
-   output_port("current_feedback",    "base/VectorXd").doc("Current feedback vector.")
 
    periodic 0.01
 end
@@ -64,41 +64,41 @@ end
 # Implementation of RadialPotentialFields in joint space. Each joint will have one 1-dimensional potential field.
 # See ctrl_lib/RadialPotentialField.hpp and ctrl_lib/MultiPotentialFields1D.hpp for details
 #
-task_context "JointRadialPotentialFields" do subclasses "ControllerTask"
-   needs_configuration
+#task_context "JointRadialPotentialFields" do subclasses "ControllerTask"
+#   needs_configuration
 
-   property("initial_influence_distance", "base/VectorXd"          ).doc("Maximum influence distance of the potential fields oer joint. For N joints, this vector has to have size N.")
-   property("order",                      "double", 1              ).doc("Order of the potential field. If M = 0 controlOutput = const, if M = 1, controlOutput ~ 1/d. If M = 2, controlOutput ~ 1/d^2 and so on.")
-   property("pot_field_centers",          "base/commands/Joints"   ).doc("Initial center of the potential fields. For N joints this has to have size N.")
+#   property("initial_influence_distance", "base/VectorXd"          ).doc("Maximum influence distance of the potential fields oer joint. For N joints, this vector has to have size N.")
+#   property("order",                      "double", 1              ).doc("Order of the potential field. If M = 0 controlOutput = const, if M = 1, controlOutput ~ 1/d. If M = 2, controlOutput ~ 1/d^2 and so on.")
+#   property("pot_field_centers",          "base/commands/Joints"   ).doc("Initial center of the potential fields. For N joints this has to have size N.")
 
-   input_port("influence_distance", "base/VectorXd"       ).doc("Set new max influence distance here")
-   input_port("setpoint",           "base/commands/Joints").doc("Setpoint of the controller. In this case interpreted as new centers of the potential fields.")
-   input_port("feedback",           "base/samples/Joints" ).doc("Feedback term of the controller.")
+#  input_port("influence_distance", "base/VectorXd"       ).doc("Set new max influence distance here")
+#   input_port("setpoint",           "base/commands/Joints").doc("Setpoint of the controller. In this case interpreted as new centers of the potential fields.")
+#   input_port("feedback",           "base/samples/Joints" ).doc("Feedback term of the controller.")
      
-   output_port("control_output",  "base/commands/Joints"     ).doc("Control output as velocity.")
-   output_port("gradients",       "std/vector<base/VectorXd>").doc("Debug output: Gradient for each of the potential fields")
+#   output_port("control_output",  "base/commands/Joints"     ).doc("Control output as velocity.")
+#   output_port("gradients",       "std/vector<base/VectorXd>").doc("Debug output: Gradient for each of the potential fields")
 
-   periodic 0.01   
-end
+#   periodic 0.01
+#end
 
 #
 # Implementation of RadialPotentialFields in Cartesian space. Dimension of all fields has to be 3! See ctrl_lib/RadialPotentialField.hpp and
 # ctrl_lib/MultiPotentialFields.hpp for details
 #
-task_context "CartesianRadialPotentialFields" do subclasses "ControllerTask"
-   needs_configuration
+#task_context "CartesianRadialPotentialFields" do subclasses "ControllerTask"
+#   needs_configuration
 
-   property("initial_influence_distance", "base/VectorXd"                          ).doc("Maximum influence distance of the potential fields. For N fields, this vector has to have size N!")
-   property("order",                      "double", 1                              ).doc("Order of the potential field. If M = 0 controlOutput = const, if M = 1, controlOutput ~ 1/d. If M = 2, controlOutput ~ 1/d^2 and so on.")
-   property("pot_field_centers",          "std/vector<base/samples/RigidBodyState>").doc("Initial centers of the potential fields. For N fields, this has to have size Nx3")
+#   property("initial_influence_distance", "base/VectorXd"                          ).doc("Maximum influence distance of the potential fields. For N fields, this vector has to have size N!")
+#   property("order",                      "double", 1                              ).doc("Order of the potential field. If M = 0 controlOutput = const, if M = 1, controlOutput ~ 1/d. If M = 2, controlOutput ~ 1/d^2 and so on.")
+#   property("pot_field_centers",          "std/vector<base/samples/RigidBodyState>").doc("Initial centers of the potential fields. For N fields, this has to have size Nx3")
 
-   input_port("influence_distance", "base/VectorXd"                          ).doc("Set new max influence distance here")
-   input_port("setpoint",           "std/vector<base/samples/RigidBodyState>").doc("Setpoint of the controller. In this case interpreted as new centers of the potential fields.")
-   input_port("feedback",           "base/samples/RigidBodyState"            ).doc("Feedback term of the controller. Actual pose of the controlled frame.")
+#   input_port("influence_distance", "base/VectorXd"                          ).doc("Set new max influence distance here")
+#   input_port("setpoint",           "std/vector<base/samples/RigidBodyState>").doc("Setpoint of the controller. In this case interpreted as new centers of the potential fields.")
+#   input_port("feedback",           "base/samples/RigidBodyState"            ).doc("Feedback term of the controller. Actual pose of the controlled frame.")
 
-   output_port("control_output", "base/samples/RigidBodyState" ).doc("Control output as velocity.")
-   output_port("gradients",      "std/vector<base/VectorXd>"   ).doc("Debug output: Gradient for each of the potential fields")
+#   output_port("control_output", "base/samples/RigidBodyState" ).doc("Control output as velocity.")
+#   output_port("gradients",      "std/vector<base/VectorXd>"   ).doc("Debug output: Gradient for each of the potential fields")
 
-   periodic 0.01
-end
+#   periodic 0.01
+#end
 

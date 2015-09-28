@@ -35,7 +35,7 @@ bool JointPositionController::startHook(){
     return true;
 }
 
-bool JointPositionController::readSetpoints(){
+bool JointPositionController::readSetpoint(){
     if(_setpoint.readNewest(setpoint) == RTT::NoData)
         return false;
     else{

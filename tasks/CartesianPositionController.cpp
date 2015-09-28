@@ -47,7 +47,7 @@ bool CartesianPositionController::startHook(){
     return true;
 }
 
-bool CartesianPositionController::readSetpoints(){
+bool CartesianPositionController::readSetpoint(){
     _setpoint.readNewest(setpoint);
     if(!setpoint.hasValidPosition() || !setpoint.hasValidOrientation())
         return false;

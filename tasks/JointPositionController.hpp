@@ -33,7 +33,7 @@ protected:
     base::commands::Joints setpoint, control_output;
     base::samples::Joints feedback;
 
-    virtual bool readSetpoints();
+    virtual bool readSetpoint();
     virtual bool readFeedback();
     virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw);
 

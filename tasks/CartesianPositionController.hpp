@@ -34,7 +34,7 @@ protected:
     base::VectorXd current_feedback;
     Eigen::AngleAxisd orientation_error;
 
-    virtual bool readSetpoints();
+    virtual bool readSetpoint();
     virtual bool readFeedback();
     virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw);
 

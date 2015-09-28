@@ -8,22 +8,7 @@
 
 namespace ctrl_lib {
 
-/*! \class CartesianPositionController
-     * \brief The task context provides and requires services. It uses an ExecutionEngine to perform its functions.
-     * Essential interfaces are operations, data flow ports and properties. These interfaces have been defined using the oroGen specification.
-     * In order to modify the interfaces you should (re)use oroGen and rely on the associated workflow.
-     *
-Implementation of PositionControlFeedForward in Cartesian space
-
-     * \details
-     * The name of a TaskContext is primarily defined via:
-     \verbatim
-     deployment 'deployment_name'
-         task('custom_task_name','ctrl_lib::CartesianPositionController')
-     end
-     \endverbatim
-     *  It can be dynamically adapted when the deployment is called with a prefix argument.
-     */
+/*! \class CartesianPositionController Implementation of PositionControlFeedForward in Cartesian space */
 class CartesianPositionController : public CartesianPositionControllerBase
 {
     friend class CartesianPositionControllerBase;
@@ -31,11 +16,13 @@ protected:
 
     std::vector<std::string> joint_names;
     base::samples::RigidBodyState setpoint, control_output, feedback;
-    base::VectorXd current_feedback;
     Eigen::AngleAxisd orientation_error;
 
+    /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
     virtual bool readSetpoint();
+    /** Read all feedback values of the controller. Return false if there is no feedback, true otherwise */
     virtual bool readFeedback();
+    /** Write the output of the controller to a port */
     virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw);
 
 public:

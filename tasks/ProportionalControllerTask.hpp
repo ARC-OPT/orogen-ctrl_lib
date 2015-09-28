@@ -12,12 +12,12 @@ namespace ctrl_lib{
 	friend class ProportionalControllerTaskBase;
     protected:
 
-        /** Implement in base class. Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
+        /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
         virtual bool readSetpoint() = 0;
-        /** Implement in base class. Read all feedback value of the controller. Return false if there is no feedback, true otherwise */
+        /** Read all feedback values of the controller. Return false if there is no feedback, true otherwise */
         virtual bool readFeedback() = 0;
-        /** Compute and write the output of the controller to a port */
-        virtual void writeControlOutput() = 0;
+        /** Write the output of the controller to a port */
+        virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw) = 0;
 
         Eigen::VectorXd control_output; /** Control output */
         std::vector<std::string> field_names;

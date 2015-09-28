@@ -1,6 +1,7 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "ProportionalControllerTask.hpp"
+#include <base/Logging.hpp>
 
 using namespace ctrl_lib;
 
@@ -62,6 +63,10 @@ void ProportionalControllerTask::updateHook()
     _max_control_output.readNewest((base::VectorXd&)controller->max_control_output);
     _dead_zone.readNewest((base::VectorXd&)controller->dead_zone);
 
+    _current_prop_gain.write(controller->prop_gain);
+    _current_max_control_output.write(controller->max_control_output);
+    _current_dead_zone.write(controller->dead_zone);
+
     if(!readFeedback()){
         if(state() != NO_FEEDBACK)
             state(NO_FEEDBACK);
@@ -77,7 +82,11 @@ void ProportionalControllerTask::updateHook()
     if(state() != RUNNING)
         state(RUNNING);
 
+
     controller->update(control_output);
+
+    _control_error.write(controller->control_error);
+
     writeControlOutput(control_output);
 
 }

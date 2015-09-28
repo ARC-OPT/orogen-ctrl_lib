@@ -5,7 +5,7 @@ import_types_from "ctrl_libTypes.hpp"
 import_types_from "base"
 
 #
-# Base task for all proportional controller
+# Base task for all proportional controllers
 #
 task_context "ProportionalControllerTask" do abstract
    needs_configuration
@@ -21,15 +21,16 @@ task_context "ProportionalControllerTask" do abstract
    input_port("max_control_output", "base/VectorXd").doc("Set new maximum control output here.")
    input_port("dead_zone",          "base/VectorXd").doc("Set new dead zone here.")
 
-   output_port("current_feedback",      "base/VectorXd").doc("Current feedback vector.")
-   output_port("current_setpoint",      "base/VectorXd").doc("Current setpoint vector.")
-   output_port("current_control_error", "base/VectorXd").doc("Current control error.")
+   output_port("control_error", "base/VectorXd").doc("Debug: Current control error.")
+   output_port("current_prop_gain", "base/VectorXd").doc("Debug: Current control error.")
+   output_port("current_max_control_output", "base/VectorXd").doc("Debug: Current max control output.")
+   output_port("current_dead_zone", "base/VectorXd").doc("Debug: Current dead zone.")
 
    periodic 0.01
 end
 
 #
-# Implementation of PositionControlFeedForward in joint space. See ctrl_lib/PositionControlFeedForward.hpp for details
+# Implementation of a Position controller in joint space. See ctrl_lib/ProportionalController.hpp for details
 #
 task_context "JointPositionController" do subclasses "ProportionalControllerTask"
    needs_configuration
@@ -40,12 +41,13 @@ task_context "JointPositionController" do subclasses "ProportionalControllerTask
    input_port("feedback", "base/samples/Joints"   ).doc("Feedback term of the controller.")
 
    output_port("control_output",   "base/commands/Joints").doc("Control output as velocity.")
+   output_port("current_feedback", "base/samples/Joints").doc("Debug: Current feedback term.")
 
    periodic 0.01
 end
 
 #
-# Implementation of PositionControlFeedForward in Cartesian space
+# Implementation of Position controller in Cartesian space. See ctrl_lib/ProportionalController.hpp for details
 # 
 task_context "CartesianPositionController" do subclasses "ProportionalControllerTask"
    needs_configuration
@@ -56,8 +58,24 @@ task_context "CartesianPositionController" do subclasses "ProportionalController
    input_port("feedback", "base/samples/RigidBodyState").doc("Feedback term of the controller.")
 
    output_port("control_output",   "base/samples/RigidBodyState" ).doc("Control output as velocity.")
+   output_port("current_feedback", "base/samples/RigidBodyState").doc("Debug: Current feedback term.")
 
    periodic 0.01
+end
+
+#
+# Implementation of a force controller in Cartesian space. See ctrl_lib/ProportionalController.hpp for details
+#
+task_context "CartesianForceController" do subclasses "ProportionalControllerTask"
+    needs_configuration
+
+   property("initial_setpoint", "base/samples/Wrench").doc("Initial setpoint. If uninitialized, controller will wait for input from setpoint port")
+
+   input_port("setpoint", "base/samples/Wrench").doc("Setpoint of the controller.")
+   input_port("feedback", "base/samples/Wrench").doc("Feedback term of the controller.")
+
+   output_port("control_output",   "base/samples/RigidBodyState" ).doc("Control output as velocity.")
+   output_port("current_feedback", "base/samples/Wrench").doc("Debug: Current feedback term.")
 end
 
 #

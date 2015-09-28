@@ -29,21 +29,21 @@ bool ControllerTask::configureHook()
 
     field_names = _field_names.get();
     controller->prop_gain = _initial_prop_gain.get();
-    if(controller->prop_gain.size() != field_names.size()){
+    if((size_t)controller->prop_gain.size() != field_names.size()){
         LOG_ERROR("%s: Initial proportional Gain should have size %i, but has size %i",
                   this->getName().c_str(), field_names.size(), controller->prop_gain.size());
         return false;
     }
 
     controller->max_control_output = _initial_max_control_output.get();
-    if(controller->max_control_output.size() != field_names.size()){
+    if((size_t)controller->max_control_output.size() != field_names.size()){
         LOG_ERROR("%s: Initial max control output should have size %i, but has size %i",
                   this->getName().c_str(), field_names.size(), controller->max_control_output.size());
         return false;
     }
 
     controller->dead_zone = _initial_dead_zone.get();
-    if(controller->dead_zone.size() != field_names.size()){
+    if((size_t)controller->dead_zone.size() != field_names.size()){
         LOG_ERROR("%s: Initial dead zone should have size %i, but has size %i",
                   this->getName().c_str(), field_names.size(), controller->dead_zone.size());
         return false;
@@ -67,17 +67,11 @@ void ControllerTask::updateHook()
     _max_control_output.readNewest((base::VectorXd&)controller->max_control_output);
     _dead_zone.readNewest((base::VectorXd&)controller->dead_zone);
 
-    _current_prop_gain.write(controller->prop_gain);
-    _current_max_control_output.write(controller->max_control_output);
-    _current_dead_zone.write(controller->dead_zone);
-
     if(!readFeedback()){
         if(state() != NO_FEEDBACK)
             state(NO_FEEDBACK);
         return;
     }
-    else
-        _current_feedback.write(controller->feedback);
 
     if(!readSetpoints()){
         if(state() != NO_SETPOINT)
@@ -89,10 +83,6 @@ void ControllerTask::updateHook()
         state(RUNNING);
 
     controller->update(control_output);
-
-    _current_setpoint.write(controller->setpoint);
-    _current_control_error.write(controller->control_error);
-
     writeControlOutput(control_output);
 }
 void ControllerTask::errorHook()

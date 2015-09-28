@@ -5,9 +5,9 @@ import_types_from "ctrl_libTypes.hpp"
 import_types_from "base"
 
 #
-# Base task for all controllers
+# Base task for all proportional controller
 #
-task_context "ControllerTask" do abstract
+task_context "ProportionalControllerTask" do abstract
    needs_configuration
    runtime_states "NO_SETPOINT", # Never got a setpoint, or input setpoint is invalid
                   "NO_FEEDBACK"  # Never got feedback, or feedback term is invalid
@@ -20,13 +20,6 @@ task_context "ControllerTask" do abstract
    input_port("prop_gain",          "base/VectorXd").doc("Set new proportional gain here.")
    input_port("max_control_output", "base/VectorXd").doc("Set new maximum control output here.")
    input_port("dead_zone",          "base/VectorXd").doc("Set new dead zone here.")
-
-   output_port("current_prop_gain",          "base/VectorXd").doc("Current proportional gain used")
-   output_port("current_max_control_output", "base/VectorXd").doc("Current max ctrl output used")
-   output_port("current_dead_zone",          "base/VectorXd").doc("Current dead zone used")
-   output_port("current_setpoint",           "base/VectorXd").doc("Currently applied setpoint")
-   output_port("current_feedback",           "base/VectorXd").doc("Current feedback term")
-   output_port("current_control_error",      "base/VectorXd").doc("Current control error")
 
    periodic 0.01
 end
@@ -43,6 +36,8 @@ task_context "JointPositionController" do subclasses "ControllerTask"
    input_port("feedback", "base/samples/Joints"   ).doc("Feedback term of the controller.")
 
    output_port("control_output",   "base/commands/Joints").doc("Control output as velocity.")
+   output_port("control_error",    "base/VectorXd").doc("Current control error.")
+   output_port("current_feedback",    "base/VectorXd").doc("Current feedback vector.")
 
    periodic 0.01
 end
@@ -59,6 +54,8 @@ task_context "CartesianPositionController" do subclasses "ControllerTask"
    input_port("feedback", "base/samples/RigidBodyState").doc("Feedback term of the controller.")
 
    output_port("control_output",   "base/samples/RigidBodyState" ).doc("Control output as velocity.")
+   output_port("control_error",    "base/VectorXd").doc("Current control error.")
+   output_port("current_feedback",    "base/VectorXd").doc("Current feedback vector.")
 
    periodic 0.01
 end

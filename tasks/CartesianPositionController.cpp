@@ -1,7 +1,7 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "CartesianPositionController.hpp"
-#include <ctrl_lib/PositionControlFeedForward.hpp>
+#include <ctrl_lib/ProportionalControllerFeedForward.hpp>
 #include <base/Logging.hpp>
 
 using namespace ctrl_lib;
@@ -25,7 +25,7 @@ bool CartesianPositionController::configureHook(){
         LOG_ERROR("Size of field name vector should be 6, but is %i", field_names.size());
         return false;
     }
-    controller = new PositionControlFeedForward(field_names.size());
+    controller = new ProportionalControllerFeedForward(field_names.size());
 
     setpoint.invalidatePosition();
     setpoint.invalidateOrientation();
@@ -52,6 +52,10 @@ bool CartesianPositionController::readSetpoints(){
     if(!setpoint.hasValidPosition() || !setpoint.hasValidOrientation())
         return false;
     else{
+
+        Eigen::VectorXd& xr = ((ProportionalControllerFeedForward* )controller)->setpoint;
+        Eigen::VectorXd& x = ((ProportionalControllerFeedForward* )controller)->feedback;
+
         // Compute orientation error as quaternion
         orientation_error = setpoint.orientation * feedback.orientation.inverse();
 
@@ -59,11 +63,11 @@ bool CartesianPositionController::readSetpoints(){
         // cannot deal with full poses. Use angle-axis representation to compute the orientation-error
         // as xyz-rotation, since the controller cannot deal with full poses. This will give the
         // rotational velocity in 3D space that rotates the actual pose (feedback) onto the setpoint
-        controller->setpoint.resize(6);
-        controller->setpoint.segment(0,3) = setpoint.position - feedback.position;
-        controller->setpoint.segment(3,3) = orientation_error.axis()* orientation_error.angle();
-        controller->feedback.resize(6);
-        controller->feedback.setZero();
+        xr.resize(6);
+        xr.segment(0,3) = setpoint.position - feedback.position;
+        xr.segment(3,3) = orientation_error.axis()* orientation_error.angle();
+        x.resize(6);
+        x.setZero();
 
         return true;
     }
@@ -73,6 +77,10 @@ bool CartesianPositionController::readFeedback(){
     if(_feedback.readNewest(feedback) == RTT::NoData)
         return false;
     else{
+        current_feedback.resize(6);
+        current_feedback.segment(0,3) = feedback.position;
+        current_feedback.segment(3,3) = base::getEuler(feedback.orientation);
+        _current_feedback.write(current_feedback);
         return true;
     }
 }
@@ -82,6 +90,8 @@ void CartesianPositionController::writeControlOutput(const Eigen::VectorXd &ctrl
     control_output.angular_velocity = ctrl_output_raw.segment(3,3);
     control_output.time = base::Time::now();
     _control_output.write(control_output);
+
+    _control_error.write(((ProportionalControllerFeedForward*)controller)->control_error);
 }
 
 void CartesianPositionController::updateHook(){

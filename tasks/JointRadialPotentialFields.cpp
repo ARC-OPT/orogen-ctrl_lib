@@ -30,7 +30,7 @@ bool JointRadialPotentialFields::configureHook(){
         multiFields.push_back(new RadialRepulsivePotentialField(1));
 
     // The Controller contains all potential fields:
-    controller = new MultiPotentialFields1D(multiFields, field_names.size());
+    controller = new MultiPotentialFields1D(multiFields);
 
     setMaxInfluenceDistance(influence_distance);
     setPotFieldCenters(pot_field_centers);
@@ -92,7 +92,6 @@ bool JointRadialPotentialFields::readFeedback(){
     else{
         MultiPotentialFields1D* multiFieldCtrl = (MultiPotentialFields1D*)controller;
         base::JointState status;
-        multiFieldCtrl->feedback.resize(field_names.size());
         for(size_t i = 0; i < field_names.size(); i++){
             try{
                 status = feedback.getElementByName(field_names[i]);
@@ -106,7 +105,8 @@ bool JointRadialPotentialFields::readFeedback(){
                 throw e;
             }
 
-            multiFieldCtrl->feedback(i) = status.position;
+            multiFieldCtrl->fields[i]->position.resize(1);
+            multiFieldCtrl->fields[i]->position[0] = status.position;
         }
         return true;
     }
@@ -120,7 +120,7 @@ void JointRadialPotentialFields::writeControlOutput(const Eigen::VectorXd &ctrl_
     MultiPotentialFields1D* multiFieldCtrl = (MultiPotentialFields1D*)controller;
     gradients.resize(multiFieldCtrl->fields.size());
     for(size_t i = 0; i < multiFieldCtrl->fields.size(); i++)
-        gradients[i] = multiFieldCtrl->gradients[i];
+        gradients[i] = multiFieldCtrl->gradient_per_field[i];
     _gradients.write(gradients);
 
     control_output.time = base::Time::now();
@@ -154,8 +154,10 @@ void JointRadialPotentialFields::setPotFieldCenters(const base::commands::Joints
         LOG_ERROR("Pot. Field Center vector must have same length as number of potential fields");
         throw std::invalid_argument("Invalid input");
     }
-    for(size_t i = 0; i < multiFieldCtrl->fields.size(); i++)
-        multiFieldCtrl->setpoint[i] = centers[i].position;
+    for(size_t i = 0; i < multiFieldCtrl->fields.size(); i++){
+        multiFieldCtrl->fields[i]->pot_field_center.resize(1);
+        multiFieldCtrl->fields[i]->pot_field_center(0) = centers[i].position;
+    }
 }
 
 void JointRadialPotentialFields::setOrder(const double order){

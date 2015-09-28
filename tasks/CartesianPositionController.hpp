@@ -31,6 +31,7 @@ protected:
 
     std::vector<std::string> joint_names;
     base::samples::RigidBodyState setpoint, control_output, feedback;
+    base::VectorXd current_feedback;
     Eigen::AngleAxisd orientation_error;
 
     virtual bool readSetpoints();

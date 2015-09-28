@@ -1,7 +1,7 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "JointPositionController.hpp"
-#include <ctrl_lib/PositionControlFeedForward.hpp>
+#include <ctrl_lib/ProportionalControllerFeedForward.hpp>
 
 using namespace ctrl_lib;
 
@@ -19,7 +19,7 @@ JointPositionController::~JointPositionController(){
 bool JointPositionController::configureHook(){
 
     field_names = _field_names.get();
-    controller = new PositionControlFeedForward(field_names.size());
+    controller = new ProportionalControllerFeedForward(field_names.size());
     control_output.resize(field_names.size());
     control_output.names = field_names;
 
@@ -39,8 +39,8 @@ bool JointPositionController::readSetpoints(){
     if(_setpoint.readNewest(setpoint) == RTT::NoData)
         return false;
     else{
-        extractPositions(setpoint, field_names, controller->setpoint);
-        extractSpeeds(setpoint, field_names, ((PositionControlFeedForward*)controller)->feed_forward_vel);
+        extractPositions(setpoint, field_names, ((ProportionalControllerFeedForward*)controller)->setpoint);
+        extractSpeeds(setpoint, field_names, ((ProportionalControllerFeedForward*)controller)->feed_forward);
         return true;
     }
 }
@@ -49,7 +49,7 @@ bool JointPositionController::readFeedback(){
     if(_feedback.readNewest(feedback) == RTT::NoData)
         return false;
     else{
-        extractPositions(feedback, field_names, controller->feedback);
+        extractPositions(feedback, field_names, ((ProportionalControllerFeedForward*)controller)->feedback);
         return true;
     }
 }

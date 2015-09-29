@@ -9,22 +9,23 @@ Orocos.run "ctrl_lib::CartesianRadialPotentialFields" => "controller" do
    
    prop_gain              = Types::Base::VectorXd.new(3)
    max_control_output     = Types::Base::VectorXd.new(3)
-   influence_distance = 1.0
+   influence_distance     = 1.0
    center1                = Types::Base::Samples::RigidBodyState.new
    center2                = Types::Base::Samples::RigidBodyState.new
+
    center1.position[0],center1.position[1],center1.position[2] = 0,0,0
    center2.position[0],center2.position[1],center2.position[2] = 1,0,0
 
    for i in (0..2) do 
-      prop_gain[i]             = 0.1
-      max_control_output[i]     = 0.5
+      prop_gain[i]             = 1.0
+      max_control_output[i]    = 0.3
    end
 
    controller.field_names                = ["X", "Y", "Z"]
    controller.initial_prop_gain          = prop_gain
    controller.initial_max_control_output = max_control_output
    controller.initial_influence_distance =  influence_distance
-   controller.order                      = 0
+   controller.order                      = 1
    controller.initial_pot_field_centers  = Array[center1, center2]
 
    controller.configure

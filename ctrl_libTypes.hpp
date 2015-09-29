@@ -20,7 +20,7 @@ namespace ctrl_lib {
             order = field->order;
             influence_distance = field->influence_distance;
             distance = field->distance;
-            position = field->position;
+            gradient = field->gradient;
             pot_field_center = field->pot_field_center;
        }
 
@@ -36,8 +36,8 @@ namespace ctrl_lib {
        /** Distance vector to the potential field. */
        base::VectorXd distance;
 
-       /** Current position*/
-       base::VectorXd position;
+       /** Gradient vector for this field*/
+       base::VectorXd gradient;
 
        /** Potential field center position*/
        base::VectorXd pot_field_center;

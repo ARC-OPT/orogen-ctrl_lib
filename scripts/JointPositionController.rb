@@ -7,40 +7,41 @@ Orocos.run "ctrl_lib::JointPositionController" => "controller" do
 
    controller = Orocos::TaskContext.get "controller"
 
-   propGain         = Types::Base::VectorXd.new(2)
-   deadZone         = Types::Base::VectorXd.new(2)
-   maxControlOutput = Types::Base::VectorXd.new(2)
+   prop_gain         = Types::Base::VectorXd.new(2)
+   dead_zone         = Types::Base::VectorXd.new(2)
+   max_control_output = Types::Base::VectorXd.new(2)
 
-   propGain[0],propGain[1]                 = 1.0,1.0
-   deadZone[0],deadZone[1]                 = 0.01,0.03
-   maxControlOutput[0],maxControlOutput[1] = 0.3,0.5
+   prop_gain[0],prop_gain[1]                 = 1.0,1.0
+   dead_zone[0],dead_zone[1]                 = 0.05,0.1
+   max_control_output[0],max_control_output[1] = 1e10,1e10
 
-   controller.jointNames       = ["Joint_1", "Joint_2"]
-   controller.propGain         = propGain
-   controller.deadZone         = deadZone
-   controller.maxControlOutput = maxControlOutput
+   controller.field_names       = ["Joint_1", "Joint_2"]
+   controller.initial_prop_gain         = prop_gain
+   controller.initial_dead_zone         = dead_zone
+   controller.initial_max_control_output = max_control_output
 
    controller.configure
    controller.start
 
    setpoint          = Types::Base::Commands::Joints.new
-   setpoint.names    = controller.jointNames
+   setpoint.names    = controller.field_names
    cmd1              = Types::Base::JointState.new
    cmd2              = Types::Base::JointState.new
    cmd1.position     = 1.0
    cmd2.position     = 2.0
+   cmd1.speed        = 0.1
    setpoint.elements = Array[cmd1, cmd2]
 
    feedback          = Types::Base::Samples::Joints.new
-   feedback.names    = controller.jointNames
+   feedback.names    = controller.field_names
    state             = Types::Base::JointState.new
    state.position    = 0.0
    feedback.elements = Array[state, state]
 
    setpoint_writer      = controller.setpoint.writer
    feedback_writer      = controller.feedback.writer
-   controlOutput_reader = controller.controlOutput.reader
-   controlOutput        = Types::Base::Commands::Joints.new
+   control_output_reader = controller.control_output.reader
+   control_output        = Types::Base::Commands::Joints.new
 
    setpoint_writer.write(setpoint)
 
@@ -48,15 +49,15 @@ Orocos.run "ctrl_lib::JointPositionController" => "controller" do
    puts "Press Ctrl-C to stop ..."
    while true
       feedback_writer.write(feedback)
-      if not controlOutput_reader.read(controlOutput)
+      if not control_output_reader.read(control_output)
          sleep(cycle_time)
          next
       end
 
-      for i in (0..1) do feedback.elements[i].position += cycle_time*controlOutput.elements[i].speed end    
+      for i in (0..1) do feedback.elements[i].position += cycle_time*control_output.elements[i].speed end
 
       print "Goal Position:   Joint_1: #{'%.04f' % setpoint.elements[0].position}, Joint_2: #{'%.04f' % setpoint.elements[1].position}\n"
-      print "Control Output:  Joint_1: #{'%.04f' % controlOutput.elements[0].speed}, Joint_2: #{'%.04f' % controlOutput.elements[1].speed}\n"
+      print "Control Output:  Joint_1: #{'%.04f' % control_output.elements[0].speed}, Joint_2: #{'%.04f' % control_output.elements[1].speed}\n"
       print "Actual Position: Joint_1: #{'%.04f' % feedback.elements[0].position}, Joint_2: #{'%.04f' % feedback.elements[1].position}\n\n"
       sleep(cycle_time)
    end

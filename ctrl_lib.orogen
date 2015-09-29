@@ -67,7 +67,7 @@ end
 # Implementation of a force controller in Cartesian space. See ctrl_lib/ProportionalController.hpp for details
 #
 task_context "CartesianForceController" do subclasses "ProportionalControllerTask"
-    needs_configuration
+   needs_configuration
 
    property("initial_setpoint", "base/samples/Wrench").doc("Initial setpoint. If uninitialized, controller will wait for input from setpoint port")
 
@@ -78,45 +78,61 @@ task_context "CartesianForceController" do subclasses "ProportionalControllerTas
    output_port("current_feedback", "base/samples/Wrench").doc("Debug: Current feedback term.")
 end
 
+task_context "PotentialFieldsControllerTask" do abstract
+
+   runtime_states "NO_ACTUAL_POSITION",  # Never got actual position, or actual position term is invalid
+                  "NO_POT_FIELD_CENTERS" # Never got field positions, or field positions are invalid
+
+   property("field_names",                "std/vector<std/string>").doc("Name for each variable, e.g. joint names in case of a joint space controller.")
+   property("order",                      "int", 1       ).doc("Order of all potential fields. If order = 0 control_output = const, if order = 1, control_output ~ 1/d. If order = 2, control_output ~ 1/d^2 and so on.")
+   property("initial_prop_gain",          "base/VectorXd").doc("Proportional gain. Size has to be the same as size of field_names.")
+   property("initial_max_control_output", "base/VectorXd").doc("Maximum control output (saturation). If one output value exceeds maximum, all other values will be scaled accordingly. Size has to be same as field_names.")
+
+   input_port("prop_gain",          "base/VectorXd").doc("Set new proportional gain here.")
+   input_port("max_control_output", "base/VectorXd").doc("Set new maximum control output here.")
+
+   output_port("current_prop_gain",          "base/VectorXd").doc("Debug: Current control error.")
+   output_port("current_max_control_output", "base/VectorXd").doc("Debug: Current max control output.")
+   output_port("field_infos",                "std/vector<ctrl_lib/PotentialFieldInfo>").doc("Debug: Current status and settings for all potential fields.")
+
+   periodic 0.01
+end
+
 #
 # Implementation of RadialPotentialFields in joint space. Each joint will have one 1-dimensional potential field.
-# See ctrl_lib/RadialPotentialField.hpp and ctrl_lib/MultiPotentialFields1D.hpp for details
+# See ctrl_lib/RadialPotentialField.hpp and ctrl_lib/PotentialFieldsController.hpp for details
 #
-#task_context "JointRadialPotentialFields" do subclasses "ControllerTask"
-#   needs_configuration
+task_context "JointRadialPotentialFields" do subclasses "PotentialFieldsControllerTask"
+   needs_configuration
 
-#   property("initial_influence_distance", "base/VectorXd"          ).doc("Maximum influence distance of the potential fields oer joint. For N joints, this vector has to have size N.")
-#   property("order",                      "double", 1              ).doc("Order of the potential field. If M = 0 controlOutput = const, if M = 1, controlOutput ~ 1/d. If M = 2, controlOutput ~ 1/d^2 and so on.")
-#   property("pot_field_centers",          "base/commands/Joints"   ).doc("Initial center of the potential fields. For N joints this has to have size N.")
+   property("initial_pot_field_centers",  "base/commands/Joints").doc("Initial centers of the potential fields. For N joints this has to have size N.")
+   property("initial_influence_distance", "base/VectorXd").doc("Influence distance of the potential fields. Size has to be same as the number of potential fields.")
 
-#  input_port("influence_distance", "base/VectorXd"       ).doc("Set new max influence distance here")
-#   input_port("setpoint",           "base/commands/Joints").doc("Setpoint of the controller. In this case interpreted as new centers of the potential fields.")
-#   input_port("feedback",           "base/samples/Joints" ).doc("Feedback term of the controller.")
+   input_port("pot_field_centers",  "base/commands/Joints").doc("Set new centers of the potential fields here. Size has to be same as field_names.")
+   input_port("actual_position",    "base/samples/Joints" ).doc("Set actual joint position here. Size has to be same as field_names.")
+   input_port("influence_distance", "base/VectorXd").doc("Set new influence distance zone here.")
      
-#   output_port("control_output",  "base/commands/Joints"     ).doc("Control output as velocity.")
-#   output_port("gradients",       "std/vector<base/VectorXd>").doc("Debug output: Gradient for each of the potential fields")
+   output_port("control_output", "base/commands/Joints").doc("Control output as joint velocity.")
 
-#   periodic 0.01
-#end
+   periodic 0.01
+end
 
 #
 # Implementation of RadialPotentialFields in Cartesian space. Dimension of all fields has to be 3! See ctrl_lib/RadialPotentialField.hpp and
-# ctrl_lib/MultiPotentialFields.hpp for details
+# ctrl_lib/PotentialFieldsController.hpp for details
 #
-#task_context "CartesianRadialPotentialFields" do subclasses "ControllerTask"
-#   needs_configuration
+task_context "CartesianRadialPotentialFields" do subclasses "PotentialFieldsControllerTask"
+   needs_configuration
 
-#   property("initial_influence_distance", "base/VectorXd"                          ).doc("Maximum influence distance of the potential fields. For N fields, this vector has to have size N!")
-#   property("order",                      "double", 1                              ).doc("Order of the potential field. If M = 0 controlOutput = const, if M = 1, controlOutput ~ 1/d. If M = 2, controlOutput ~ 1/d^2 and so on.")
-#   property("pot_field_centers",          "std/vector<base/samples/RigidBodyState>").doc("Initial centers of the potential fields. For N fields, this has to have size Nx3")
+   property("initial_influence_distance", "double"                                 ).doc("Influence distance for all potential fields.")
+   property("initial_pot_field_centers",  "std/vector<base/samples/RigidBodyState>").doc("Initial centers of the potential fields.")
 
-#   input_port("influence_distance", "base/VectorXd"                          ).doc("Set new max influence distance here")
-#   input_port("setpoint",           "std/vector<base/samples/RigidBodyState>").doc("Setpoint of the controller. In this case interpreted as new centers of the potential fields.")
-#   input_port("feedback",           "base/samples/RigidBodyState"            ).doc("Feedback term of the controller. Actual pose of the controlled frame.")
+   input_port("pot_field_centers",  "std/vector<base/samples/RigidBodyState>").doc("Set new centers of the potential fields here. Number of fields can be arbitrary.")
+   input_port("actual_position",    "base/samples/RigidBodyState"            ).doc("Feedback term of the controller. Actual pose of the controlled frame.")
+   input_port("influence_distance", "double"                                 ).doc("Set new influence distance zone here.")
 
-#   output_port("control_output", "base/samples/RigidBodyState" ).doc("Control output as velocity.")
-#   output_port("gradients",      "std/vector<base/VectorXd>"   ).doc("Debug output: Gradient for each of the potential fields")
+   output_port("control_output", "base/samples/RigidBodyState" ).doc("Control output as cartesian velocity.")
 
-#   periodic 0.01
-#end
+   periodic 0.01
+end
 

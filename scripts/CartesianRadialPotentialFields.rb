@@ -7,56 +7,53 @@ Orocos.run "ctrl_lib::CartesianRadialPotentialFields" => "controller" do
 
    controller = Orocos::TaskContext.get "controller"
    
-   propGain             = Types::Base::VectorXd.new(3)
-   deadZone             = Types::Base::VectorXd.new(3)
-   maxControlOutput     = Types::Base::VectorXd.new(3)
-   maxInfluenceDistance = Types::Base::VectorXd.new(2)
-   center1              = Types::Base::VectorXd.new(3)
-   center2              = Types::Base::VectorXd.new(3)
-   center1[0],center1[1],center1[2] = 0,0,0
-   center2[0],center2[1],center2[2] = 1,0,0
+   prop_gain              = Types::Base::VectorXd.new(3)
+   max_control_output     = Types::Base::VectorXd.new(3)
+   influence_distance = 1.0
+   center1                = Types::Base::Samples::RigidBodyState.new
+   center2                = Types::Base::Samples::RigidBodyState.new
+   center1.position[0],center1.position[1],center1.position[2] = 0,0,0
+   center2.position[0],center2.position[1],center2.position[2] = 1,0,0
 
    for i in (0..2) do 
-      propGain[i]             = 0.01 
-      deadZone[i]             = 0.01
-      maxControlOutput[i]     = 0.5 
-      maxInfluenceDistance[i] = 1.0
+      prop_gain[i]             = 0.1
+      max_control_output[i]     = 0.5
    end
 
-   controller.propGain             = propGain
-   controller.deadZone             = deadZone
-   controller.maxControlOutput     = maxControlOutput
-   controller.maxInfluenceDistance = maxInfluenceDistance
-   controller.order                = 0
-   controller.potFieldCenters      = Array[center1, center2]
+   controller.field_names                = ["X", "Y", "Z"]
+   controller.initial_prop_gain          = prop_gain
+   controller.initial_max_control_output = max_control_output
+   controller.initial_influence_distance =  influence_distance
+   controller.order                      = 0
+   controller.initial_pot_field_centers  = Array[center1, center2]
 
    controller.configure
    controller.start
     
-   feedback = Types::Base::Samples::RigidBodyState.new
-   feedback.position[0],feedback.position[1],feedback.position[2] = 0,0,0.5
-   feedback.orientation.x,feedback.orientation.y,feedback.orientation.z,feedback.orientation.w = 0,0,0,1
+   actual_position = Types::Base::Samples::RigidBodyState.new
+   actual_position.position[0],actual_position.position[1],actual_position.position[2] = 0,0,0.5
+   actual_position.orientation.x,actual_position.orientation.y,actual_position.orientation.z,actual_position.orientation.w = 0,0,0,1
 
-   feedback_writer      = controller.feedback.writer
-   controlOutput_reader = controller.controlOutput.reader
-   controlOutput        = Types::Base::Samples::RigidBodyState.new 
+   actual_position_writer = controller.actual_position.writer
+   control_output_reader  = controller.control_output.reader
+   control_output         = Types::Base::Samples::RigidBodyState.new
 
    cycle_time = 0.01
    puts("Press Ctrl-C to stop ...")
    while true 
-      feedback_writer.write(feedback)
-      if not controlOutput_reader.read(controlOutput)
+      actual_position_writer.write(actual_position)
+      if not control_output_reader.read(control_output)
          sleep(cycle_time)
          next
       end
 
-      for i in (0..2) do feedback.position[i] += cycle_time*controlOutput.velocity[i] end
+      for i in (0..2) do actual_position.position[i] += cycle_time*control_output.velocity[i] end
 
-      print "Potential Field 1 position: #{'%.04f' % controller.potFieldCenters[0][0]} #{'%.04f' % controller.potFieldCenters[0][1]} #{'%.04f' % controller.potFieldCenters[0][2]}\n"
-      print "Potential Field 2 position: #{'%.04f' % controller.potFieldCenters[1][0]} #{'%.04f' % controller.potFieldCenters[1][1]} #{'%.04f' % controller.potFieldCenters[1][2]}\n"
-      print "Control Output:             #{'%.04f' % controlOutput.velocity[0]} #{'%.04f' % controlOutput.velocity[1]} #{'%.04f' % controlOutput.velocity[2]}\n"
-      print "Actual Position:            #{'%.04f' % feedback.position[0]} #{'%.04f' % feedback.position[1]} #{'%.04f' % feedback.position[2]}"
-      print " #{'%.04f' % feedback.orientation.to_euler[0]} #{'%.04f' % feedback.orientation.to_euler[1]} #{'%.04f' % feedback.orientation.to_euler[2]}\n\n"
+      print "Potential Field 1 position: #{'%.04f' % controller.initial_pot_field_centers[0].position[0]} #{'%.04f' % controller.initial_pot_field_centers[0].position[1]} #{'%.04f' % controller.initial_pot_field_centers[0].position[2]}\n"
+      print "Potential Field 2 position: #{'%.04f' % controller.initial_pot_field_centers[1].position[0]} #{'%.04f' % controller.initial_pot_field_centers[1].position[1]} #{'%.04f' % controller.initial_pot_field_centers[1].position[2]}\n"
+      print "Control Output:             #{'%.04f' % control_output.velocity[0]} #{'%.04f' % control_output.velocity[1]} #{'%.04f' % control_output.velocity[2]}\n"
+      print "Actual Position:            #{'%.04f' % actual_position.position[0]} #{'%.04f' % actual_position.position[1]} #{'%.04f' % actual_position.position[2]}"
+      print " #{'%.04f' % actual_position.orientation.to_euler[0]} #{'%.04f' % actual_position.orientation.to_euler[1]} #{'%.04f' % actual_position.orientation.to_euler[2]}\n\n"
       sleep(cycle_time)
    end
    

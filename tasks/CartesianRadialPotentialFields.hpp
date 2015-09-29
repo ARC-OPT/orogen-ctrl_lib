@@ -8,41 +8,30 @@
 
 namespace ctrl_lib {
 
-/*! \class CartesianRadialPotentialFields
-     * \brief The task context provides and requires services. It uses an ExecutionEngine to perform its functions.
-     * Essential interfaces are operations, data flow ports and properties. These interfaces have been defined using the oroGen specification.
-     * In order to modify the interfaces you should (re)use oroGen and rely on the associated workflow.
-     *
-Implementation of RadialPotentialFields in Cartesian space. Dimension of all fields has to be 3! See ctrl_lib/RadialPotentialField.hpp and
-ctrl_lib/MultiPotentialFields.hpp for details
-
-     * \details
-     * The name of a TaskContext is primarily defined via:
-     \verbatim
-     deployment 'deployment_name'
-         task('custom_task_name','ctrl_lib::CartesianRadialPotentialFields')
-     end
-     \endverbatim
-     *  It can be dynamically adapted when the deployment is called with a prefix argument.
-     */
+/*! \class CartesianRadialPotentialFields Implementation of RadialPotentialFields in Cartesian space. Dimension of all fields has to be 3! See ctrl_lib/RadialPotentialField.hpp and
+ctrl_lib/PotentialFieldsController.hpp for details  */
 class CartesianRadialPotentialFields : public CartesianRadialPotentialFieldsBase
 {
     friend class CartesianRadialPotentialFieldsBase;
 protected:
 
-    base::samples::RigidBodyState control_output, feedback;
+    base::samples::RigidBodyState control_output, actual_position;
     std::vector<base::samples::RigidBodyState> pot_field_centers;
-    std::vector<base::VectorXd> gradients;
-    base::VectorXd influence_distance;
-    double order;
+    int order;
+    double influence_distance;
 
-    virtual bool readSetpoints();
-    virtual bool readFeedback();
-    virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw);
-
-    void setMaxInfluenceDistance(const base::VectorXd& maxInfluenceDistance);
-    void setOrder(const double order);
+    /** Read actual position. Return false if there is no valid actual position*/
+    virtual bool readActualPosition();
+    /** Read potential field centers. Return false if there are no valid potential centers*/
+    virtual bool readPotFieldCenters() ;
+    /** Write the output of the controller to a port */
+    virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw) ;
+    /** Set new potential field centers*/
     void setPotentialFieldCenters(const std::vector<base::samples::RigidBodyState> &centers);
+    /** Set actual position in all potential fields */
+    void setActualPosition(const base::samples::RigidBodyState& actual);
+    /** Delete all potential fields*/
+    void clearPotentialFields();
 
 public:
     CartesianRadialPotentialFields(std::string const& name = "ctrl_lib::CartesianRadialPotentialFields");

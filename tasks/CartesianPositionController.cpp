@@ -40,13 +40,15 @@ bool CartesianPositionController::startHook(){
 }
 
 bool CartesianPositionController::readSetpoint(){
-    _setpoint.readNewest(setpoint);
-    if(!setpoint.hasValidPosition() || !setpoint.hasValidOrientation())
+
+    if(_setpoint.readNewest(setpoint) == RTT::NoData)
         return false;
     else{
 
-        Eigen::VectorXd& xr = controller->setpoint;
-        Eigen::VectorXd& x = controller->feedback;
+        if(!setpoint.hasValidPosition() || !setpoint.hasValidOrientation()){
+            LOG_ERROR("%s: Setpoint does not have a valid position or orientation value", this->getName().c_str());
+            throw std::invalid_argument("Invalid setpoint");
+        }
 
         // Compute orientation error as quaternion
         orientation_error = setpoint.orientation * feedback.orientation.inverse();
@@ -55,21 +57,27 @@ bool CartesianPositionController::readSetpoint(){
         // cannot deal with full poses. Use angle-axis representation to compute the orientation-error
         // as xyz-rotation, since the controller cannot deal with full poses. This will give the
         // rotational velocity in 3D space that rotates the actual pose (feedback) onto the setpoint
-        xr.resize(6);
-        xr.segment(0,3) = setpoint.position - feedback.position;
-        xr.segment(3,3) = orientation_error.axis()* orientation_error.angle();
-        x.resize(6);
-        x.setZero();
+        controller->setpoint.resize(6);
+        controller->setpoint.segment(0,3) = setpoint.position - feedback.position;
+        controller->setpoint.segment(3,3) = orientation_error.axis()* orientation_error.angle();
+        controller->feedback.resize(6);
+        controller->feedback.setZero();
 
         return true;
     }
 }
 
 bool CartesianPositionController::readFeedback(){
-    _feedback.readNewest(feedback);
-    if(!feedback.hasValidPosition() || !feedback.hasValidOrientation())
+
+    if(_feedback.readNewest(feedback) == RTT::NoData)
         return false;
     else{
+
+        if(!feedback.hasValidPosition() || !feedback.hasValidOrientation()){
+            LOG_ERROR("%s: Feedback term does not have a valid position or orientation value", this->getName().c_str());
+            throw std::invalid_argument("Invalid feedback term");
+        }
+
         _current_feedback.write(feedback);
         return true;
     }
@@ -95,6 +103,5 @@ void CartesianPositionController::stopHook(){
 }
 
 void CartesianPositionController::cleanupHook(){
-    delete controller;
     CartesianPositionControllerBase::cleanupHook();
 }

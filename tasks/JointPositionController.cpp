@@ -40,7 +40,6 @@ bool JointPositionController::readSetpoint(){
         return false;
     else{
         extractPositions(setpoint, field_names, controller->setpoint);
-        extractSpeeds(setpoint, field_names, controller->feed_forward);
         return true;
     }
 }
@@ -76,5 +75,4 @@ void JointPositionController::stopHook(){
 
 void JointPositionController::cleanupHook(){
     JointPositionControllerBase::cleanupHook();
-    delete controller;
 }

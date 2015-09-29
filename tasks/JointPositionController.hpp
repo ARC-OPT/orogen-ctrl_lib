@@ -25,26 +25,21 @@ protected:
     /** Write the output of the controller to a port */
     virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw);
 
-    inline void extractPositions(const base::commands::Joints &command, const std::vector<std::string> jointNames, Eigen::VectorXd& positions){
-        positions.resize(jointNames.size());
-        for(size_t i  = 0; i < jointNames.size(); i++){
-            const base::JointState &cmd = command.getElementByName(jointNames[i]);
-            if(!cmd.hasPosition()){ //Throw here, since we always need valid positions for this controller
-                LOG_ERROR("Element %s has no valid position value!", jointNames[i].c_str());
-                throw std::invalid_argument("Invalid position value");
-            }
-            positions(i) = cmd.position;
-        }
-    }
+    inline void extractPositions(const base::samples::Joints& joints, const std::vector<std::string> &names, Eigen::VectorXd& positions){
 
-    inline void extractSpeeds(const base::commands::Joints &command, const std::vector<std::string> jointNames, Eigen::VectorXd& speeds){
-        speeds.resize(jointNames.size());
-        for(size_t i = 0; i < jointNames.size(); i++){
-            const base::JointState &cmd = command.getElementByName(jointNames[i]);
-            if(cmd.hasSpeed())
-                speeds(i) = cmd.speed;
-            else
-                speeds(i) = 0;
+        if(joints.elements.size() != joints.names.size()){
+            LOG_ERROR("%s: Sizes of names and elements does not match", this->getName().c_str());
+            throw std::invalid_argument("Invalid joints vector");
+        }
+
+        positions.resize(names.size());
+        for(size_t i = 0; i < names.size(); i++){
+            const base::JointState& elem = joints.getElementByName(names[i]);
+            if(!elem.hasPosition()){
+                LOG_ERROR("%s: Element %s does not have a valid position value", this->getName().c_str(), names[i].c_str());
+                throw std::invalid_argument("Invalid joints vector");
+            }
+            positions(i) = elem.position;
         }
     }
 

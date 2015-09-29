@@ -9,42 +9,45 @@
 
 namespace ctrl_lib {
 
-/*! \class JointRadialPotentialFields
-     * \brief The task context provides and requires services. It uses an ExecutionEngine to perform its functions.
-     * Essential interfaces are operations, data flow ports and properties. These interfaces have been defined using the oroGen specification.
-     * In order to modify the interfaces you should (re)use oroGen and rely on the associated workflow.
-     *
-Implementation of RadialPotentialFields in joint space. Each joint will have its own potential field. See ctrl_lib/RadialPotentialField.hpp and
-ctrl_lib/MultiPotentialFields.hpp for details
-
-     * \details
-     * The name of a TaskContext is primarily defined via:
-     \verbatim
-     deployment 'deployment_name'
-         task('custom_task_name','ctrl_lib::JointRadialPotentialFields')
-     end
-     \endverbatim
-     *  It can be dynamically adapted when the deployment is called with a prefix argument.
-     */
+/*! \class JointRadialPotentialFields Implementation of RadialPotentialFields in joint space. Each joint will have its own potential field. See ctrl_lib/RadialPotentialField.hpp and
+ctrl_lib/MultiPotentialFields.hpp for details */
 class JointRadialPotentialFields : public JointRadialPotentialFieldsBase
 {
     friend class JointRadialPotentialFieldsBase;
 protected:
 
-    virtual bool readSetpoints();
-    virtual bool readFeedback();
+    /** Read actual position. Return false if there is no valid actual position*/
+    virtual bool readActualPosition();
+    /** Read potential field centers. Return false if there are no valid potential centers*/
+    virtual bool readPotFieldCenters();
+    /** Write the output of the controller to a port */
     virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw);
 
-    base::commands::Joints pot_field_centers;
-    base::samples::Joints feedback;
-    base::VectorXd influence_distance;
-    base::commands::Joints control_output;
-    std::vector<base::VectorXd> gradients;
-    double order;
-
-    void setMaxInfluenceDistance(const base::VectorXd& distance);
+    /** Set new positions for the potential fields*/
     void setPotFieldCenters(const base::commands::Joints& centers);
-    void setOrder(const double order);
+
+    base::commands::Joints pot_field_centers;
+    base::samples::Joints actual_position;
+    base::commands::Joints control_output;
+    Eigen::VectorXd position;
+
+    inline void extractPositions(const base::samples::Joints& joints, const std::vector<std::string> &names, Eigen::VectorXd& positions){
+
+        if(joints.elements.size() != joints.names.size()){
+            LOG_ERROR("%s: Sizes of names and elements does not match", this->getName().c_str());
+            throw std::invalid_argument("Invalid joints vector");
+        }
+
+        positions.resize(names.size());
+        for(size_t i = 0; i < names.size(); i++){
+            const base::JointState& elem = joints.getElementByName(names[i]);
+            if(!elem.hasPosition()){
+                LOG_ERROR("%s: Element %s does not have a valid position value", this->getName().c_str(), names[i].c_str());
+                throw std::invalid_argument("Invalid joints vector");
+            }
+            positions(i) = elem.position;
+        }
+    }
 
 public:
     JointRadialPotentialFields(std::string const& name = "ctrl_lib::JointRadialPotentialFields");

@@ -1,8 +1,7 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "CartesianRadialPotentialFields.hpp"
-#include <ctrl_lib/MultiPotentialFields3D.hpp>
-#include <ctrl_lib/RadialRepulsivePotentialField.hpp>
+#include <ctrl_lib/RadialPotentialField.hpp>
 #include <base/Logging.hpp>
 
 using namespace ctrl_lib;
@@ -20,30 +19,19 @@ CartesianRadialPotentialFields::~CartesianRadialPotentialFields(){
 
 bool CartesianRadialPotentialFields::configureHook(){
 
+    if (! CartesianRadialPotentialFieldsBase::configureHook())
+        return false;
+
     field_names = _field_names.get();
     if(field_names.size() != 3){
-        LOG_ERROR("Size of field name vector should be 3, but is %i", field_names.size());
+        LOG_ERROR("%s: Size of field name vector has to be be 3, but is %i", field_names.size(), this->getName().c_str());
         return false;
     }
 
-    pot_field_centers = _pot_field_centers.get();
     influence_distance = _initial_influence_distance.get();
     order = _order.get();
 
-    //Create potential fields. All fields will have dimension 3 here!
-    std::vector<PotentialField*> multiFields;
-    for(uint i = 0; i < pot_field_centers.size(); i++)
-        multiFields.push_back(new RadialRepulsivePotentialField(3));
-
-    // The Controller contains all potential fields:
-    controller = new MultiPotentialFields3D(multiFields);
-
-    setMaxInfluenceDistance(influence_distance);
-    setOrder(order);
-    setPotentialFieldCenters(pot_field_centers);
-
-    if (! CartesianRadialPotentialFieldsBase::configureHook())
-        return false;
+    setPotentialFieldCenters(_initial_pot_field_centers.get());
 
     return true;
 }
@@ -67,31 +55,24 @@ void CartesianRadialPotentialFields::stopHook(){
 }
 
 void CartesianRadialPotentialFields::cleanupHook(){
-    MultiPotentialFields3D* multi_field_ctrl = (MultiPotentialFields3D*)controller;
-    for(size_t i = 0; i < multi_field_ctrl->fields.size(); i++)
-        delete multi_field_ctrl->fields[i];
-    delete controller;
-    controller = 0;
+    clearPotentialFields();
     CartesianRadialPotentialFieldsBase::cleanupHook();
 }
 
-bool CartesianRadialPotentialFields::readSetpoints(){
-    if(_setpoint.readNewest(pot_field_centers) == RTT::NewData)
-        setPotentialFieldCenters(pot_field_centers);
+bool CartesianRadialPotentialFields::readPotFieldCenters(){
+    _influence_distance.read(influence_distance);
 
-    if(_influence_distance.read(influence_distance) == RTT::NewData)
-        setMaxInfluenceDistance(influence_distance);
+    if(_pot_field_centers.readNewest(pot_field_centers) == RTT::NewData)
+        setPotentialFieldCenters(pot_field_centers);
 
     return true; //Always return true here, since we don't necessarily need a setpoint (could be fixed by configuration)
 }
 
-bool CartesianRadialPotentialFields::readFeedback(){
-    if(_feedback.read(feedback) == RTT::NoData)
+bool CartesianRadialPotentialFields::readActualPosition(){
+    if(_actual_position.read(actual_position) == RTT::NoData)
         return false;
     else{
-        MultiPotentialFields3D* multi_field_ctrl = (MultiPotentialFields3D*)controller;
-        for(size_t i = 0; i < multi_field_ctrl->fields.size(); i++)
-            multi_field_ctrl->fields[i]->position = feedback.position;
+        setActualPosition(actual_position);
         return true;
     }
 }
@@ -100,54 +81,52 @@ void CartesianRadialPotentialFields::writeControlOutput(const Eigen::VectorXd &c
     //Control output will only have linear components, since radial fields cannot generate rotational components
     for(uint i = 0; i < 3; i++)
         control_output.velocity(i) = ctrl_output_raw(i);
-
-    //Write gradients of all potential fields on debug port
-    MultiPotentialFields3D* multi_field_ctrl = (MultiPotentialFields3D*)controller;
-    gradients.resize(multi_field_ctrl->fields.size());
-    for(size_t i = 0; i < multi_field_ctrl->fields.size(); i++)
-        gradients[i] = multi_field_ctrl->gradients[i];
-    _gradients.write(gradients);
-
     control_output.time = base::Time::now();
     _control_output.write(control_output);
-}
-
-void CartesianRadialPotentialFields::setMaxInfluenceDistance(const base::VectorXd& distance){
-
-    assert(controller != 0);
-
-    // If maximum influence distance is not set, the default (inf) will be used in the potential field. So,
-    // only do sth. if the size is not zero
-    if(distance.size() == 0){
-
-        MultiPotentialFields3D* multi_field_ctrl = (MultiPotentialFields3D*)controller;
-        if(distance.size() != (int)multi_field_ctrl->fields.size()){
-            LOG_ERROR("maxInfluenceDistance vector must have same length as number of potential fields");
-            throw std::invalid_argument("Invalid input");
-        }
-        for(size_t i = 0; i < multi_field_ctrl->fields.size(); i++)
-            multi_field_ctrl->fields[i]->influence_distance = distance(i);
-    }
-}
-
-void CartesianRadialPotentialFields::setOrder(const double order){
-
-    assert(controller != 0);
-    MultiPotentialFields3D* multi_field_ctrl = (MultiPotentialFields3D*)controller;
-    for(size_t i = 0; i < multi_field_ctrl->fields.size(); i++)
-        multi_field_ctrl->fields[i]->order = order;
 }
 
 void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<base::samples::RigidBodyState> &centers){
 
     assert(controller != 0);
 
-    MultiPotentialFields3D* multi_field_ctrl = (MultiPotentialFields3D*)controller;
-    if(centers.size() != multi_field_ctrl->fields.size()){
-        LOG_ERROR("Pot. Field Center vector must have same length as number of potential fields");
-        throw std::invalid_argument("Invalid input");
+    if(!centers.empty())
+    {
+        if(centers.size() != controller->fields.size()){
+
+            clearPotentialFields();
+
+            std::vector<PotentialField*> fields(centers.size());
+            for(size_t i = 0; i < centers.size(); i++){
+                fields[i] = new RadialPotentialField(3, order);
+                fields[i]->influence_distance = influence_distance;
+            }
+            controller->setFields(fields);
+        }
+        for(size_t i = 0; i < controller->fields.size(); i++){
+            if(!centers[i].hasValidPosition()){
+                LOG_ERROR("%s: Potential fields center number %i (source: %s, target: %s) has invalid position, e.g. NaN",
+                          this->getName().c_str(), i, centers[i].sourceFrame.c_str(), centers[i].targetFrame.c_str());
+                throw std::invalid_argument("Invalid potential field centers");
+            }
+            controller->fields[i]->pot_field_center = centers[i].position;
+            controller->fields[i]->position = actual_position.position;
+        }
     }
-    for(size_t i = 0; i < multi_field_ctrl->fields.size(); i++)
-        multi_field_ctrl->fields[i]->pot_field_center = centers[i].position;
 }
 
+void CartesianRadialPotentialFields::setActualPosition(const base::samples::RigidBodyState& actual){
+
+    for(size_t i = 0; i < controller->fields.size(); i++){
+        if(!actual.hasValidPosition()){
+            LOG_ERROR("%s: Actual position is invalid, e.g. NaN", this->getName().c_str());
+            throw std::invalid_argument("Invalid actual position");
+        }
+        controller->fields[i]->position = actual_position.position;
+    }
+}
+
+void CartesianRadialPotentialFields::clearPotentialFields(){
+    for(size_t i = 0; i < controller->fields.size(); i++)
+        delete controller->fields[i];
+    controller->fields.clear();
+}

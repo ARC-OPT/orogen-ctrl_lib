@@ -25,6 +25,16 @@ protected:
     /** Write the output of the controller to a port */
     virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw);
 
+    bool isValid(const base::Wrench &w){
+        return !base::isNaN(w.force(0)) && !base::isNaN(w.force(1)) && !base::isNaN(w.force(2)) &&
+               !base::isNaN(w.torque(0)) && !base::isNaN(w.torque(1)) && !base::isNaN(w.torque(2));
+    }
+    void invalidate(base::Wrench& w){
+        for(uint i = 0; i < 3; i++){
+            w.force(i) = base::NaN<double>();
+            w.torque(i) = base::NaN<double>();
+        }
+    }
 
 public:
     CartesianForceController(std::string const& name = "ctrl_lib::CartesianForceController");

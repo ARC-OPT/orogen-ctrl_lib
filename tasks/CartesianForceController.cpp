@@ -1,6 +1,7 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "CartesianForceController.hpp"
+#include <base/Logging.hpp>
 
 using namespace ctrl_lib;
 
@@ -23,6 +24,9 @@ bool CartesianForceController::configureHook()
     if (! CartesianForceControllerBase::configureHook())
         return false;
 
+    invalidate(setpoint);
+    invalidate(feedback);
+
     setpoint = _initial_setpoint.get();
 
     return true;
@@ -31,6 +35,7 @@ bool CartesianForceController::startHook()
 {
     if (! CartesianForceControllerBase::startHook())
         return false;
+
     return true;
 }
 
@@ -38,6 +43,12 @@ bool CartesianForceController::readFeedback(){
     if(_feedback.readNewest(feedback) == RTT::NoData)
         return false;
     else{
+
+        if(!isValid(feedback)){
+            LOG_ERROR("%s: Feedback has an invalid force or torque value", this->getName().c_str());
+            throw std::invalid_argument("Invalid feedback term");
+        }
+
         _current_feedback.write(feedback);
         controller->feedback.segment(0,3) = feedback.force;
         controller->feedback.segment(3,3) = feedback.force;
@@ -46,9 +57,15 @@ bool CartesianForceController::readFeedback(){
 }
 
 bool CartesianForceController::readSetpoint(){
-    if(_setpoint.readNewest(setpoint) == RTT::NoData)
+    if(_feedback.readNewest(setpoint) == RTT::NoData)
         return false;
     else{
+
+        if(!isValid(setpoint)){
+            LOG_ERROR("%s: Setpoint has an invalid force or torque value", this->getName().c_str());
+            throw std::invalid_argument("Invalid setpoint");
+        }
+
         controller->setpoint.segment(0,3) = setpoint.force;
         controller->setpoint.segment(3,3) = setpoint.force;
         return true;

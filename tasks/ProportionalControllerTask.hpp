@@ -19,7 +19,7 @@ namespace ctrl_lib{
         /** Write the output of the controller to a port */
         virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw) = 0;
 
-        Eigen::VectorXd control_output; /** Control output */
+        Eigen::VectorXd control_output_raw; /** Control output */
         std::vector<std::string> field_names;
         ProportionalController* controller;
 

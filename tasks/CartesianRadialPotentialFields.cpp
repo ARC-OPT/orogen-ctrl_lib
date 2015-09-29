@@ -69,10 +69,11 @@ bool CartesianRadialPotentialFields::readPotFieldCenters(){
 }
 
 bool CartesianRadialPotentialFields::readActualPosition(){
-    if(_actual_position.read(actual_position) == RTT::NoData)
+    if(_position.read(position) == RTT::NoData)
         return false;
     else{
-        setActualPosition(actual_position);
+        setActualPosition(position);
+        _current_position.write(position);
         return true;
     }
 }
@@ -109,7 +110,7 @@ void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<
                 throw std::invalid_argument("Invalid potential field centers");
             }
             controller->fields[i]->pot_field_center = centers[i].position;
-            controller->fields[i]->position = actual_position.position;
+            controller->fields[i]->position = position.position;
         }
     }
 }
@@ -121,7 +122,7 @@ void CartesianRadialPotentialFields::setActualPosition(const base::samples::Rigi
             LOG_ERROR("%s: Actual position is invalid, e.g. NaN", this->getName().c_str());
             throw std::invalid_argument("Invalid actual position");
         }
-        controller->fields[i]->position = actual_position.position;
+        controller->fields[i]->position = position.position;
     }
 }
 

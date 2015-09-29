@@ -15,7 +15,7 @@ class CartesianRadialPotentialFields : public CartesianRadialPotentialFieldsBase
     friend class CartesianRadialPotentialFieldsBase;
 protected:
 
-    base::samples::RigidBodyState control_output, actual_position;
+    base::samples::RigidBodyState control_output, position;
     std::vector<base::samples::RigidBodyState> pot_field_centers;
     int order;
     double influence_distance;

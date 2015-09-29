@@ -27,9 +27,9 @@ protected:
     void setPotFieldCenters(const base::commands::Joints& centers);
 
     base::commands::Joints pot_field_centers;
-    base::samples::Joints actual_position;
+    base::samples::Joints position;
     base::commands::Joints control_output;
-    Eigen::VectorXd position;
+    Eigen::VectorXd position_raw;
 
     inline void extractPositions(const base::samples::Joints& joints, const std::vector<std::string> &names, Eigen::VectorXd& positions){
 

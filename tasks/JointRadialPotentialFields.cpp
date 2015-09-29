@@ -76,14 +76,15 @@ bool JointRadialPotentialFields::readPotFieldCenters(){
 
 bool JointRadialPotentialFields::readActualPosition(){
 
-    if(_actual_position.read(actual_position) == RTT::NoData)
+    if(_position.read(position) == RTT::NoData)
         return false;
     else{
-        extractPositions(actual_position, field_names, position);
+        extractPositions(position, field_names, position_raw);
         for(size_t i = 0; i < field_names.size(); i++){
             controller->fields[i]->position.resize(1);
-            controller->fields[i]->position[0] = position(i);
+            controller->fields[i]->position[0] = position_raw(i);
         }
+        _current_position.write(position);
         return true;
     }
 }

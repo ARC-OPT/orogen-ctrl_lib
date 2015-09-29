@@ -109,10 +109,11 @@ task_context "JointRadialPotentialFields" do subclasses "PotentialFieldsControll
    property("initial_influence_distance", "base/VectorXd").doc("Influence distance of the potential fields. Size has to be same as the number of potential fields.")
 
    input_port("pot_field_centers",  "base/commands/Joints").doc("Set new centers of the potential fields here. Size has to be same as field_names.")
-   input_port("actual_position",    "base/samples/Joints" ).doc("Set actual joint position here. Size has to be same as field_names.")
+   input_port("position",           "base/samples/Joints" ).doc("Set actual joint position here. Size has to be same as field_names.")
    input_port("influence_distance", "base/VectorXd").doc("Set new influence distance zone here.")
      
-   output_port("control_output", "base/commands/Joints").doc("Control output as joint velocity.")
+   output_port("control_output",   "base/commands/Joints").doc("Control output as joint velocity.")
+   output_port("current_position", "base/samples/Joints" ).doc("Debug: Current position.")
 
    periodic 0.01
 end
@@ -128,10 +129,11 @@ task_context "CartesianRadialPotentialFields" do subclasses "PotentialFieldsCont
    property("initial_pot_field_centers",  "std/vector<base/samples/RigidBodyState>").doc("Initial centers of the potential fields.")
 
    input_port("pot_field_centers",  "std/vector<base/samples/RigidBodyState>").doc("Set new centers of the potential fields here. Number of fields can be arbitrary.")
-   input_port("actual_position",    "base/samples/RigidBodyState"            ).doc("Feedback term of the controller. Actual pose of the controlled frame.")
+   input_port("position",           "base/samples/RigidBodyState"            ).doc("Feedback term of the controller. Actual pose of the controlled frame.")
    input_port("influence_distance", "double"                                 ).doc("Set new influence distance zone here.")
 
-   output_port("control_output", "base/samples/RigidBodyState" ).doc("Control output as cartesian velocity.")
+   output_port("control_output",   "base/samples/RigidBodyState" ).doc("Control output as cartesian velocity.")
+   output_port("current_position", "base/samples/RigidBodyState" ).doc("Debug: Current position.")
 
    periodic 0.01
 end

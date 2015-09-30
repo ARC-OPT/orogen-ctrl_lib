@@ -24,11 +24,6 @@ bool CartesianForceController::configureHook()
     if (! CartesianForceControllerBase::configureHook())
         return false;
 
-    invalidate(setpoint);
-    invalidate(feedback);
-
-    setpoint = _initial_setpoint.get();
-
     return true;
 }
 bool CartesianForceController::startHook()
@@ -36,13 +31,18 @@ bool CartesianForceController::startHook()
     if (! CartesianForceControllerBase::startHook())
         return false;
 
+    invalidate(setpoint);
+    invalidate(feedback);
+
     return true;
 }
 
 bool CartesianForceController::readFeedback(){
-    if(_feedback.readNewest(feedback) == RTT::NoData)
-        return false;
-    else{
+
+    if(_feedback.readNewest(feedback) == RTT::NewData)
+        has_feedback = true;
+
+    if(has_feedback){
 
         if(!isValid(feedback)){
             LOG_ERROR("%s: Feedback has an invalid force or torque value", this->getName().c_str());
@@ -54,12 +54,16 @@ bool CartesianForceController::readFeedback(){
         controller->feedback.segment(3,3) = feedback.force;
         return true;
     }
+    else
+        return false;
 }
 
 bool CartesianForceController::readSetpoint(){
-    if(_feedback.readNewest(setpoint) == RTT::NoData)
-        return false;
-    else{
+
+    if(_feedback.readNewest(setpoint) == RTT::NewData)
+        has_setpoint = true;
+
+    if(has_setpoint){
 
         if(!isValid(setpoint)){
             LOG_ERROR("%s: Setpoint has an invalid force or torque value", this->getName().c_str());
@@ -70,6 +74,8 @@ bool CartesianForceController::readSetpoint(){
         controller->setpoint.segment(3,3) = setpoint.force;
         return true;
     }
+    else
+        return false;
 }
 
 void CartesianForceController::writeControlOutput(const Eigen::VectorXd &ctrl_output_raw){

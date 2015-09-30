@@ -20,7 +20,6 @@ bool JointRadialPotentialFields::configureHook(){
 
     if (! JointRadialPotentialFieldsBase::configureHook())
         return false;
-
     field_names = _field_names.get();
 
     // Create a single 1-dimensional potential field per joint:
@@ -32,7 +31,9 @@ bool JointRadialPotentialFields::configureHook(){
     controller->setFields(fields);
 
     setInfluenceDistance(_initial_influence_distance.get());
-    setPotFieldCenters(_initial_pot_field_centers.get());
+    pot_field_centers = _initial_pot_field_centers.get();
+    if(!pot_field_centers.empty())
+        has_pot_field_centers = true;
 
     control_output.resize(field_names.size());
     control_output.names = field_names;
@@ -43,6 +44,7 @@ bool JointRadialPotentialFields::configureHook(){
 bool JointRadialPotentialFields::startHook(){
     if (! JointRadialPotentialFieldsBase::startHook())
         return false;
+
     return true;
 }
 
@@ -63,22 +65,34 @@ void JointRadialPotentialFields::cleanupHook(){
     for(size_t i = 0; i < controller->fields.size(); i++)
         delete controller->fields[i];
 
+    pot_field_centers.clear();
+    position.clear();
+    control_output.clear();
+
     JointRadialPotentialFieldsBase::cleanupHook();
 }
 
 bool JointRadialPotentialFields::readPotFieldCenters(){
 
     if(_pot_field_centers.readNewest(pot_field_centers) == RTT::NewData)
-        setPotFieldCenters(pot_field_centers);
+        has_pot_field_centers = true;
 
-    return true; //Always return true here, since we don't necessarily need a setpoint (could be the one from configuration)
+    if(has_pot_field_centers){
+        setPotFieldCenters(pot_field_centers);
+        return true;
+    }
+    else
+        return false;
+
+    return true;
 }
 
 bool JointRadialPotentialFields::readActualPosition(){
 
-    if(_position.read(position) == RTT::NoData)
-        return false;
-    else{
+    if(_position.readNewest(position) == RTT::NewData)
+        has_position = true;
+
+    if(has_position){
         extractPositions(position, field_names, position_raw);
         for(size_t i = 0; i < field_names.size(); i++){
             controller->fields[i]->position.resize(1);
@@ -87,6 +101,8 @@ bool JointRadialPotentialFields::readActualPosition(){
         _current_position.write(position);
         return true;
     }
+    else
+        return false;
 }
 
 void JointRadialPotentialFields::writeControlOutput(const Eigen::VectorXd &ctrl_output_raw){
@@ -101,9 +117,9 @@ void JointRadialPotentialFields::setPotFieldCenters(const base::commands::Joints
 
     assert(controller != 0);
 
-    extractPositions(centers, field_names, position);
+    extractPositions(centers, field_names, position_raw);
     for(size_t i = 0; i < controller->fields.size(); i++){
         controller->fields[i]->pot_field_center.resize(1);
-        controller->fields[i]->pot_field_center(0) = position(i);
+        controller->fields[i]->pot_field_center(0) = position_raw(i);
     }
 }

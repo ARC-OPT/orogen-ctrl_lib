@@ -22,6 +22,7 @@ namespace ctrl_lib{
         Eigen::VectorXd control_output_raw; /** Control output */
         std::vector<std::string> field_names;
         ProportionalController* controller;
+        bool has_setpoint, has_feedback;
 
     public:
         ProportionalControllerTask(std::string const& name = "ctrl_lib::ProportionalControllerTask");

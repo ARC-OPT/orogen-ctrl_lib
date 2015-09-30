@@ -19,13 +19,6 @@ CartesianPositionController::~CartesianPositionController(){
 
 bool CartesianPositionController::configureHook(){
 
-    setpoint.invalidatePosition();
-    setpoint.invalidateOrientation();
-    setpoint.invalidateVelocity();
-    setpoint.invalidateAngularVelocity();
-
-    setpoint = _initial_setpoint.get();
-
     if (! CartesianPositionControllerBase::configureHook())
         return false;
 
@@ -36,14 +29,20 @@ bool CartesianPositionController::startHook(){
     if (! CartesianPositionControllerBase::startHook())
         return false;
 
+    setpoint.invalidatePosition();
+    setpoint.invalidateOrientation();
+    setpoint.invalidateVelocity();
+    setpoint.invalidateAngularVelocity();
+
     return true;
 }
 
 bool CartesianPositionController::readSetpoint(){
 
-    if(_setpoint.readNewest(setpoint) == RTT::NoData)
-        return false;
-    else{
+    if(_setpoint.readNewest(setpoint) == RTT::NewData)
+        has_setpoint = true;
+
+    if(has_setpoint){
 
         if(!setpoint.hasValidPosition() || !setpoint.hasValidOrientation()){
             LOG_ERROR("%s: Setpoint does not have a valid position or orientation value", this->getName().c_str());
@@ -55,7 +54,7 @@ bool CartesianPositionController::readSetpoint(){
 
         // Set reference value to control error and actual value to zero, since the controller
         // cannot deal with full poses. Use angle-axis representation to compute the orientation-error
-        // as xyz-rotation, since the controller cannot deal with full poses. This will give the
+        // as zyx-rotation, since the controller cannot deal with full poses. This will give the
         // rotational velocity in 3D space that rotates the actual pose (feedback) onto the setpoint
         controller->setpoint.resize(6);
         controller->setpoint.segment(0,3) = setpoint.position - feedback.position;
@@ -65,13 +64,16 @@ bool CartesianPositionController::readSetpoint(){
 
         return true;
     }
+    else
+        return false;
 }
 
 bool CartesianPositionController::readFeedback(){
 
-    if(_feedback.readNewest(feedback) == RTT::NoData)
-        return false;
-    else{
+    if(_feedback.readNewest(feedback) == RTT::NewData)
+         has_feedback = true;
+
+    if(has_feedback){
 
         if(!feedback.hasValidPosition() || !feedback.hasValidOrientation()){
             LOG_ERROR("%s: Feedback term does not have a valid position or orientation value", this->getName().c_str());
@@ -81,6 +83,8 @@ bool CartesianPositionController::readFeedback(){
         _current_feedback.write(feedback);
         return true;
     }
+    else
+        return false;
 }
 
 void CartesianPositionController::writeControlOutput(const Eigen::VectorXd &ctrl_output_raw){

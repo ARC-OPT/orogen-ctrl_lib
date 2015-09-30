@@ -53,6 +53,9 @@ bool ProportionalControllerTask::startHook()
 {
     if (! ProportionalControllerTaskBase::startHook())
         return false;
+
+    has_setpoint = has_feedback = false;
+
     return true;
 }
 void ProportionalControllerTask::updateHook()

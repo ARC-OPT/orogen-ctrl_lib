@@ -36,22 +36,28 @@ bool JointPositionController::startHook(){
 }
 
 bool JointPositionController::readSetpoint(){
-    if(_setpoint.readNewest(setpoint) == RTT::NoData)
-        return false;
-    else{
+    if(_setpoint.readNewest(setpoint) == RTT::NewData)
+        has_setpoint = true;
+
+    if(has_setpoint){
         extractPositions(setpoint, field_names, controller->setpoint);
         return true;
     }
+    else
+        return false;
 }
 
 bool JointPositionController::readFeedback(){
-    if(_feedback.readNewest(feedback) == RTT::NoData)
-        return false;
-    else{
+    if(_feedback.readNewest(feedback) == RTT::NewData)
+        has_feedback = true;
+
+    if(has_feedback){
         extractPositions(feedback, field_names, controller->feedback);
         _current_feedback.write(feedback);
         return true;
     }
+    else
+        return false;
 }
 
 void JointPositionController::writeControlOutput(const Eigen::VectorXd &ctrl_output_raw){

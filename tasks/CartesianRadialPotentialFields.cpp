@@ -31,8 +31,6 @@ bool CartesianRadialPotentialFields::configureHook(){
     influence_distance = _initial_influence_distance.get();
     order = _order.get();
 
-    setPotentialFieldCenters(_initial_pot_field_centers.get());
-
     return true;
 }
 
@@ -63,19 +61,28 @@ bool CartesianRadialPotentialFields::readPotFieldCenters(){
     _influence_distance.read(influence_distance);
 
     if(_pot_field_centers.readNewest(pot_field_centers) == RTT::NewData)
-        setPotentialFieldCenters(pot_field_centers);
+        has_pot_field_centers = true;
 
-    return true; //Always return true here, since we don't necessarily need a setpoint (could be fixed by configuration)
+    if(has_pot_field_centers){
+        setPotentialFieldCenters(pot_field_centers);
+        return true;
+    }
+    else
+        return false;
+
+    return true;
 }
 
 bool CartesianRadialPotentialFields::readActualPosition(){
-    if(_position.read(position) == RTT::NoData)
-        return false;
-    else{
+    if(_position.read(position) == RTT::NewData)
+        has_position = true;
+    if(has_position){
         setActualPosition(position);
         _current_position.write(position);
         return true;
     }
+    else
+        return false;
 }
 
 void CartesianRadialPotentialFields::writeControlOutput(const Eigen::VectorXd &ctrl_output_raw){
@@ -130,4 +137,6 @@ void CartesianRadialPotentialFields::clearPotentialFields(){
     for(size_t i = 0; i < controller->fields.size(); i++)
         delete controller->fields[i];
     controller->fields.clear();
+    pot_field_centers.clear();
+    position.invalidatePosition();
 }

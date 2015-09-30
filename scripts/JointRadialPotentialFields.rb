@@ -32,30 +32,30 @@ Orocos.run "ctrl_lib::JointRadialPotentialFields" => "controller" do
    controller.configure
    controller.start
 
-   actual_position          = Types::Base::Samples::Joints.new
-   actual_position.names    = controller.field_names
+   position          = Types::Base::Samples::Joints.new
+   position.names    = controller.field_names
    state                    = Types::Base::JointState.new
    state.position           = 0.01
-   actual_position.elements = Array[state, state]
+   position.elements = Array[state, state]
 
-   actual_position_writer = controller.actual_position.writer
+   position_writer = controller.position.writer
    control_output_reader  = controller.control_output.reader
    control_output         = Types::Base::Commands::Joints.new
 
    cycle_time = 0.01
    puts "Press Ctrl-C to exit..."
    while true
-      actual_position_writer.write(actual_position)
+      position_writer.write(position)
       if not control_output_reader.read(control_output)
          sleep(cycle_time)
          next
       end
 
-      for i in (0..1) do actual_position.elements[i].position += cycle_time*control_output.elements[i].speed end
+      for i in (0..1) do position.elements[i].position += cycle_time*control_output.elements[i].speed end
 
       print "Potential Field Centers: Joint_1: #{'%.04f' % pot_field_centers.elements[0].position}, Joint_2: #{'%.04f' % pot_field_centers.elements[1].position}\n"
       print "Control Output:          Joint_1: #{'%.04f' % control_output.elements[0].speed}, Joint_2: #{'%.04f' % control_output.elements[1].speed}\n"
-      print "Actual Position:         Joint_1: #{'%.04f' % actual_position.elements[0].position}, Joint_2: #{'%.04f' % actual_position.elements[1].position}\n\n"
+      print "Actual Position:         Joint_1: #{'%.04f' % position.elements[0].position}, Joint_2: #{'%.04f' % position.elements[1].position}\n\n"
       sleep(cycle_time)
    end
 

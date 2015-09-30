@@ -25,6 +25,7 @@ protected:
     std::vector<std::string> field_names;
     std::vector<PotentialFieldInfo> field_infos;
     Eigen::VectorXd control_output_raw;
+    bool has_pot_field_centers, has_position;
 
     void setInfluenceDistance(const base::VectorXd &distance){
 

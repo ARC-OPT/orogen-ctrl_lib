@@ -25,6 +25,8 @@ bool PotentialFieldsControllerTask::configureHook()
     if (! PotentialFieldsControllerTaskBase::configureHook())
         return false;
 
+    has_pot_field_centers = has_position = false;
+
     controller = new PotentialFieldsController();
 
     field_names = _field_names.get();
@@ -52,6 +54,7 @@ bool PotentialFieldsControllerTask::startHook()
 {
     if (! PotentialFieldsControllerTaskBase::startHook())
         return false;
+
     return true;
 }
 void PotentialFieldsControllerTask::updateHook()
@@ -65,8 +68,8 @@ void PotentialFieldsControllerTask::updateHook()
     _current_max_control_output.write(controller->max_control_output);
 
     if(!readActualPosition()){
-        if(state() != NO_ACTUAL_POSITION)
-            state(NO_ACTUAL_POSITION);
+        if(state() != NO_POSITION)
+            state(NO_POSITION);
         return;
     }
     if(!readPotFieldCenters()){
@@ -74,7 +77,6 @@ void PotentialFieldsControllerTask::updateHook()
             state(NO_POT_FIELD_CENTERS);
         return;
     }
-
     if(state() != RUNNING)
         state(RUNNING);
 
@@ -100,4 +102,6 @@ void PotentialFieldsControllerTask::cleanupHook()
     PotentialFieldsControllerTaskBase::cleanupHook();
 
     delete controller;
+    field_names.clear();
+    field_infos.clear();
 }

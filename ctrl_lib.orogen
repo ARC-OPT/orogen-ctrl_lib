@@ -169,8 +169,8 @@ task_context "JointRadialPotentialFields" do subclasses "PotentialFieldsControll
    # Set new centers of the potential fields here. Joints will mapped internally by names. All joints from field_names have to be present here!
    input_port "pot_field_centers",  "base/commands/Joints"
 
-   # Set actual joint position here. Size has to be same as size of field_names. Joints will mapped internally by names. All joints from field_names have to be present here!
-   input_port "position",           "base/samples/Joints"
+   # Controller feedback: Actual joint position. Size has to be same as size of field_names. Joints will mapped internally by names. All joints from field_names have to be present here!
+   input_port "feedback",           "base/samples/Joints"
 
    # Set new influence distance zone here. Size has to be same as size of field_names.
    input_port "influence_distance", "base/VectorXd"
@@ -197,8 +197,8 @@ task_context "CartesianRadialPotentialFields" do subclasses "PotentialFieldsCont
    # Set new centers of the potential fields here. Number of fields can be anything > 0.
    input_port "pot_field_centers",  "std/vector<base/samples/RigidBodyState>"
 
-   # Actual position of the control frame on the robot. Orientation is not used in this controller
-   input_port "position",           "base/samples/RigidBodyState"
+   # Controller feedback: Actual position of the control frame on the robot. Orientation is not used in this controller
+   input_port "feedback",           "base/samples/RigidBodyState"
 
    # Set new influence distance zone here. Value has to be > 0!
    input_port "influence_distance", "double"

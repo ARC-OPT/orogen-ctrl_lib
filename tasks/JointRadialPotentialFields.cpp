@@ -32,8 +32,10 @@ bool JointRadialPotentialFields::configureHook(){
 
     setInfluenceDistance(_initial_influence_distance.get());
     pot_field_centers = _initial_pot_field_centers.get();
-    if(!pot_field_centers.empty())
+    if(!pot_field_centers.empty()){
+        setPotFieldCenters(pot_field_centers);
         has_pot_field_centers = true;
+    }
 
     control_output.resize(field_names.size());
     control_output.names = field_names;
@@ -89,7 +91,7 @@ bool JointRadialPotentialFields::readPotFieldCenters(){
 
 bool JointRadialPotentialFields::readActualPosition(){
 
-    if(_position.readNewest(position) == RTT::NewData)
+    if(_feedback.readNewest(position) == RTT::NewData)
         has_position = true;
 
     if(has_position){

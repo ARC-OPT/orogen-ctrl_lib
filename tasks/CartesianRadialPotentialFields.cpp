@@ -74,7 +74,7 @@ bool CartesianRadialPotentialFields::readPotFieldCenters(){
 }
 
 bool CartesianRadialPotentialFields::readActualPosition(){
-    if(_position.read(position) == RTT::NewData)
+    if(_feedback.read(position) == RTT::NewData)
         has_position = true;
     if(has_position){
         setActualPosition(position);

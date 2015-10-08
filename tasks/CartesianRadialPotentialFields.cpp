@@ -78,7 +78,7 @@ bool CartesianRadialPotentialFields::readActualPosition(){
         has_position = true;
     if(has_position){
         setActualPosition(position);
-        _current_position.write(position);
+        _current_feedback.write(position);
         return true;
     }
     else

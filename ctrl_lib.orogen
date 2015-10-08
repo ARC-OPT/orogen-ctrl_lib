@@ -179,7 +179,7 @@ task_context "JointRadialPotentialFields" do subclasses "PotentialFieldsControll
    output_port "control_output",   "base/commands/Joints"
 
    # Debug: Current position.
-   output_port "current_position", "base/samples/Joints"
+   output_port "current_feedback", "base/samples/Joints"
 
    periodic 0.01
 end
@@ -207,7 +207,7 @@ task_context "CartesianRadialPotentialFields" do subclasses "PotentialFieldsCont
    output_port "control_output",   "base/samples/RigidBodyState"
 
    # Debug: Current position.
-   output_port "current_position", "base/samples/RigidBodyState"
+   output_port "current_feedback", "base/samples/RigidBodyState"
 
    periodic 0.01
 end

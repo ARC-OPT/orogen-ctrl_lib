@@ -100,7 +100,7 @@ bool JointRadialPotentialFields::readActualPosition(){
             controller->fields[i]->position.resize(1);
             controller->fields[i]->position[0] = position_raw(i);
         }
-        _current_position.write(position);
+        _current_feedback.write(position);
         return true;
     }
     else

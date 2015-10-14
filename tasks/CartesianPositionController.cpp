@@ -70,6 +70,8 @@ bool CartesianPositionController::readSetpoint(){
         controller->feedback.resize(6);
         controller->feedback.setZero();
 
+        _current_setpoint.write(setpoint);
+
         return true;
     }
     else

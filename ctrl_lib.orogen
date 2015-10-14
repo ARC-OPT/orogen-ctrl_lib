@@ -66,6 +66,9 @@ task_context "JointPositionController" do subclasses "ProportionalControllerTask
    # Control output as velocity. Size will be same as size of field_names.
    output_port "control_output", "base/commands/Joints"
 
+   # Debug: Current setpoint.
+   output_port "current_setpoint", "base/commands/Joints"
+
    # Debug: Current feedback term.
    output_port "current_feedback", "base/samples/Joints"
 
@@ -88,6 +91,9 @@ task_context "CartesianPositionController" do subclasses "ProportionalController
    # Control output as Cartesian velocity/angular velocity.
    output_port "control_output", "base/samples/RigidBodyState"
 
+   # Debug: Current setpoint.
+   output_port "current_setpoint", "base/samples/RigidBodyState"
+
    # Debug: Current feedback term.
    output_port "current_feedback", "base/samples/RigidBodyState"
 
@@ -108,6 +114,9 @@ task_context "CartesianForceController" do subclasses "ProportionalControllerTas
 
    # Control output as Cartesian velocity/angular velocity.
    output_port "control_output", "base/samples/RigidBodyState"
+
+   # Debug: Current setpoint.
+   output_port "current_setpoint", "base/samples/Wrench"
 
    # Debug: Current feedback term.
    output_port "current_feedback", "base/samples/Wrench"

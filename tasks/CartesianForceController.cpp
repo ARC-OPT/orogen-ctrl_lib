@@ -72,6 +72,7 @@ bool CartesianForceController::readSetpoint(){
 
         controller->setpoint.segment(0,3) = setpoint.force;
         controller->setpoint.segment(3,3) = setpoint.force;
+        _current_setpoint.write(setpoint);
         return true;
     }
     else

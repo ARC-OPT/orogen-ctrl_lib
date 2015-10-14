@@ -3,6 +3,7 @@
 #include "CartesianPositionController.hpp"
 #include <ctrl_lib/ProportionalController.hpp>
 #include <base/Logging.hpp>
+#include <kdl_conversions/KDLConversions.hpp>
 
 using namespace ctrl_lib;
 
@@ -53,12 +54,19 @@ bool CartesianPositionController::readSetpoint(){
         orientation_error = setpoint.orientation * feedback.orientation.inverse();
 
         // Set reference value to control error and actual value to zero, since the controller
-        // cannot deal with full poses. Use angle-axis representation to compute the orientation-error
+        // cannot deal with full poses. Use KDL::diff to compute the orientation-error
         // as zyx-rotation, since the controller cannot deal with full poses. This will give the
         // rotational velocity in 3D space that rotates the actual pose (feedback) onto the setpoint
+
+        KDL::Frame setpoint_kdl, feedback_kdl;
+        KDL::Twist diff;
+        kdl_conversions::RigidBodyState2KDL(setpoint,setpoint_kdl);
+        kdl_conversions::RigidBodyState2KDL(feedback,feedback_kdl);
+        diff = KDL::diff(feedback_kdl, setpoint_kdl);
+
         controller->setpoint.resize(6);
-        controller->setpoint.segment(0,3) = setpoint.position - feedback.position;
-        controller->setpoint.segment(3,3) = orientation_error.axis()* orientation_error.angle();
+        for(int i = 0; i < 6; i++)
+            controller->setpoint(i) = diff(i);
         controller->feedback.resize(6);
         controller->feedback.setZero();
 

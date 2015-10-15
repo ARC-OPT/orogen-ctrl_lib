@@ -36,15 +36,15 @@ bool JointPositionController::startHook(){
 }
 
 bool JointPositionController::readSetpoint(){
-    if(_setpoint.readNewest(setpoint) == RTT::NewData)
+    if(_setpoint.readNewest(setpoint) == RTT::NewData){
         has_setpoint = true;
-
-    if(has_setpoint){
         extractPositions(setpoint, field_names, controller->setpoint);
         extractVelocities(setpoint, field_names, controller->feed_forward);
         _current_setpoint.write(setpoint);
-        return true;
     }
+
+    if(has_setpoint)
+        return true;
     else
         return false;
 }
@@ -89,10 +89,12 @@ void JointPositionController::reset(){
     if(has_feedback){
         setpoint.resize(field_names.size());
         setpoint.names = field_names;
-        for(size_t i = 0; i < field_names.size(); i++){
-            const base::JointState& state = feedback.getElementByName(field_names[i]);
-            setpoint[i].position = state.position;
-        }
+        for(size_t i = 0; i < field_names.size(); i++)
+            setpoint[i].position = feedback.getElementByName(field_names[i]).position;
+        _current_setpoint.write(setpoint);
+
+        extractPositions(setpoint, field_names, controller->setpoint);
+        extractVelocities(setpoint, field_names, controller->feed_forward);
         has_setpoint = true;
     }
 }

@@ -5,6 +5,7 @@
 
 #include "ctrl_lib/CartesianPositionControllerBase.hpp"
 #include <base/commands/Joints.hpp>
+#include <kdl_conversions/KDLConversions.hpp>
 
 namespace ctrl_lib {
 
@@ -16,6 +17,7 @@ protected:
 
     std::vector<std::string> joint_names;
     base::samples::RigidBodyState setpoint, control_output, feedback;
+    KDL::Frame setpoint_kdl, feedback_kdl;
     Eigen::AngleAxisd orientation_error;
 
     /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */

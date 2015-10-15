@@ -84,3 +84,15 @@ void JointPositionController::stopHook(){
 void JointPositionController::cleanupHook(){
     JointPositionControllerBase::cleanupHook();
 }
+
+void JointPositionController::reset(){
+    if(has_feedback){
+        setpoint.resize(field_names.size());
+        setpoint.names = field_names;
+        for(size_t i = 0; i < field_names.size(); i++){
+            const base::JointState& state = feedback.getElementByName(field_names[i]);
+            setpoint[i].position = state.position;
+        }
+        has_setpoint = true;
+    }
+}

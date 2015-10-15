@@ -46,6 +46,8 @@ public:
     void errorHook();
     void stopHook();
     void cleanupHook();
+
+    virtual void reset();
 };
 }
 

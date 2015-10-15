@@ -124,3 +124,11 @@ void CartesianPositionController::stopHook(){
 void CartesianPositionController::cleanupHook(){
     CartesianPositionControllerBase::cleanupHook();
 }
+
+void CartesianPositionController::reset(){
+    if(has_feedback){
+        setpoint.position = feedback.position;
+        setpoint.orientation = feedback.orientation;
+        has_setpoint = true;
+    }
+}

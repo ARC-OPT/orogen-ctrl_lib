@@ -103,3 +103,10 @@ void CartesianForceController::cleanupHook()
 {
     CartesianForceControllerBase::cleanupHook();
 }
+
+void CartesianForceController::reset(){
+    if(has_feedback){
+        setpoint = feedback;
+        has_setpoint = true;
+    }
+}

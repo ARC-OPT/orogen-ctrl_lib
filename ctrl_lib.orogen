@@ -48,6 +48,9 @@ task_context "ProportionalControllerTask" do abstract
    # Debug: Current dead zone.
    output_port "current_dead_zone", "base/VectorXd"
 
+   # Set setpoint to current feedback value
+   operation "reset"
+
    periodic 0.01
 end
 

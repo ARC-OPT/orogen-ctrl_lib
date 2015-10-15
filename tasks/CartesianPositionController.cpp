@@ -70,6 +70,11 @@ bool CartesianPositionController::readSetpoint(){
         controller->feedback.resize(6);
         controller->feedback.setZero();
 
+        if(setpoint.hasValidVelocity() && setpoint.hasValidAngularVelocity()){
+            controller->feed_forward.segment(0,3) = setpoint.velocity;
+            controller->feed_forward.segment(3,3) = setpoint.angular_velocity;
+        }
+
         _current_setpoint.write(setpoint);
 
         return true;

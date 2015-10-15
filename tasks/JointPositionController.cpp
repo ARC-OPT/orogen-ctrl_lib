@@ -41,6 +41,7 @@ bool JointPositionController::readSetpoint(){
 
     if(has_setpoint){
         extractPositions(setpoint, field_names, controller->setpoint);
+        extractVelocities(setpoint, field_names, controller->feed_forward);
         _current_setpoint.write(setpoint);
         return true;
     }

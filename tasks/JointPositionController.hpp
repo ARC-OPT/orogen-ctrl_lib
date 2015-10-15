@@ -43,6 +43,18 @@ protected:
         }
     }
 
+    inline void extractVelocities(const base::samples::Joints& joints, const std::vector<std::string> &names, Eigen::VectorXd& velocities){
+        velocities.resize(names.size(), 0);
+        for(size_t i = 0; i < names.size(); i++){
+            const base::JointState& elem = joints.getElementByName(names[i]);
+            if(!elem.hasSpeed()){ // If no speeds are given for an element, disable feed forward term
+                velocities.setConstant(0);
+                return;
+            }
+            velocities(i) = elem.speed;
+        }
+    }
+
 public:
     JointPositionController(std::string const& name = "ctrl_lib::JointPositionController");
     JointPositionController(std::string const& name, RTT::ExecutionEngine* engine);

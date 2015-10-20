@@ -21,11 +21,13 @@ protected:
     double influence_distance;
 
     /** Read actual position. Return false if there is no valid actual position*/
-    virtual bool readActualPosition();
+    virtual bool readFeedback();
     /** Read potential field centers. Return false if there are no valid potential centers*/
-    virtual bool readPotFieldCenters() ;
+    virtual bool readSetpoint() ;
     /** Write the output of the controller to a port */
-    virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw) ;
+    virtual void writeControlOutput(const base::VectorXd &ctrl_output_raw);
+    /** Write activation function to port*/
+    virtual void writeActivationFunction(){}
     /** Set new potential field centers*/
     void setPotentialFieldCenters(const std::vector<base::samples::RigidBodyState> &centers);
     /** Set actual position in all potential fields */
@@ -43,6 +45,8 @@ public:
     void errorHook();
     void stopHook();
     void cleanupHook();
+
+    virtual void reset(){}
 };
 }
 

@@ -15,39 +15,41 @@ class PotentialFieldsControllerTask : public PotentialFieldsControllerTaskBase
 protected:
 
     /** Read actual position. Return false if there is no valid actual position*/
-    virtual bool readActualPosition() = 0;
+    virtual bool readSetpoint() = 0;
     /** Read potential field centers. Return false if there are no valid potential centers*/
-    virtual bool readPotFieldCenters() = 0;
+    virtual bool readFeedback() = 0;
     /** Write the output of the controller to a port */
-    virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw) = 0;
+    virtual void writeControlOutput(const base::VectorXd &ctrl_output_raw) = 0;
+    /** Write activation function to port*/
+    virtual void writeActivationFunction() = 0;
 
-    PotentialFieldsController* controller;
-    std::vector<std::string> field_names;
     std::vector<PotentialFieldInfo> field_infos;
-    Eigen::VectorXd control_output_raw;
-    bool has_pot_field_centers, has_position;
+    bool has_pot_field_centers, has_feedback;
+    base::VectorXd influence_distance;
 
     void setInfluenceDistance(const base::VectorXd &distance){
 
-        assert(controller != 0);
+        PotentialFieldsController* ctrl = (PotentialFieldsController*)controller;
+
+        assert(ctrl != 0);
 
         // If maximum influence distance is not set, the default (inf) will be used in the potential field. So,
         // only do sth. if the size is not zero
         if(distance.size() != 0){
 
-            if(distance.size() != (int)controller->fields.size()){
+            if(distance.size() != (int)ctrl->fields.size()){
                 LOG_ERROR("%s: Max. Influence Distance vector has size %s, but field names size is ",
-                          this->getName().c_str(), distance.size(), controller->fields.size());
+                          this->getName().c_str(), distance.size(), ctrl->fields.size());
                 throw std::invalid_argument("Invalid influence distance");
             }
-            for(size_t i = 0; i < controller->fields.size(); i++)
-                controller->fields[i]->influence_distance = distance(i);
+            for(size_t i = 0; i < ctrl->fields.size(); i++)
+                ctrl->fields[i]->influence_distance = distance(i);
         }
     }
 
 public:
-    PotentialFieldsControllerTask(std::string const& name = "ctrl_lib::PotentialFieldsControllerTask", TaskCore::TaskState initial_state = Stopped);
-    PotentialFieldsControllerTask(std::string const& name, RTT::ExecutionEngine* engine, TaskCore::TaskState initial_state = Stopped);
+    PotentialFieldsControllerTask(std::string const& name = "ctrl_lib::PotentialFieldsControllerTask");
+    PotentialFieldsControllerTask(std::string const& name, RTT::ExecutionEngine* engine);
     ~PotentialFieldsControllerTask();
     bool configureHook();
     bool startHook();

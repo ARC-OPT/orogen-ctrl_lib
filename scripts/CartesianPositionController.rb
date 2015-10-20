@@ -10,16 +10,19 @@ Orocos.run "ctrl_lib::CartesianPositionController" => "controller" do
    prop_gain          = Types::Base::VectorXd.new(6)
    dead_zone          = Types::Base::VectorXd.new(6)
    max_control_output = Types::Base::VectorXd.new(6)
+   ff_gain            = Types::Base::VectorXd.new(6)
 
    for i in (0..5) do 
-      prop_gain[i]         = 1.0
-      dead_zone[i]         = 0.01
+      prop_gain[i]          = 1.0
+      dead_zone[i]          = 0.01
       max_control_output[i] = 0.5
+      ff_gain[i]            = 0
    end
 
-   controller.field_names = ["X", "Y", "Z", "rotZ", "rotY", "rotZ"]
-   controller.initial_prop_gain         = prop_gain
-   controller.initial_dead_zone         = dead_zone
+   controller.field_names                = ["X", "Y", "Z", "rotZ", "rotY", "rotZ"]
+   controller.initial_prop_gain          = prop_gain
+   controller.initial_dead_zone          = dead_zone
+   controller.initial_ff_gain            = ff_gain
    controller.initial_max_control_output = max_control_output
 
    controller.configure

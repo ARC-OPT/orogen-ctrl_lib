@@ -6,9 +6,9 @@ import_types_from "base"
 using_library "kdl_conversions"
 
 #
-# Base task for all proportional controllers. See ctrl_lib/ProportionalController.hpp for details
+# Base class for all controllers. Implements the controller state machine
 #
-task_context "ProportionalControllerTask" do abstract
+task_context "ControllerTask" do abstract
    needs_configuration
 
    runtime_states "NO_SETPOINT", # Never got a setpoint, no control output will be written
@@ -17,8 +17,28 @@ task_context "ProportionalControllerTask" do abstract
    # Unique name for each variable, e.g. joint names in case of a joint space controller.
    property "field_names", "std/vector<std/string>"
 
+   # Type of activation function used. See ctrl_libTypes.hpp for details.
+   property "activation_function", "ctrl_lib/activationFunction"
+
+   # Current activation values
+   output_port "activation", "base/VectorXd"
+
+   # Commonly, these type of tasks should be called periodically
+   periodic 0.01
+end
+
+#
+# Base task for all proportional controllers. See ctrl_lib/ProportionalController.hpp for details
+#
+task_context "ProportionalControllerTask" do subclasses "ControllerTask"
+   abstract
+   needs_configuration
+
    # Proportional gain. Size has to be the same as size of field_names.
    property "initial_prop_gain", "base/VectorXd"
+
+   # Feed Forward gain. Size has to be the same as size of field_names.
+   property "initial_ff_gain", "base/VectorXd"
 
    # Maximum control output (saturation). If one output value exceeds maximum, all
    # other values will be scaled accordingly. Size has to be the same as size of field_names.
@@ -29,6 +49,9 @@ task_context "ProportionalControllerTask" do abstract
 
    # Set new proportional gain here. Size has to be the same as size of field_names.
    input_port "prop_gain", "base/VectorXd"
+
+   # Set new proportional gain here. Size has to be the same as size of field_names.
+   input_port "ff_gain", "base/VectorXd"
 
    # Set new maximum control output here. Size has to be the same as size of field_names.
    input_port "max_control_output", "base/VectorXd"
@@ -42,13 +65,16 @@ task_context "ProportionalControllerTask" do abstract
    # Debug: Current proportional gain
    output_port "current_prop_gain", "base/VectorXd"
 
+   # Debug: Current proportional gain
+   output_port "current_ff_gain", "base/VectorXd"
+
    # Debug: Current max control output.
    output_port "current_max_control_output", "base/VectorXd"
 
    # Debug: Current dead zone.
    output_port "current_dead_zone", "base/VectorXd"
 
-   # Set setpoint to current feedback value
+   # Reset function. Implemented in derived task. This sets the control output to zero by setting setpoint and feedback to the same value.
    operation "reset"
 
    periodic 0.01
@@ -59,6 +85,9 @@ end
 #
 task_context "JointPositionController" do subclasses "ProportionalControllerTask"
    needs_configuration
+
+   # Set true to use only the feedforward velocity for control: control_out = k_ff * v, instead of control_out = kff * v + kp * (x_r - x)
+   property "disable_feedback", "bool", false
 
    # Setpoint of the controller. Joints will be mapped by name internally. Size has to be >= size of field_names. All field names have to be present.
    input_port "setpoint", "base/commands/Joints"
@@ -128,24 +157,26 @@ end
 #
 # Base task for all potential fields. See ctrl_lib/PotentialFieldsController.hpp for details
 #
-task_context "PotentialFieldsControllerTask" do abstract
-
-   runtime_states "NO_POSITION",         # Never got current position, no control output will be written
-                  "NO_POT_FIELD_CENTERS" # Never got field positions, no control output will be written
-
-   # Name for each variable, e.g. joint names in case of a joint space controller.
-   property "field_names", "std/vector<std/string>"
+task_context "PotentialFieldsControllerTask" do subclasses "ControllerTask"
+   abstract
+   needs_configuration
 
    # Order of all potential fields. If order = 0 => control_output = const,
    # if order = 1 => control_output ~ 1/d. If order = 2, => control_output ~ 1/d^2 and so on.
    property "order", "int", 1
 
+   # Influence distance of the potential fields. Size has to be the same as size of field_names. Values have to be > 0!
+   property "initial_influence_distance", "base/VectorXd"
+
    # Initial proportional gain. Size has to be the same as size of field_names.
    property "initial_prop_gain", "base/VectorXd"
 
-   # Initial maximum control output (saturation). If one output value exceeds maximum, all other
-   # values will be scaled accordingly. Size has to be same as field_names.
+   # Maximum control output (saturation). If one output value exceeds maximum, all
+   # other values will be scaled accordingly. Size has to be the same as size of field_names.
    property "initial_max_control_output", "base/VectorXd"
+
+   # Set new influence distance zone here. Size has to be same as size of field_names.
+   input_port "influence_distance", "base/VectorXd"
 
    # Set new proportional gain here. Size has to be the same as size of field_names.
    input_port "prop_gain", "base/VectorXd"
@@ -159,6 +190,9 @@ task_context "PotentialFieldsControllerTask" do abstract
    # Debug: Current max control output.
    output_port "current_max_control_output", "base/VectorXd"
 
+   # Debug: Current max control output.
+   output_port "current_influence_distance", "base/VectorXd"
+
    # Debug: Current status and settings for all potential fields.
    output_port "field_infos", "std/vector<ctrl_lib/PotentialFieldInfo>"
 
@@ -167,27 +201,17 @@ end
 
 #
 # Implementation of RadialPotentialFields in joint space. Each joint will have one 1-dimensional potential field.
-# This implementation can be used, e.g. for joint limit avoidance
 # See ctrl_lib/RadialPotentialField.hpp and ctrl_lib/PotentialFieldsController.hpp for details
 #
-task_context "JointRadialPotentialFields" do subclasses "PotentialFieldsControllerTask"
+task_context "JointLimitAvoidance" do subclasses "PotentialFieldsControllerTask"
    needs_configuration
 
    # Initial centers of the potential fields. Size has to be either empty or same as size of field_names. If empty the task will be wait for input from port
-   property "initial_pot_field_centers",  "base/commands/Joints"
-
-   # Influence distance of the potential fields. Size has to be the same as size of field_names. Values have to be > 0!
-   property "initial_influence_distance", "base/VectorXd"
-
-   # Set new centers of the potential fields here. Joints will mapped internally by names. All joints from field_names have to be present here!
-   input_port "pot_field_centers",  "base/commands/Joints"
+   property "joint_limits",        "base/JointLimits"
 
    # Controller feedback: Actual joint position. Size has to be same as size of field_names. Joints will mapped internally by names. All joints from field_names have to be present here!
    input_port "feedback",           "base/samples/Joints"
 
-   # Set new influence distance zone here. Size has to be same as size of field_names.
-   input_port "influence_distance", "base/VectorXd"
-     
    # Control output as joint velocity. Size will be same as size of field_names.
    output_port "control_output",   "base/commands/Joints"
 
@@ -204,17 +228,11 @@ end
 task_context "CartesianRadialPotentialFields" do subclasses "PotentialFieldsControllerTask"
    needs_configuration
 
-   # Influence distance. This will be same for all pot. fields, since the number of fields is dynamic. Value has to be > 0!
-   property "initial_influence_distance", "double"
-
    # Set new centers of the potential fields here. Number of fields can be anything > 0.
    input_port "pot_field_centers",  "std/vector<base/samples/RigidBodyState>"
 
    # Controller feedback: Actual position of the control frame on the robot. Orientation is not used in this controller
    input_port "feedback",           "base/samples/RigidBodyState"
-
-   # Set new influence distance zone here. Value has to be > 0!
-   input_port "influence_distance", "double"
 
    # Control output as cartesian velocity.
    output_port "control_output",   "base/samples/RigidBodyState"
@@ -225,3 +243,6 @@ task_context "CartesianRadialPotentialFields" do subclasses "PotentialFieldsCont
    periodic 0.01
 end
 
+typekit do
+   export_types "ctrl_lib/activationFunction"
+end

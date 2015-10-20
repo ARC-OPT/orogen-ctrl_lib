@@ -23,7 +23,9 @@ protected:
     /** Read all feedback values of the controller. Return false if there is no feedback, true otherwise */
     virtual bool readFeedback();
     /** Write the output of the controller to a port */
-    virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw);
+    virtual void writeControlOutput(const base::VectorXd &ctrl_output_raw);
+    /** Reset function. Implemented in derived task. This sets the control output to zero by setting setpoint and feedback to the same value.*/
+    virtual void reset();
 
     bool isValid(const base::Wrench &w){
         return !base::isNaN(w.force(0)) && !base::isNaN(w.force(1)) && !base::isNaN(w.force(2)) &&
@@ -46,8 +48,6 @@ public:
     void errorHook();
     void stopHook();
     void cleanupHook();
-
-    virtual void reset();
 };
 }
 

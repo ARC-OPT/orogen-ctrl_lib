@@ -9,37 +9,24 @@ namespace ctrl_lib {
 
 class Controller;
 
-/*! \class ControllerTask
-     * \brief The task context provides and requires services. It uses an ExecutionEngine to perform its functions.
-     * Essential interfaces are operations, data flow ports and properties. These interfaces have been defined using the oroGen specification.
-     * In order to modify the interfaces you should (re)use oroGen and rely on the associated workflow.
-     *
-Base task for all controllers
-
-     * \details
-     * The name of a TaskContext is primarily defined via:
-     \verbatim
-     deployment 'deployment_name'
-         task('custom_task_name','ctrl_lib::ControllerTask')
-     end
-     \endverbatim
-     *  It can be dynamically adapted when the deployment is called with a prefix argument.
-     */
+/*! \class ControllerTask Base task for all controllers */
 class ControllerTask : public ControllerTaskBase
 {
     friend class ControllerTaskBase;
 protected:
 
-    Controller* controller;
-
-    /** Implement in base class. Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
-    virtual bool readSetpoints() = 0;
-    /** Implement in base class. Read all feedback value of the controller. Return false if there is no feedback, true otherwise */
+    /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
+    virtual bool readSetpoint() = 0;
+    /** Read all feedback values of the controller. Return false if there is no feedback, true otherwise */
     virtual bool readFeedback() = 0;
-    /** Compute and write the output of the controller to a port */
-    virtual void updateControlOutput() = 0;
+    /** Compute output of the controller and write it to port. Returns control output */
+    virtual void writeControlOutput(const base::VectorXd& control_output_raw) = 0;
+    /** Write activation function to port*/
+    virtual void writeActivationFunction() = 0;
 
-    Eigen::VectorXd control_output; /** Control output */
+    base::VectorXd control_output_raw, activation;
+    activationFunction activation_function;
+    Controller *controller;
     std::vector<std::string> field_names;
 
 public:

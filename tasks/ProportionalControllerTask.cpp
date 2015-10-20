@@ -2,6 +2,7 @@
 
 #include "ProportionalControllerTask.hpp"
 #include <base/Logging.hpp>
+#include <ctrl_lib/ProportionalController.hpp>
 
 using namespace ctrl_lib;
 
@@ -23,29 +24,36 @@ bool ProportionalControllerTask::configureHook()
     if (! ProportionalControllerTaskBase::configureHook())
         return false;
 
-    field_names = _field_names.get();
-    controller = new ProportionalController(field_names.size());
+    ProportionalController* ctrl = new ProportionalController(field_names.size());
 
-    controller->prop_gain = _initial_prop_gain.get();
-    if((size_t)controller->prop_gain.size() != field_names.size()){
-        LOG_ERROR("%s: Field names has size %i, but initial proportional gain has size %i",
-                  this->getName().c_str(), field_names.size(), controller->prop_gain.size());
-        return false;
-    }
-
-    controller->max_control_output = _initial_max_control_output.get();
-    if((size_t)controller->max_control_output.size() != field_names.size()){
+    ctrl->max_control_output = _initial_max_control_output.get();
+    if((size_t)ctrl->max_control_output.size() != field_names.size()){
         LOG_ERROR("%s: Field names has size %i, but initial max control output has size %i",
-                  this->getName().c_str(), field_names.size(), controller->max_control_output.size());
+                  this->getName().c_str(), field_names.size(), ctrl->max_control_output.size());
         return false;
     }
 
-    controller->dead_zone = _initial_dead_zone.get();
-    if((size_t)controller->dead_zone.size() != field_names.size()){
+    ctrl->dead_zone = _initial_dead_zone.get();
+    if((size_t)ctrl->dead_zone.size() != field_names.size()){
         LOG_ERROR("%s: Field names has size %i, but initial dead zone has size %i",
-                  this->getName().c_str(), field_names.size(), controller->dead_zone.size());
+                  this->getName().c_str(), field_names.size(), ctrl->dead_zone.size());
         return false;
     }
+
+    ctrl->prop_gain = _initial_prop_gain.get();
+    if((size_t)ctrl->prop_gain.size() != field_names.size()){
+        LOG_ERROR("%s: Field names has size %i, but initial proportional gain has size %i",
+                  this->getName().c_str(), field_names.size(), ctrl->prop_gain.size());
+        return false;
+    }
+    ctrl->ff_gain = _initial_ff_gain.get();
+    if((size_t)ctrl->ff_gain.size() != field_names.size()){
+        LOG_ERROR("%s: Field names has size %i, but initial feed forward gain has size %i",
+                  this->getName().c_str(), field_names.size(), ctrl->ff_gain.size());
+        return false;
+    }
+
+    controller = ctrl;
 
     return true;
 }
@@ -60,39 +68,32 @@ bool ProportionalControllerTask::startHook()
 }
 void ProportionalControllerTask::updateHook()
 {
+    ProportionalController* ctrl = (ProportionalController*)controller;
+
+    _max_control_output.readNewest(ctrl->max_control_output);
+    _dead_zone.readNewest(ctrl->dead_zone);
+    _prop_gain.readNewest(ctrl->prop_gain);
+    _ff_gain.readNewest(ctrl->ff_gain);
+
+    _current_max_control_output.write(ctrl->max_control_output);
+    _current_dead_zone.write(ctrl->dead_zone);
+    _current_prop_gain.write(ctrl->prop_gain);
+    _current_ff_gain.write(ctrl->ff_gain);
+
     ProportionalControllerTaskBase::updateHook();
-
-    _prop_gain.readNewest((base::VectorXd&)controller->prop_gain);
-    _max_control_output.readNewest((base::VectorXd&)controller->max_control_output);
-    _dead_zone.readNewest((base::VectorXd&)controller->dead_zone);
-
-    _current_prop_gain.write(controller->prop_gain);
-    _current_max_control_output.write(controller->max_control_output);
-    _current_dead_zone.write(controller->dead_zone);
-
-    if(!readFeedback()){
-        if(state() != NO_FEEDBACK)
-            state(NO_FEEDBACK);
-        return;
-    }
-
-    if(!readSetpoint()){
-        if(state() != NO_SETPOINT)
-            state(NO_SETPOINT);
-        return;
-    }
-
-    if(state() != RUNNING)
-        state(RUNNING);
-
-
-    controller->update(control_output_raw);
-
-    _control_error.write(controller->control_error);
-
-    writeControlOutput(control_output_raw);
-
 }
+
+void ProportionalControllerTask::writeActivationFunction()
+{
+    ProportionalController* ctrl = (ProportionalController*)controller;
+    activation.resize(field_names.size());
+
+    for(int i = 0; i < control_output_raw.size(); i++)
+        activation(i) = fabs(control_output_raw(i))/ctrl->max_control_output(i);
+
+    _activation.write(activation_function.compute(activation));
+}
+
 void ProportionalControllerTask::errorHook()
 {
     ProportionalControllerTaskBase::errorHook();

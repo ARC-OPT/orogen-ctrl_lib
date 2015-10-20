@@ -28,7 +28,6 @@ bool CartesianRadialPotentialFields::configureHook(){
         return false;
     }
 
-    influence_distance = _initial_influence_distance.get();
     order = _order.get();
 
     return true;
@@ -57,8 +56,7 @@ void CartesianRadialPotentialFields::cleanupHook(){
     CartesianRadialPotentialFieldsBase::cleanupHook();
 }
 
-bool CartesianRadialPotentialFields::readPotFieldCenters(){
-    _influence_distance.read(influence_distance);
+bool CartesianRadialPotentialFields::readSetpoint(){
 
     if(_pot_field_centers.readNewest(pot_field_centers) == RTT::NewData)
         has_pot_field_centers = true;
@@ -73,10 +71,10 @@ bool CartesianRadialPotentialFields::readPotFieldCenters(){
     return true;
 }
 
-bool CartesianRadialPotentialFields::readActualPosition(){
+bool CartesianRadialPotentialFields::readFeedback(){
     if(_feedback.read(position) == RTT::NewData)
-        has_position = true;
-    if(has_position){
+        has_feedback = true;
+    if(has_feedback){
         setActualPosition(position);
         _current_feedback.write(position);
         return true;
@@ -85,7 +83,7 @@ bool CartesianRadialPotentialFields::readActualPosition(){
         return false;
 }
 
-void CartesianRadialPotentialFields::writeControlOutput(const Eigen::VectorXd &ctrl_output_raw){
+void CartesianRadialPotentialFields::writeControlOutput(const base::VectorXd &ctrl_output_raw){
     //Control output will only have linear components, since radial fields cannot generate rotational components
     for(uint i = 0; i < 3; i++)
         control_output.velocity(i) = ctrl_output_raw(i);
@@ -95,11 +93,13 @@ void CartesianRadialPotentialFields::writeControlOutput(const Eigen::VectorXd &c
 
 void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<base::samples::RigidBodyState> &centers){
 
-    assert(controller != 0);
+    PotentialFieldsController* ctrl = (PotentialFieldsController*)controller;
+
+    assert(ctrl != 0);
 
     if(!centers.empty())
     {
-        if(centers.size() != controller->fields.size()){
+        if(centers.size() != ctrl->fields.size()){
 
             clearPotentialFields();
 
@@ -108,35 +108,40 @@ void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<
                 fields[i] = new RadialPotentialField(3, order);
                 fields[i]->influence_distance = influence_distance;
             }
-            controller->setFields(fields);
+            ctrl->setFields(fields);
         }
-        for(size_t i = 0; i < controller->fields.size(); i++){
+        for(size_t i = 0; i < ctrl->fields.size(); i++){
             if(!centers[i].hasValidPosition()){
                 LOG_ERROR("%s: Potential fields center number %i (source: %s, target: %s) has invalid position, e.g. NaN",
                           this->getName().c_str(), i, centers[i].sourceFrame.c_str(), centers[i].targetFrame.c_str());
                 throw std::invalid_argument("Invalid potential field centers");
             }
-            controller->fields[i]->pot_field_center = centers[i].position;
-            controller->fields[i]->position = position.position;
+            ctrl->fields[i]->pot_field_center = centers[i].position;
+            ctrl->fields[i]->position = position.position;
         }
     }
 }
 
 void CartesianRadialPotentialFields::setActualPosition(const base::samples::RigidBodyState& actual){
 
-    for(size_t i = 0; i < controller->fields.size(); i++){
+    PotentialFieldsController* ctrl = (PotentialFieldsController*)controller;
+
+    for(size_t i = 0; i < ctrl->fields.size(); i++){
         if(!actual.hasValidPosition()){
             LOG_ERROR("%s: Actual position is invalid, e.g. NaN", this->getName().c_str());
             throw std::invalid_argument("Invalid actual position");
         }
-        controller->fields[i]->position = position.position;
+        ctrl->fields[i]->position = position.position;
     }
 }
 
 void CartesianRadialPotentialFields::clearPotentialFields(){
-    for(size_t i = 0; i < controller->fields.size(); i++)
-        delete controller->fields[i];
-    controller->fields.clear();
+
+    PotentialFieldsController* ctrl = (PotentialFieldsController*)controller;
+
+    for(size_t i = 0; i < ctrl->fields.size(); i++)
+        delete ctrl->fields[i];
+    ctrl->fields.clear();
     pot_field_centers.clear();
     position.invalidatePosition();
 }

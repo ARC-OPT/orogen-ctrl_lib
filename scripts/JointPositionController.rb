@@ -7,17 +7,20 @@ Orocos.run "ctrl_lib::JointPositionController" => "controller" do
 
    controller = Orocos::TaskContext.get "controller"
 
-   prop_gain         = Types::Base::VectorXd.new(2)
-   dead_zone         = Types::Base::VectorXd.new(2)
+   prop_gain          = Types::Base::VectorXd.new(2)
+   dead_zone          = Types::Base::VectorXd.new(2)
    max_control_output = Types::Base::VectorXd.new(2)
+   ff_gain            = Types::Base::VectorXd.new(2)
 
-   prop_gain[0],prop_gain[1]                 = 1.0,1.0
-   dead_zone[0],dead_zone[1]                 = 0.05,0.1
+   prop_gain[0],prop_gain[1]                   = 1.0,1.0
+   dead_zone[0],dead_zone[1]                   = 0.05,0.1
+   ff_gain[0],ff_gain[1]                       = 0,0
    max_control_output[0],max_control_output[1] = 1e10,1e10
 
-   controller.field_names       = ["Joint_1", "Joint_2"]
-   controller.initial_prop_gain         = prop_gain
-   controller.initial_dead_zone         = dead_zone
+   controller.field_names                = ["Joint_1", "Joint_2"]
+   controller.initial_prop_gain          = prop_gain
+   controller.initial_dead_zone          = dead_zone
+   controller.initial_ff_gain            = ff_gain
    controller.initial_max_control_output = max_control_output
 
    controller.configure

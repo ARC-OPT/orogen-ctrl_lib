@@ -6,13 +6,13 @@
 
 using namespace ctrl_lib;
 
-PotentialFieldsControllerTask::PotentialFieldsControllerTask(std::string const& name, TaskCore::TaskState initial_state)
-    : PotentialFieldsControllerTaskBase(name, initial_state)
+PotentialFieldsControllerTask::PotentialFieldsControllerTask(std::string const& name)
+    : PotentialFieldsControllerTaskBase(name)
 {
 }
 
-PotentialFieldsControllerTask::PotentialFieldsControllerTask(std::string const& name, RTT::ExecutionEngine* engine, TaskCore::TaskState initial_state)
-    : PotentialFieldsControllerTaskBase(name, engine, initial_state)
+PotentialFieldsControllerTask::PotentialFieldsControllerTask(std::string const& name, RTT::ExecutionEngine* engine)
+    : PotentialFieldsControllerTaskBase(name, engine)
 {
 }
 
@@ -25,28 +25,32 @@ bool PotentialFieldsControllerTask::configureHook()
     if (! PotentialFieldsControllerTaskBase::configureHook())
         return false;
 
-    has_pot_field_centers = has_position = false;
-
-    controller = new PotentialFieldsController();
+    has_pot_field_centers = has_feedback = false;
 
     field_names = _field_names.get();
+    PotentialFieldsController* ctrl = new PotentialFieldsController(field_names.size());
+
     if(field_names.empty()){
         LOG_ERROR("%s: Size of field_names must be > 0", this->getName().c_str());
         return false;
     }
 
-    controller->prop_gain = _initial_prop_gain.get();
-    if(field_names.size() != (size_t)controller->prop_gain.size()){
+    ctrl->prop_gain = _initial_prop_gain.get();
+    if(field_names.size() != (size_t)ctrl->prop_gain.size()){
         LOG_ERROR("%s: Size of field_names is %i, but size of proportional gain is %i",
-                  this->getName().c_str(), field_names.size(), controller->prop_gain.size());
+                  this->getName().c_str(), field_names.size(), ctrl->prop_gain.size());
         return false;
     }
-    controller->max_control_output = _initial_max_control_output.get();
-    if(field_names.size() != (size_t)controller->max_control_output.size()){
+    ctrl->max_control_output = _initial_max_control_output.get();
+    if(field_names.size() != (size_t)ctrl->max_control_output.size()){
         LOG_ERROR("%s: Size of field_names is %i, but size of maximum control output is %i",
-                  this->getName().c_str(), field_names.size(), controller->max_control_output.size());
+                  this->getName().c_str(), field_names.size(), ctrl->max_control_output.size());
         return false;
     }
+
+    influence_distance = _initial_influence_distance.get();
+
+    controller = ctrl;
 
     return true;
 }
@@ -59,34 +63,23 @@ bool PotentialFieldsControllerTask::startHook()
 }
 void PotentialFieldsControllerTask::updateHook()
 {
-    PotentialFieldsControllerTaskBase::updateHook();
+    PotentialFieldsController* ctrl = (PotentialFieldsController*)controller;
 
-    _prop_gain.readNewest((base::VectorXd&)controller->prop_gain);
-    _max_control_output.readNewest((base::VectorXd&)controller->max_control_output);
+    _prop_gain.readNewest(ctrl->prop_gain);
+    _max_control_output.readNewest(ctrl->max_control_output);
+    if(_influence_distance.readNewest(influence_distance) == RTT::NewData)
+        setInfluenceDistance(influence_distance);
 
-    _current_prop_gain.write(controller->prop_gain);
-    _current_max_control_output.write(controller->max_control_output);
+    _current_prop_gain.write(ctrl->prop_gain);
+    _current_max_control_output.write(ctrl->max_control_output);
+    _current_influence_distance.write(influence_distance);
 
-    if(!readActualPosition()){
-        if(state() != NO_POSITION)
-            state(NO_POSITION);
-        return;
-    }
-    if(!readPotFieldCenters()){
-        if(state() != NO_POT_FIELD_CENTERS)
-            state(NO_POT_FIELD_CENTERS);
-        return;
-    }
-    if(state() != RUNNING)
-        state(RUNNING);
-
-    controller->update(control_output_raw);
-    writeControlOutput(control_output_raw);
-
-    field_infos.resize(controller->fields.size());
-    for(size_t i = 0; i < controller->fields.size(); i++)
-        field_infos[i].setFromField(controller->fields[i]);
+    field_infos.resize(ctrl->fields.size());
+    for(size_t i = 0; i < ctrl->fields.size(); i++)
+        field_infos[i].setFromField(ctrl->fields[i]);
     _field_infos.write(field_infos);
+
+    PotentialFieldsControllerTaskBase::updateHook();
 
 }
 void PotentialFieldsControllerTask::errorHook()

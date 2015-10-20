@@ -50,8 +50,9 @@ bool CartesianForceController::readFeedback(){
         }
 
         _current_feedback.write(feedback);
-        controller->feedback.segment(0,3) = feedback.force;
-        controller->feedback.segment(3,3) = feedback.force;
+        ProportionalController* ctrl = (ProportionalController*)controller;
+        ctrl->feedback.segment(0,3) = feedback.force;
+        ctrl->feedback.segment(3,3) = feedback.force;
         return true;
     }
     else
@@ -70,8 +71,9 @@ bool CartesianForceController::readSetpoint(){
             throw std::invalid_argument("Invalid setpoint");
         }
 
-        controller->setpoint.segment(0,3) = setpoint.force;
-        controller->setpoint.segment(3,3) = setpoint.force;
+        ProportionalController* ctrl = (ProportionalController*)controller;
+        ctrl->setpoint.segment(0,3) = setpoint.force;
+        ctrl->setpoint.segment(3,3) = setpoint.force;
         _current_setpoint.write(setpoint);
         return true;
     }
@@ -79,7 +81,7 @@ bool CartesianForceController::readSetpoint(){
         return false;
 }
 
-void CartesianForceController::writeControlOutput(const Eigen::VectorXd &ctrl_output_raw){
+void CartesianForceController::writeControlOutput(const base::VectorXd &ctrl_output_raw){
     control_output.velocity = ctrl_output_raw.segment(0,3);
     control_output.angular_velocity = ctrl_output_raw.segment(3,3);
     control_output.time = base::Time::now();

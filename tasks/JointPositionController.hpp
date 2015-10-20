@@ -14,18 +14,16 @@ class JointPositionController : public JointPositionControllerBase
 {
     friend class JointPositionControllerBase;
 protected:
-
-    base::commands::Joints setpoint, control_output;
-    base::samples::Joints feedback;
-
     /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
     virtual bool readSetpoint();
     /** Read all feedback values of the controller. Return false if there is no feedback, true otherwise */
     virtual bool readFeedback();
     /** Write the output of the controller to a port */
-    virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw);
+    virtual void writeControlOutput(const base::VectorXd &ctrl_output_raw);
+    /** Reset function. Implemented in derived task. This sets the control output to zero by setting setpoint and feedback to the same value.*/
+    virtual void reset();
 
-    inline void extractPositions(const base::samples::Joints& joints, const std::vector<std::string> &names, Eigen::VectorXd& positions){
+    inline void extractPositions(const base::samples::Joints& joints, const std::vector<std::string> &names, base::VectorXd& positions){
 
         if(joints.elements.size() != joints.names.size()){
             LOG_ERROR("%s: Sizes of names and elements does not match", this->getName().c_str());
@@ -43,8 +41,8 @@ protected:
         }
     }
 
-    inline void extractVelocities(const base::samples::Joints& joints, const std::vector<std::string> &names, Eigen::VectorXd& velocities){
-        velocities.resize(names.size(), 0);
+    inline void extractVelocities(const base::samples::Joints& joints, const std::vector<std::string> &names, base::VectorXd& velocities){
+        velocities.resize(names.size());
         for(size_t i = 0; i < names.size(); i++){
             const base::JointState& elem = joints.getElementByName(names[i]);
             if(!elem.hasSpeed()){ // If no speeds are given for an element, disable feed forward term
@@ -54,6 +52,10 @@ protected:
             velocities(i) = elem.speed;
         }
     }
+
+    base::commands::Joints setpoint, control_output;
+    base::samples::Joints feedback;
+    bool disable_feedback;
 
 public:
     JointPositionController(std::string const& name = "ctrl_lib::JointPositionController");
@@ -65,8 +67,6 @@ public:
     void errorHook();
     void stopHook();
     void cleanupHook();
-
-    virtual void reset();
 };
 }
 

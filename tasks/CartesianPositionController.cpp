@@ -50,9 +50,6 @@ bool CartesianPositionController::readSetpoint(){
             throw std::invalid_argument("Invalid setpoint");
         }
 
-        // Compute orientation error as quaternion
-        orientation_error = setpoint.orientation * feedback.orientation.inverse();
-
         // Set reference value to control error and actual value to zero, since the controller
         // cannot deal with full poses. Use KDL::diff to compute the orientation-error
         // as zyx-rotation, since the controller cannot deal with full poses. This will give the
@@ -64,15 +61,17 @@ bool CartesianPositionController::readSetpoint(){
         kdl_conversions::RigidBodyState2KDL(feedback,feedback_kdl);
         diff = KDL::diff(feedback_kdl, setpoint_kdl);
 
-        controller->setpoint.resize(6);
+        ProportionalController* ctrl = (ProportionalController*)controller;
+
+        ctrl->setpoint.resize(6);
         for(int i = 0; i < 6; i++)
-            controller->setpoint(i) = diff(i);
-        controller->feedback.resize(6);
-        controller->feedback.setZero();
+            ctrl->setpoint(i) = diff(i);
+        ctrl->feedback.resize(6);
+        ctrl->feedback.setZero();
 
         if(setpoint.hasValidVelocity() && setpoint.hasValidAngularVelocity()){
-            controller->feed_forward.segment(0,3) = setpoint.velocity;
-            controller->feed_forward.segment(3,3) = setpoint.angular_velocity;
+            ctrl->feed_forward.segment(0,3) = setpoint.velocity;
+            ctrl->feed_forward.segment(3,3) = setpoint.angular_velocity;
         }
 
         _current_setpoint.write(setpoint);
@@ -102,7 +101,7 @@ bool CartesianPositionController::readFeedback(){
         return false;
 }
 
-void CartesianPositionController::writeControlOutput(const Eigen::VectorXd &ctrl_output_raw){
+void CartesianPositionController::writeControlOutput(const base::VectorXd &ctrl_output_raw){
     control_output.velocity = ctrl_output_raw.segment(0,3);
     control_output.angular_velocity = ctrl_output_raw.segment(3,3);
     control_output.time = base::Time::now();

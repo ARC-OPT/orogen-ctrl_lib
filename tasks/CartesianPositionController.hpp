@@ -14,17 +14,16 @@ class CartesianPositionController : public CartesianPositionControllerBase
     friend class CartesianPositionControllerBase;
 protected:
 
-    std::vector<std::string> joint_names;
     base::samples::RigidBodyState setpoint, control_output, feedback;
-    Eigen::AngleAxisd orientation_error;
 
     /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
     virtual bool readSetpoint();
     /** Read all feedback values of the controller. Return false if there is no feedback, true otherwise */
     virtual bool readFeedback();
     /** Write the output of the controller to a port */
-    virtual void writeControlOutput(const Eigen::VectorXd &ctrl_output_raw);
-
+    virtual void writeControlOutput(const base::VectorXd &ctrl_output_raw);
+    /** Reset function. Implemented in derived task. This sets the control output to zero by setting setpoint and feedback to the same value.*/
+    virtual void reset();
 public:
     CartesianPositionController(std::string const& name = "ctrl_lib::CartesianPositionController");
     CartesianPositionController(std::string const& name, RTT::ExecutionEngine* engine);
@@ -35,8 +34,6 @@ public:
     void errorHook();
     void stopHook();
     void cleanupHook();
-
-    virtual void reset();
 };
 }
 

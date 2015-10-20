@@ -18,13 +18,13 @@ JointPositionController::~JointPositionController(){
 
 bool JointPositionController::configureHook(){
 
-    if (! JointPositionControllerBase::configureHook())
-        return false;
-
+    field_names = _field_names.get();
+    controller = new ProportionalController(field_names.size());
     control_output.resize(field_names.size());
     control_output.names = field_names;
 
-    disable_feedback = _disable_feedback.get();
+    if (! JointPositionControllerBase::configureHook())
+        return false;
 
     return true;
 }
@@ -36,34 +36,19 @@ bool JointPositionController::startHook(){
 }
 
 bool JointPositionController::readSetpoint(){
-    if(_setpoint.readNewest(setpoint) == RTT::NewData)
+    if(_setpoint.readNewest(setpoint) == RTT::NewData){
         has_setpoint = true;
-
-    if(has_setpoint){
-        if(disable_feedback)
-            ((ProportionalController*)controller)->setpoint.setZero(field_names.size());
-        else
-            extractPositions(setpoint, field_names, ((ProportionalController*)controller)->setpoint);
+        extractPositions(setpoint, field_names, ((ProportionalController*)controller)->setpoint);
         extractVelocities(setpoint, field_names, ((ProportionalController*)controller)->feed_forward);
         _current_setpoint.write(setpoint);
-        return true;
     }
-    else
-        return false;
+
+    return has_setpoint;
 }
 
 bool JointPositionController::readFeedback(){
-
-    if(disable_feedback){
-        ((ProportionalController*)controller)->feedback.setZero(field_names.size());
-        ((ProportionalController*)controller)->prop_gain.setZero(field_names.size());
-        return true;
-    }
-
-    if(_feedback.readNewest(feedback) == RTT::NewData)
+    if(_feedback.readNewest(feedback) == RTT::NewData){
         has_feedback = true;
-
-    if(has_feedback){
         extractPositions(feedback, field_names, ((ProportionalController*)controller)->feedback);
         _current_feedback.write(feedback);
         return true;

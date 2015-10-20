@@ -5,6 +5,7 @@
 
 #include "ctrl_lib/CartesianPositionControllerBase.hpp"
 #include <base/commands/Joints.hpp>
+#include <kdl/frames.hpp>
 
 namespace ctrl_lib {
 
@@ -15,6 +16,7 @@ class CartesianPositionController : public CartesianPositionControllerBase
 protected:
 
     base::samples::RigidBodyState setpoint, control_output, feedback;
+    KDL::Frame feedback_kdl, setpoint_kdl;
 
     /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
     virtual bool readSetpoint();

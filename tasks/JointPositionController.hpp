@@ -43,6 +43,7 @@ protected:
 
     inline void extractVelocities(const base::samples::Joints& joints, const std::vector<std::string> &names, base::VectorXd& velocities){
         velocities.resize(names.size());
+        velocities.setZero();
         for(size_t i = 0; i < names.size(); i++){
             const base::JointState& elem = joints.getElementByName(names[i]);
             if(!elem.hasSpeed()){ // If no speeds are given for an element, disable feed forward term

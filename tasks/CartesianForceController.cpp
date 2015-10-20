@@ -1,6 +1,7 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "CartesianForceController.hpp"
+#include <ctrl_lib/ProportionalController.hpp>
 #include <base/Logging.hpp>
 
 using namespace ctrl_lib;
@@ -39,46 +40,36 @@ bool CartesianForceController::startHook()
 
 bool CartesianForceController::readFeedback(){
 
-    if(_feedback.readNewest(feedback) == RTT::NewData)
-        has_feedback = true;
-
-    if(has_feedback){
-
+    if(_feedback.readNewest(feedback) == RTT::NewData){
         if(!isValid(feedback)){
             LOG_ERROR("%s: Feedback has an invalid force or torque value", this->getName().c_str());
             throw std::invalid_argument("Invalid feedback term");
         }
-
+        has_feedback = true;
         _current_feedback.write(feedback);
         ProportionalController* ctrl = (ProportionalController*)controller;
         ctrl->feedback.segment(0,3) = feedback.force;
         ctrl->feedback.segment(3,3) = feedback.force;
         return true;
     }
-    else
-        return false;
+    return has_feedback;
 }
 
 bool CartesianForceController::readSetpoint(){
 
-    if(_feedback.readNewest(setpoint) == RTT::NewData)
-        has_setpoint = true;
-
-    if(has_setpoint){
-
+    if(_feedback.readNewest(setpoint) == RTT::NewData){
         if(!isValid(setpoint)){
             LOG_ERROR("%s: Setpoint has an invalid force or torque value", this->getName().c_str());
             throw std::invalid_argument("Invalid setpoint");
         }
-
-        ProportionalController* ctrl = (ProportionalController*)controller;
+        has_setpoint = true;
+        ProportionalController *ctrl = ((ProportionalController*)controller);
         ctrl->setpoint.segment(0,3) = setpoint.force;
         ctrl->setpoint.segment(3,3) = setpoint.force;
         _current_setpoint.write(setpoint);
         return true;
     }
-    else
-        return false;
+    return has_setpoint;
 }
 
 void CartesianForceController::writeControlOutput(const base::VectorXd &ctrl_output_raw){
@@ -110,5 +101,9 @@ void CartesianForceController::reset(){
     if(has_feedback){
         setpoint = feedback;
         has_setpoint = true;
+        ProportionalController *ctrl = ((ProportionalController*)controller);
+        ctrl->setpoint.segment(0,3) = setpoint.force;
+        ctrl->setpoint.segment(3,3) = setpoint.force;
+        _current_setpoint.write(setpoint);
     }
 }

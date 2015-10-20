@@ -40,26 +40,23 @@ bool CartesianPositionController::startHook(){
 
 bool CartesianPositionController::readSetpoint(){
 
-    if(_setpoint.readNewest(setpoint) == RTT::NewData)
-        has_setpoint = true;
-
-    if(has_setpoint){
-
+    if(_setpoint.readNewest(setpoint) == RTT::NewData){
         if(!setpoint.hasValidPosition() || !setpoint.hasValidOrientation()){
             LOG_ERROR("%s: Setpoint does not have a valid position or orientation value", this->getName().c_str());
             throw std::invalid_argument("Invalid setpoint");
         }
+        _current_setpoint.write(setpoint);
+        kdl_conversions::RigidBodyState2KDL(setpoint,setpoint_kdl);
+        has_setpoint = true;
+    }
+
+    if(has_setpoint){
 
         // Set reference value to control error and actual value to zero, since the controller
         // cannot deal with full poses. Use KDL::diff to compute the orientation-error
         // as zyx-rotation, since the controller cannot deal with full poses. This will give the
         // rotational velocity in 3D space that rotates the actual pose (feedback) onto the setpoint
-
-        KDL::Frame setpoint_kdl, feedback_kdl;
-        KDL::Twist diff;
-        kdl_conversions::RigidBodyState2KDL(setpoint,setpoint_kdl);
-        kdl_conversions::RigidBodyState2KDL(feedback,feedback_kdl);
-        diff = KDL::diff(feedback_kdl, setpoint_kdl);
+        KDL::Twist diff = KDL::diff(feedback_kdl, setpoint_kdl);
 
         ProportionalController* ctrl = (ProportionalController*)controller;
 
@@ -84,21 +81,20 @@ bool CartesianPositionController::readSetpoint(){
 
 bool CartesianPositionController::readFeedback(){
 
-    if(_feedback.readNewest(feedback) == RTT::NewData)
-         has_feedback = true;
-
-    if(has_feedback){
+    if(_feedback.readNewest(feedback) == RTT::NewData){
 
         if(!feedback.hasValidPosition() || !feedback.hasValidOrientation()){
             LOG_ERROR("%s: Feedback term does not have a valid position or orientation value", this->getName().c_str());
             throw std::invalid_argument("Invalid feedback term");
         }
 
+        kdl_conversions::RigidBodyState2KDL(feedback,feedback_kdl);
+        has_feedback = true;
         _current_feedback.write(feedback);
         return true;
     }
-    else
-        return false;
+    return has_feedback;
+
 }
 
 void CartesianPositionController::writeControlOutput(const base::VectorXd &ctrl_output_raw){

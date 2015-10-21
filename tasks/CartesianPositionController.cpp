@@ -124,6 +124,7 @@ void CartesianPositionController::reset(){
     if(has_feedback){
         setpoint.position = feedback.position;
         setpoint.orientation = feedback.orientation;
+        kdl_conversions::RigidBodyState2KDL(setpoint,setpoint_kdl);
         has_setpoint = true;
     }
 }

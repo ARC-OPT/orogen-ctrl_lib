@@ -25,7 +25,7 @@ protected:
     virtual void writeActivationFunction() = 0;
 
     base::VectorXd control_output_raw, activation;
-    activationFunction activation_function;
+    ActivationFunction activation_function;
     Controller *controller;
     std::vector<std::string> field_names;
 

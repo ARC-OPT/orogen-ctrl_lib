@@ -18,7 +18,7 @@ task_context "ControllerTask" do abstract
    property "field_names", "std/vector<std/string>"
 
    # Type of activation function used. See ctrl_libTypes.hpp for details.
-   property "activation_function", "ctrl_lib/activationFunction"
+   property "activation_function", "ctrl_lib/ActivationFunction"
 
    # Current activation values
    output_port "activation", "base/VectorXd"
@@ -244,5 +244,5 @@ task_context "CartesianRadialPotentialFields" do subclasses "PotentialFieldsCont
 end
 
 typekit do
-   export_types "ctrl_lib/activationFunction"
+   export_types "ctrl_lib/ActivationFunction"
 end

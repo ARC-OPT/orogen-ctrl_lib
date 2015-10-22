@@ -24,8 +24,8 @@ enum activationType{NO_ACTIVATION, STEP_ACTIVATION, LINEAR_ACTIVATION, SIGMOID_A
  *    c = offset
  *    a = steepness
  */
-struct activationFunction{
-    activationFunction() :
+struct ActivationFunction{
+    ActivationFunction() :
         type(NO_ACTIVATION){
     }
 

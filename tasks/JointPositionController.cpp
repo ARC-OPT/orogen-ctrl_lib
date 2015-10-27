@@ -54,7 +54,7 @@ bool JointPositionController::readFeedback(){
         return true;
     }
     else
-        return false;
+        return has_feedback;
 }
 
 void JointPositionController::writeControlOutput(const base::VectorXd &ctrl_output_raw){

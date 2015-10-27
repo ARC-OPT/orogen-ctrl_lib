@@ -56,7 +56,6 @@ protected:
 
     base::commands::Joints setpoint, control_output;
     base::samples::Joints feedback;
-    bool disable_feedback;
 
 public:
     JointPositionController(std::string const& name = "ctrl_lib::JointPositionController");

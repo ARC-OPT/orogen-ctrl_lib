@@ -86,9 +86,6 @@ end
 task_context "JointPositionController" do subclasses "ProportionalControllerTask"
    needs_configuration
 
-   # Set true to use only the feedforward velocity for control: control_out = k_ff * v, instead of control_out = kff * v + kp * (x_r - x)
-   property "disable_feedback", "bool", false
-
    # Setpoint of the controller. Joints will be mapped by name internally. Size has to be >= size of field_names. All field names have to be present.
    input_port "setpoint", "base/commands/Joints"
 

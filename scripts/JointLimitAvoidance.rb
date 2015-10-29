@@ -13,7 +13,7 @@ Orocos.run "ctrl_lib::JointLimitAvoidance" => "controller" do
    max_influence_distance = Types::Base::VectorXd.new(2)
    joint_limits           = Types::Base::JointLimits.new
    joint_limits.names     = ["Joint_1", "Joint_2"]
-   activation             = Types::CtrlLib::activationFunction.new
+   activation             = Types::CtrlLib::ActivationFunction.new
    for i in (0..1) do 
       prop_gain[i]              = 0.01
       max_control_output[i]     = 0.1
@@ -23,8 +23,9 @@ Orocos.run "ctrl_lib::JointLimitAvoidance" => "controller" do
       range.min.position        = -1.0
       joint_limits.elements << range
    end
-   activation.steepness = 10.0
-   activation.offset = 0.5
+   activation.param_a = 10.0
+   activation.param_b = 0.5
+   activation.type = :SIGMOID_ACTIVATION
 
    controller.field_names                = ["Joint_1", "Joint_2"]
    controller.initial_prop_gain          = prop_gain

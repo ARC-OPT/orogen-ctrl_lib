@@ -110,7 +110,7 @@ void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<
                 throw std::invalid_argument("Invalid potential field centers");
             }
             ctrl->fields[i]->pot_field_center = centers[i].position;
-            ctrl->fields[i]->position = feedback.position;
+            setActualPosition(feedback);
         }
     }
 }

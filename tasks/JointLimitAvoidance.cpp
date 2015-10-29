@@ -63,7 +63,12 @@ bool JointLimitAvoidance::readFeedback(){
 
             ctrl->fields[i]->pot_field_center.resize(1);
 
-            if(fabs(position_raw(i)) - joint_limits[i].max.position < fabs(position_raw(i)) - joint_limits[i].min.position)
+            if(position_raw(i) >= joint_limits[i].max.position)
+                position_raw(i) = joint_limits[i].max.position - 1e-5;
+            if(position_raw(i) <= joint_limits[i].min.position)
+                position_raw(i) = joint_limits[i].min.position + 1e-5;
+
+            if(fabs(joint_limits[i].max.position - position_raw(i))  < fabs(position_raw(i) - joint_limits[i].min.position))
                 ctrl->fields[i]->pot_field_center(0) = joint_limits[i].max.position;
             else
                 ctrl->fields[i]->pot_field_center(0) = joint_limits[i].min.position;

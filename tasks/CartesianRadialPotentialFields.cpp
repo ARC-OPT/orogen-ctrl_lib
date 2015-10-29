@@ -58,29 +58,22 @@ void CartesianRadialPotentialFields::cleanupHook(){
 
 bool CartesianRadialPotentialFields::readSetpoint(){
 
-    if(_pot_field_centers.readNewest(pot_field_centers) == RTT::NewData)
-        has_pot_field_centers = true;
-
-    if(has_pot_field_centers){
+    if(_pot_field_centers.readNewest(pot_field_centers) == RTT::NewData){
         setPotentialFieldCenters(pot_field_centers);
-        return true;
+        has_pot_field_centers = true;
     }
-    else
-        return false;
 
-    return true;
+    return has_pot_field_centers;
 }
 
 bool CartesianRadialPotentialFields::readFeedback(){
-    if(_feedback.read(position) == RTT::NewData)
+    if(_feedback.read(feedback) == RTT::NewData){
+        setActualPosition(feedback);
+        _current_feedback.write(feedback);
         has_feedback = true;
-    if(has_feedback){
-        setActualPosition(position);
-        _current_feedback.write(position);
-        return true;
     }
-    else
-        return false;
+
+    return has_feedback;
 }
 
 void CartesianRadialPotentialFields::writeControlOutput(const base::VectorXd &ctrl_output_raw){
@@ -106,9 +99,9 @@ void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<
             std::vector<PotentialField*> fields(centers.size());
             for(size_t i = 0; i < centers.size(); i++){
                 fields[i] = new RadialPotentialField(3, order);
-                fields[i]->influence_distance = influence_distance;
             }
             ctrl->setFields(fields);
+            setInfluenceDistance(influence_distance);
         }
         for(size_t i = 0; i < ctrl->fields.size(); i++){
             if(!centers[i].hasValidPosition()){
@@ -117,7 +110,7 @@ void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<
                 throw std::invalid_argument("Invalid potential field centers");
             }
             ctrl->fields[i]->pot_field_center = centers[i].position;
-            ctrl->fields[i]->position = position.position;
+            ctrl->fields[i]->position = feedback.position;
         }
     }
 }
@@ -131,7 +124,7 @@ void CartesianRadialPotentialFields::setActualPosition(const base::samples::Rigi
             LOG_ERROR("%s: Actual position is invalid, e.g. NaN", this->getName().c_str());
             throw std::invalid_argument("Invalid actual position");
         }
-        ctrl->fields[i]->position = position.position;
+        ctrl->fields[i]->position = actual.position;
     }
 }
 
@@ -142,6 +135,4 @@ void CartesianRadialPotentialFields::clearPotentialFields(){
     for(size_t i = 0; i < ctrl->fields.size(); i++)
         delete ctrl->fields[i];
     ctrl->fields.clear();
-    pot_field_centers.clear();
-    position.invalidatePosition();
 }

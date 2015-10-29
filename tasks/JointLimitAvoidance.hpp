@@ -30,6 +30,26 @@ protected:
     base::commands::Joints control_output;
     base::VectorXd tmp;
 
+    virtual void setInfluenceDistance(const base::VectorXd &distance){
+
+        PotentialFieldsController* ctrl = (PotentialFieldsController*)controller;
+
+        assert(ctrl != 0);
+
+        // If maximum influence distance is not set, the default (inf) will be used in the potential field. So,
+        // only do sth. if the size is not zero
+        if(distance.size() != 0){
+
+            if(distance.size() != (int)ctrl->dimension){
+                LOG_ERROR("%s: Max. Influence Distance vector has size %s, but field names size is ",
+                          this->getName().c_str(), distance.size(), ctrl->fields.size());
+                throw std::invalid_argument("Invalid influence distance");
+            }
+            for(size_t i = 0; i < ctrl->fields.size(); i++)
+                ctrl->fields[i]->influence_distance = distance(i);
+        }
+    }
+
     inline void extractPositions(const base::samples::Joints& joints, const std::vector<std::string> &names, base::VectorXd& positions){
 
         if(joints.elements.size() != joints.names.size()){

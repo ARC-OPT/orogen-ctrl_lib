@@ -15,10 +15,9 @@ class CartesianRadialPotentialFields : public CartesianRadialPotentialFieldsBase
     friend class CartesianRadialPotentialFieldsBase;
 protected:
 
-    base::samples::RigidBodyState control_output, position;
+    base::samples::RigidBodyState control_output, feedback;
     std::vector<base::samples::RigidBodyState> pot_field_centers;
     int order;
-    double influence_distance;
 
     /** Read actual position. Return false if there is no valid actual position*/
     virtual bool readFeedback();
@@ -34,6 +33,26 @@ protected:
     void setActualPosition(const base::samples::RigidBodyState& actual);
     /** Delete all potential fields*/
     void clearPotentialFields();
+
+    virtual void setInfluenceDistance(const base::VectorXd &distance){
+
+        PotentialFieldsController* ctrl = (PotentialFieldsController*)controller;
+
+        assert(ctrl != 0);
+
+        // If maximum influence distance is not set, the default (inf) will be used in the potential field. So,
+        // only do sth. if the size is not zero
+        if(distance.size() != 0){
+
+            if(distance.size() != 1){
+                LOG_ERROR("%s: Max. Influence Distance has to have size 1, but has size %i",
+                          this->getName().c_str(), distance.size());
+                throw std::invalid_argument("Invalid influence distance");
+            }
+            for(size_t i = 0; i < ctrl->fields.size(); i++)
+                ctrl->fields[i]->influence_distance = distance(0);
+        }
+    }
 
 public:
     CartesianRadialPotentialFields(std::string const& name = "ctrl_lib::CartesianRadialPotentialFields");

@@ -36,7 +36,6 @@ bool JointLimitAvoidance::configureHook()
         fields.push_back(new RadialPotentialField(1, _order.get()));
 
     ((PotentialFieldsController*)controller)->setFields(fields);
-
     setInfluenceDistance(influence_distance);
 
     control_output.resize(field_names.size());

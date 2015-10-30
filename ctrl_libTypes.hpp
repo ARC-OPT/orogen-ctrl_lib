@@ -39,7 +39,6 @@ struct ActivationFunction{
                 values(i) = 1;
                 break;
             case STEP_ACTIVATION:
-                values(i) = 0;
                 if(fabs(values(i)) != 0)
                     values(i) = 1;
                 else

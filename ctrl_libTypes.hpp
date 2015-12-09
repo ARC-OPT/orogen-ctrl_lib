@@ -13,7 +13,7 @@
 
 namespace ctrl_lib {
 
-enum activationType{NO_ACTIVATION, STEP_ACTIVATION, LINEAR_ACTIVATION, SIGMOID_ACTIVATION};
+enum activationType{NO_ACTIVATION, STEP_ACTIVATION, LINEAR_ACTIVATION, QUADRATIC_ACTIVATION};
 
 /** The activation function that is written on a port by the controllers is a sigmoid function:
  *
@@ -29,36 +29,43 @@ struct ActivationFunction{
         type(NO_ACTIVATION){
     }
 
-    double param_a, param_b;
+    double threshold;
     activationType type;
+    base::VectorXd activation;
 
-    base::VectorXd compute(base::VectorXd& values){
+    base::VectorXd compute(const base::VectorXd& values){
+
+        activation.resize(values.size());
+        assert(threshold > 0 && threshold <= 1);
+
         for(uint i = 0; i < values.size(); i++){
             switch(type){
             case NO_ACTIVATION:
-                values(i) = 1;
+                activation(i) = 1;
                 break;
             case STEP_ACTIVATION:
-                if(fabs(values(i)) != 0)
-                    values(i) = 1;
+                if(fabs(values(i)) > threshold)
+                    activation(i) = 1;
                 else
-                    values(i) = 0;
+                    activation(i) = 0;
                 break;
             case LINEAR_ACTIVATION:
-                assert(param_a > 0 && param_a <= 1);
-                if(values(i) < param_a)
-                    values(i) = (1.0/param_a) * values(i);
+                if(values(i) < threshold)
+                    activation(i) = (1.0/threshold) * values(i);
                 else
-                    values(i) = 1;
+                    activation(i) = 1;
                 break;
-            case SIGMOID_ACTIVATION:
-                values(i) = 1 / (1 + exp(-param_a*(values(i) - param_b)));
+            case QUADRATIC_ACTIVATION:
+                if(values(i) < threshold)
+                    activation(i) = (1.0/(threshold*threshold)) * (values(i)*values(i));
+                else
+                    activation(i) = 1;
                 break;
             default:
                 throw std::invalid_argument("Invalid activation type");
             }
         }
-        return values;
+        return activation;
     }
 };
 

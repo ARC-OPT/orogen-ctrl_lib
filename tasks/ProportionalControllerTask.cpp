@@ -26,27 +26,27 @@ bool ProportionalControllerTask::configureHook()
 
     ProportionalController* ctrl = new ProportionalController(field_names.size());
 
-    ctrl->max_control_output = _initial_max_control_output.get();
+    ctrl->max_control_output = _max_control_output.get();
     if((size_t)ctrl->max_control_output.size() != field_names.size()){
         LOG_ERROR("%s: Field names has size %i, but initial max control output has size %i",
                   this->getName().c_str(), field_names.size(), ctrl->max_control_output.size());
         return false;
     }
 
-    ctrl->dead_zone = _initial_dead_zone.get();
+    ctrl->dead_zone = _dead_zone.get();
     if((size_t)ctrl->dead_zone.size() != field_names.size()){
         LOG_ERROR("%s: Field names has size %i, but initial dead zone has size %i",
                   this->getName().c_str(), field_names.size(), ctrl->dead_zone.size());
         return false;
     }
 
-    ctrl->prop_gain = _initial_prop_gain.get();
+    ctrl->prop_gain = _prop_gain.get();
     if((size_t)ctrl->prop_gain.size() != field_names.size()){
         LOG_ERROR("%s: Field names has size %i, but initial proportional gain has size %i",
                   this->getName().c_str(), field_names.size(), ctrl->prop_gain.size());
         return false;
     }
-    ctrl->ff_gain = _initial_ff_gain.get();
+    ctrl->ff_gain = _ff_gain.get();
     if((size_t)ctrl->ff_gain.size() != field_names.size()){
         LOG_ERROR("%s: Field names has size %i, but initial feed forward gain has size %i",
                   this->getName().c_str(), field_names.size(), ctrl->ff_gain.size());
@@ -70,10 +70,10 @@ void ProportionalControllerTask::updateHook()
 {
     ProportionalController* ctrl = (ProportionalController*)controller;
 
-    _max_control_output.readNewest(ctrl->max_control_output);
-    _dead_zone.readNewest(ctrl->dead_zone);
-    _prop_gain.readNewest(ctrl->prop_gain);
-    _ff_gain.readNewest(ctrl->ff_gain);
+    ctrl->max_control_output = _max_control_output.get();
+    ctrl->dead_zone = _dead_zone.get();
+    ctrl->prop_gain = _prop_gain.get();
+    ctrl->ff_gain = _ff_gain.get();
 
     _current_max_control_output.write(ctrl->max_control_output);
     _current_dead_zone.write(ctrl->dead_zone);

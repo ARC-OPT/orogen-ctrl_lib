@@ -35,29 +35,17 @@ task_context "ProportionalControllerTask" do subclasses "ControllerTask"
    needs_configuration
 
    # Proportional gain. Size has to be the same as size of field_names.
-   property "initial_prop_gain", "base/VectorXd"
+   property("prop_gain", "base/VectorXd").dynamic
 
    # Feed Forward gain. Size has to be the same as size of field_names.
-   property "initial_ff_gain", "base/VectorXd"
+   property("ff_gain", "base/VectorXd").dynamic
 
    # Maximum control output (saturation). If one output value exceeds maximum, all
    # other values will be scaled accordingly. Size has to be the same as size of field_names.
-   property "initial_max_control_output", "base/VectorXd"
+   property("max_control_output", "base/VectorXd").dynamic
 
    # Minimum control error (dead zone). If one control error value falls below this minimum, it will be set to zero.
-   property "initial_dead_zone", "base/VectorXd"
-
-   # Set new proportional gain here. Size has to be the same as size of field_names.
-   input_port "prop_gain", "base/VectorXd"
-
-   # Set new proportional gain here. Size has to be the same as size of field_names.
-   input_port "ff_gain", "base/VectorXd"
-
-   # Set new maximum control output here. Size has to be the same as size of field_names.
-   input_port "max_control_output", "base/VectorXd"
-
-   # Set new dead zone here. Size has to be the same as size of field_names.
-   input_port "dead_zone", "base/VectorXd"
+   property("dead_zone", "base/VectorXd").dynamic
 
    # Debug: Current control error.
    output_port "control_error", "base/VectorXd"
@@ -163,23 +151,15 @@ task_context "PotentialFieldsControllerTask" do subclasses "ControllerTask"
    property "order", "int", 1
 
    # Influence distance of the potential fields. Size has to be the same as size of field_names. Values have to be > 0!
-   property "initial_influence_distance", "base/VectorXd"
+   property("influence_distance", "base/VectorXd").dynamic
 
-   # Initial proportional gain. Size has to be the same as size of field_names.
-   property "initial_prop_gain", "base/VectorXd"
+   # proportional gain. Size has to be the same as size of field_names.
+   property("prop_gain", "base/VectorXd").dynamic
 
    # Maximum control output (saturation). If one output value exceeds maximum, all
    # other values will be scaled accordingly. Size has to be the same as size of field_names.
-   property "initial_max_control_output", "base/VectorXd"
+   property("max_control_output", "base/VectorXd").dynamic
 
-   # Set new influence distance zone here. Size has to be same as size of field_names.
-   input_port "influence_distance", "base/VectorXd"
-
-   # Set new proportional gain here. Size has to be the same as size of field_names.
-   input_port "prop_gain", "base/VectorXd"
-
-   # Set new maximum control output here. Size has to be the same as size of field_names.
-   input_port "max_control_output", "base/VectorXd"
 
    # Debug: Current control error.
    output_port "current_prop_gain", "base/VectorXd"
@@ -203,7 +183,7 @@ end
 task_context "JointLimitAvoidance" do subclasses "PotentialFieldsControllerTask"
    needs_configuration
 
-   # Initial centers of the potential fields. Size has to be either empty or same as size of field_names. If empty the task will be wait for input from port
+   # centers of the potential fields. Size has to be either empty or same as size of field_names. If empty the task will be wait for input from port
    property "joint_limits",        "base/JointLimits"
 
    # Controller feedback: Actual joint position. Size has to be same as size of field_names. Joints will mapped internally by names. All joints from field_names have to be present here!

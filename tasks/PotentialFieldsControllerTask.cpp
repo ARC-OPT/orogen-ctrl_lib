@@ -35,20 +35,20 @@ bool PotentialFieldsControllerTask::configureHook()
         return false;
     }
 
-    ctrl->prop_gain = _initial_prop_gain.get();
+    ctrl->prop_gain = _prop_gain.get();
     if(field_names.size() != (size_t)ctrl->prop_gain.size()){
         LOG_ERROR("%s: Size of field_names is %i, but size of proportional gain is %i",
                   this->getName().c_str(), field_names.size(), ctrl->prop_gain.size());
         return false;
     }
-    ctrl->max_control_output = _initial_max_control_output.get();
+    ctrl->max_control_output = _max_control_output.get();
     if(field_names.size() != (size_t)ctrl->max_control_output.size()){
         LOG_ERROR("%s: Size of field_names is %i, but size of maximum control output is %i",
                   this->getName().c_str(), field_names.size(), ctrl->max_control_output.size());
         return false;
     }
 
-    influence_distance = _initial_influence_distance.get();
+    influence_distance = _influence_distance.get();
 
     controller = ctrl;
 
@@ -65,10 +65,10 @@ void PotentialFieldsControllerTask::updateHook()
 {
     PotentialFieldsController* ctrl = (PotentialFieldsController*)controller;
 
-    _prop_gain.readNewest(ctrl->prop_gain);
-    _max_control_output.readNewest(ctrl->max_control_output);
-    if(_influence_distance.readNewest(influence_distance) == RTT::NewData)
-        setInfluenceDistance(influence_distance);
+    ctrl->prop_gain = _prop_gain.get();
+    ctrl->max_control_output = _max_control_output.get();
+    influence_distance = _influence_distance.get();
+    setInfluenceDistance(influence_distance);
 
     _current_prop_gain.write(ctrl->prop_gain);
     _current_max_control_output.write(ctrl->max_control_output);

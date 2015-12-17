@@ -30,8 +30,8 @@ bool JointRadialPotentialFields::configureHook(){
     // The Controller contains all potential fields:
     controller->setFields(fields);
 
-    setInfluenceDistance(_initial_influence_distance.get());
-    pot_field_centers = _initial_pot_field_centers.get();
+    setInfluenceDistance(_influence_distance.get());
+    pot_field_centers = _pot_field_centers.get();
     if(!pot_field_centers.empty()){
         setPotFieldCenters(pot_field_centers);
         has_pot_field_centers = true;

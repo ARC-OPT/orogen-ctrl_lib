@@ -14,59 +14,21 @@ class JointLimitAvoidance : public JointLimitAvoidanceBase
 {
     friend class JointLimitAvoidanceBase;
 protected:
-
     /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
     virtual bool readSetpoint();
     /** Read all feedback values of the controller. Return false if there is no feedback, true otherwise */
     virtual bool readFeedback();
     /** Compute output of the controller and write it to port. Returns control output */
     virtual void writeControlOutput(const base::VectorXd& control_output_raw);
-    /** Write activation function to port*/
-    virtual void writeActivationFunction();
+    /** Implementation of reset behavior does not make sense for a Potential Field Controller */
+    virtual void reset(){}
+
+    void extractPositions(const base::samples::Joints& joints, const std::vector<std::string> &names, base::VectorXd& positions);
 
     base::JointLimits joint_limits;
     base::samples::Joints feedback;
     base::VectorXd position_raw;
     base::commands::Joints control_output;
-    base::VectorXd tmp;
-
-    virtual void setInfluenceDistance(const base::VectorXd &distance){
-
-        PotentialFieldsController* ctrl = (PotentialFieldsController*)controller;
-
-        assert(ctrl != 0);
-
-        // If maximum influence distance is not set, the default (inf) will be used in the potential field. So,
-        // only do sth. if the size is not zero
-        if(distance.size() != 0){
-
-            if(distance.size() != (int)ctrl->dimension){
-                LOG_ERROR("%s: Max. Influence Distance vector has size %s, but field names size is ",
-                          this->getName().c_str(), distance.size(), ctrl->fields.size());
-                throw std::invalid_argument("Invalid influence distance");
-            }
-            for(size_t i = 0; i < ctrl->fields.size(); i++)
-                ctrl->fields[i]->influence_distance = distance(i);
-        }
-    }
-
-    inline void extractPositions(const base::samples::Joints& joints, const std::vector<std::string> &names, base::VectorXd& positions){
-
-        if(joints.elements.size() != joints.names.size()){
-            LOG_ERROR("%s: Sizes of names and elements does not match", this->getName().c_str());
-            throw std::invalid_argument("Invalid joints vector");
-        }
-
-        positions.resize(names.size());
-        for(size_t i = 0; i < names.size(); i++){
-            const base::JointState& elem = joints.getElementByName(names[i]);
-            if(!elem.hasPosition()){
-                LOG_ERROR("%s: Element %s does not have a valid position value", this->getName().c_str(), names[i].c_str());
-                throw std::invalid_argument("Invalid joints vector");
-            }
-            positions(i) = elem.position;
-        }
-    }
 
 public:
     JointLimitAvoidance(std::string const& name = "ctrl_lib::JointLimitAvoidance");

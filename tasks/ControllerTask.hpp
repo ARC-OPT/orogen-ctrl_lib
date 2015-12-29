@@ -21,11 +21,12 @@ protected:
     virtual bool readFeedback() = 0;
     /** Compute output of the controller and write it to port. Returns control output */
     virtual void writeControlOutput(const base::VectorXd& control_output_raw) = 0;
-    /** Write activation function to port*/
-    virtual void writeActivationFunction() = 0;
+    /** Operation: Start evaluation. Reset measurements.*/
+    virtual void startEvaluation(bool start);
+    /** Operation: Reset function. Implemented in derived task. This sets the control output to zero by setting setpoint and feedback to the same value.*/
+    virtual void reset() = 0;
 
-    base::VectorXd control_output_raw, activation;
-    ActivationFunction activation_function;
+    base::VectorXd control_output_raw;
     Controller *controller;
     std::vector<std::string> field_names;
 

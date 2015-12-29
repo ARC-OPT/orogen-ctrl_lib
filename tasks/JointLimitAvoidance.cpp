@@ -2,6 +2,8 @@
 
 #include "JointLimitAvoidance.hpp"
 #include <ctrl_lib/RadialPotentialField.hpp>
+#include <base/Logging.hpp>
+#include <ctrl_lib/PotentialFieldsController.hpp>
 
 using namespace ctrl_lib;
 
@@ -21,6 +23,8 @@ JointLimitAvoidance::~JointLimitAvoidance()
 
 bool JointLimitAvoidance::configureHook()
 {
+    controller = new PotentialFieldsController(_field_names.get().size());
+
     if (! JointLimitAvoidanceBase::configureHook())
         return false;
 
@@ -36,7 +40,7 @@ bool JointLimitAvoidance::configureHook()
         fields.push_back(new RadialPotentialField(1, _order.get()));
 
     ((PotentialFieldsController*)controller)->setFields(fields);
-    setInfluenceDistance(influence_distance);
+    ((PotentialFieldsController*)controller)->setInfluenceDistance(_influence_distance.get());
 
     control_output.resize(field_names.size());
     control_output.names = field_names;
@@ -45,42 +49,39 @@ bool JointLimitAvoidance::configureHook()
 }
 
 bool JointLimitAvoidance::readSetpoint(){
-    has_pot_field_centers = true;
-    return true; //always return true here, since we configure the potential field centers
+    return true; //always return true here, since we configure the potential field centers by setting the joint limits
 }
 
 bool JointLimitAvoidance::readFeedback(){
-    if(_feedback.read(feedback) == RTT::NewData)
-        has_feedback = true;
 
     PotentialFieldsController* ctrl = (PotentialFieldsController*)controller;
 
-    if(has_feedback){
+    if(_feedback.read(feedback) == RTT::NewData){
+
+
         extractPositions(feedback, field_names, position_raw);
 
         for(uint i = 0; i < position_raw.size(); i++){
-
-            ctrl->fields[i]->pot_field_center.resize(1);
-
+            // Prevent infinite control action:
             if(position_raw(i) >= joint_limits[i].max.position)
                 position_raw(i) = joint_limits[i].max.position - 1e-5;
             if(position_raw(i) <= joint_limits[i].min.position)
                 position_raw(i) = joint_limits[i].min.position + 1e-5;
 
-            if(fabs(joint_limits[i].max.position - position_raw(i))  < fabs(position_raw(i) - joint_limits[i].min.position))
-                ctrl->fields[i]->pot_field_center(0) = joint_limits[i].max.position;
-            else
-                ctrl->fields[i]->pot_field_center(0) = joint_limits[i].min.position;
+            ctrl->setFeedback(position_raw);
 
-            ctrl->fields[i]->position.resize(1);
-            ctrl->fields[i]->position(0) = position_raw(i);
+            base::VectorXd center(1);
+            if(fabs(joint_limits[i].max.position - position_raw(i))  < fabs(position_raw(i) - joint_limits[i].min.position))
+                center(0) = joint_limits[i].max.position;
+            else
+                center(0) = joint_limits[i].min.position;
+           ctrl->setPotFieldCenters(i, center);
         }
 
         _current_feedback.write(feedback);
-        return true;
     }
-    else
-        return false;
+
+    return ctrl->hasFeedback();
 }
 
 void JointLimitAvoidance::writeControlOutput(const base::VectorXd& control_output_raw){
@@ -91,38 +92,40 @@ void JointLimitAvoidance::writeControlOutput(const base::VectorXd& control_outpu
     _control_output.write(control_output);
 }
 
-void JointLimitAvoidance::writeActivationFunction()
-{
-    activation.resize(field_names.size());
 
-    PotentialFieldsController* ctrl = (PotentialFieldsController*)controller;
-
-    for(int i = 0; i < control_output_raw.size(); i++){
-        double dist = fabs(ctrl->fields[i]->position(0) - ctrl->fields[i]->pot_field_center(0));
-        activation(i) = fabs(dist - influence_distance(i)) / influence_distance(i);
+void JointLimitAvoidance::extractPositions(const base::samples::Joints& joints, const std::vector<std::string> &names, base::VectorXd& positions){
+    positions.resize(names.size());
+    for(size_t i = 0; i < names.size(); i++){
+        const base::JointState& elem = joints.getElementByName(names[i]);
+        if(!elem.hasPosition()){
+            LOG_ERROR("%s: Element %s does not have a valid position value", this->getName().c_str(), names[i].c_str());
+            throw std::invalid_argument("Invalid joints vector");
+        }
+        positions(i) = elem.position;
     }
-    _activation.write(activation_function.compute(activation));
 }
 
-bool JointLimitAvoidance::startHook()
-{
+bool JointLimitAvoidance::startHook(){
     if (! JointLimitAvoidanceBase::startHook())
         return false;
     return true;
 }
-void JointLimitAvoidance::updateHook()
-{
+
+void JointLimitAvoidance::updateHook(){
+    PotentialFieldsController* ctrl = (PotentialFieldsController*)controller;
+    ctrl->setInfluenceDistance(_influence_distance.get());
+
     JointLimitAvoidanceBase::updateHook();
 }
-void JointLimitAvoidance::errorHook()
-{
+
+void JointLimitAvoidance::errorHook(){
     JointLimitAvoidanceBase::errorHook();
 }
-void JointLimitAvoidance::stopHook()
-{
+
+void JointLimitAvoidance::stopHook(){
     JointLimitAvoidanceBase::stopHook();
 }
-void JointLimitAvoidance::cleanupHook()
-{
+
+void JointLimitAvoidance::cleanupHook(){
     JointLimitAvoidanceBase::cleanupHook();
 }

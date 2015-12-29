@@ -7,52 +7,41 @@
 using namespace ctrl_lib;
 
 CartesianForceController::CartesianForceController(std::string const& name)
-    : CartesianForceControllerBase(name)
-{
+    : CartesianForceControllerBase(name){
 }
 
 CartesianForceController::CartesianForceController(std::string const& name, RTT::ExecutionEngine* engine)
-    : CartesianForceControllerBase(name, engine)
-{
+    : CartesianForceControllerBase(name, engine){
 }
 
-CartesianForceController::~CartesianForceController()
-{
+CartesianForceController::~CartesianForceController(){
 }
 
-bool CartesianForceController::configureHook()
-{
+bool CartesianForceController::configureHook(){
     if (! CartesianForceControllerBase::configureHook())
         return false;
-
     return true;
 }
-bool CartesianForceController::startHook()
-{
+
+bool CartesianForceController::startHook(){
     if (! CartesianForceControllerBase::startHook())
         return false;
 
     invalidate(setpoint);
     invalidate(feedback);
-
     return true;
 }
 
 bool CartesianForceController::readFeedback(){
-
     if(_feedback.readNewest(feedback) == RTT::NewData){
         if(!isValid(feedback)){
             LOG_ERROR("%s: Feedback has an invalid force or torque value", this->getName().c_str());
             throw std::invalid_argument("Invalid feedback term");
         }
-        has_feedback = true;
+        controller->setFeedback(wrenchToRaw(feedback, feedback_raw));
         _current_feedback.write(feedback);
-        ProportionalController* ctrl = (ProportionalController*)controller;
-        ctrl->feedback.segment(0,3) = feedback.force;
-        ctrl->feedback.segment(3,3) = feedback.force;
-        return true;
     }
-    return has_feedback;
+    return controller->hasFeedback();
 }
 
 bool CartesianForceController::readSetpoint(){
@@ -62,14 +51,10 @@ bool CartesianForceController::readSetpoint(){
             LOG_ERROR("%s: Setpoint has an invalid force or torque value", this->getName().c_str());
             throw std::invalid_argument("Invalid setpoint");
         }
-        has_setpoint = true;
-        ProportionalController *ctrl = ((ProportionalController*)controller);
-        ctrl->setpoint.segment(0,3) = setpoint.force;
-        ctrl->setpoint.segment(3,3) = setpoint.force;
+        controller->setSetpoint(wrenchToRaw(setpoint, setpoint_raw));
         _current_setpoint.write(setpoint);
-        return true;
     }
-    return has_setpoint;
+    return controller->hasSetpoint();
 }
 
 void CartesianForceController::writeControlOutput(const base::VectorXd &ctrl_output_raw){
@@ -79,11 +64,37 @@ void CartesianForceController::writeControlOutput(const base::VectorXd &ctrl_out
     _control_output.write(control_output);
 }
 
+void CartesianForceController::reset(){
+    if(controller->hasFeedback()){
+        setpoint = feedback;
+        controller->setSetpoint(wrenchToRaw(setpoint, setpoint_raw));
+        _current_setpoint.write(setpoint);
+    }
+}
+
+bool CartesianForceController::isValid(const base::Wrench &w){
+    return !base::isNaN(w.force(0)) && !base::isNaN(w.force(1)) && !base::isNaN(w.force(2)) &&
+           !base::isNaN(w.torque(0)) && !base::isNaN(w.torque(1)) && !base::isNaN(w.torque(2));
+}
+
+void CartesianForceController::invalidate(base::Wrench& w){
+    for(uint i = 0; i < 3; i++){
+        w.force(i) = base::NaN<double>();
+        w.torque(i) = base::NaN<double>();
+    }
+}
+
+const base::VectorXd CartesianForceController::wrenchToRaw(const base::samples::Wrench& wrench, base::VectorXd& raw){
+    raw.resize(6);
+    raw.segment(0,3) = wrench.force;
+    raw.segment(3,3) = wrench.torque;
+    return raw;
+}
+
 void CartesianForceController::updateHook()
 {
     CartesianForceControllerBase::updateHook();
 }
-
 void CartesianForceController::errorHook()
 {
     CartesianForceControllerBase::errorHook();
@@ -95,15 +106,4 @@ void CartesianForceController::stopHook()
 void CartesianForceController::cleanupHook()
 {
     CartesianForceControllerBase::cleanupHook();
-}
-
-void CartesianForceController::reset(){
-    if(has_feedback){
-        setpoint = feedback;
-        has_setpoint = true;
-        ProportionalController *ctrl = ((ProportionalController*)controller);
-        ctrl->setpoint.segment(0,3) = setpoint.force;
-        ctrl->setpoint.segment(3,3) = setpoint.force;
-        _current_setpoint.write(setpoint);
-    }
 }

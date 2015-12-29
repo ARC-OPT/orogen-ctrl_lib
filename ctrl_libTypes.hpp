@@ -13,62 +13,6 @@
 
 namespace ctrl_lib {
 
-enum activationType{NO_ACTIVATION, STEP_ACTIVATION, LINEAR_ACTIVATION, QUADRATIC_ACTIVATION};
-
-/** The activation function that is written on a port by the controllers is a sigmoid function:
- *
- *    act = 1 / (1 + exp(-a*(x-c))
- *
- * where
- *    x = input variable
- *    c = offset
- *    a = steepness
- */
-struct ActivationFunction{
-    ActivationFunction() :
-        type(NO_ACTIVATION){
-    }
-
-    double threshold;
-    activationType type;
-    base::VectorXd activation;
-
-    base::VectorXd compute(const base::VectorXd& values){
-
-        activation.resize(values.size());
-        assert(threshold > 0 && threshold <= 1);
-
-        for(uint i = 0; i < values.size(); i++){
-            switch(type){
-            case NO_ACTIVATION:
-                activation(i) = 1;
-                break;
-            case STEP_ACTIVATION:
-                if(fabs(values(i)) > threshold)
-                    activation(i) = 1;
-                else
-                    activation(i) = 0;
-                break;
-            case LINEAR_ACTIVATION:
-                if(values(i) < threshold)
-                    activation(i) = (1.0/threshold) * values(i);
-                else
-                    activation(i) = 1;
-                break;
-            case QUADRATIC_ACTIVATION:
-                if(values(i) < threshold)
-                    activation(i) = (1.0/(threshold*threshold)) * (values(i)*values(i));
-                else
-                    activation(i) = 1;
-                break;
-            default:
-                throw std::invalid_argument("Invalid activation type");
-            }
-        }
-        return activation;
-    }
-};
-
 struct PotentialFieldInfo{
 
     void setFromField(PotentialField* field){

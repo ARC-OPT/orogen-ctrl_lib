@@ -3,29 +3,31 @@ require 'orocos'
 Orocos.initialize
 Orocos.load_typekit("base")
 
-Orocos.run "ctrl_lib::CartesianRadialPotentialFields" => "controller" do
+Orocos.run do#{}"ctrl_lib::CartesianRadialPotentialFields" => "controller" do
 
-   controller = Orocos::TaskContext.get "controller"
-   
-   prop_gain              = Types::Base::VectorXd.new(3)
-   max_control_output     = Types::Base::VectorXd.new(3)
-   influence_distance     = Types::Base::VectorXd.new(1)
-   influence_distance[0]    = 1.0
+   controller = Orocos::TaskContext.get "orogen_default_ctrl_lib__CartesianRadialPotentialFields"
 
-   for i in (0..2) do 
+   prop_gain             = Types::Base::VectorXd.new(3)
+   max_control_output    = Types::Base::VectorXd.new(3)
+   dead_zone             = Types::Base::VectorXd.new(3)
+   influence_distance    = 1.0
+
+   for i in (0..2) do
       prop_gain[i]             = 1.0
       max_control_output[i]    = 0.3
+      dead_zone[i]             = 0
    end
 
-   controller.field_names                = ["X", "Y", "Z"]
-   controller.initial_prop_gain          = prop_gain
-   controller.initial_max_control_output = max_control_output
-   controller.initial_influence_distance =  influence_distance
-   controller.order                      = 1
+   controller.field_names        = ["X", "Y", "Z"]
+   controller.prop_gain          = prop_gain
+   controller.max_control_output = max_control_output
+   controller.influence_distance = influence_distance
+   controller.dead_zone          = dead_zone
+   controller.order              = 1
 
    controller.configure
    controller.start
-    
+
    feedback = Types::Base::Samples::RigidBodyState.new
    feedback.position[0],feedback.position[1],feedback.position[2] = 0,0,0.1
    feedback.orientation.x,feedback.orientation.y,feedback.orientation.z,feedback.orientation.w = 0,0,0,1
@@ -42,7 +44,7 @@ Orocos.run "ctrl_lib::CartesianRadialPotentialFields" => "controller" do
 
    cycle_time = 0.01
    puts("Press Ctrl-C to stop ...")
-   while true 
+   while true
       feedback_writer.write(feedback)
       if not control_output_reader.read(control_output)
          sleep(cycle_time)
@@ -57,5 +59,5 @@ Orocos.run "ctrl_lib::CartesianRadialPotentialFields" => "controller" do
       print " #{'%.04f' % feedback.orientation.to_euler[0]} #{'%.04f' % feedback.orientation.to_euler[1]} #{'%.04f' % feedback.orientation.to_euler[2]}\n\n"
       sleep(cycle_time)
    end
-   
+
 end

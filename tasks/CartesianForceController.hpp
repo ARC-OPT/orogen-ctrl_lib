@@ -14,10 +14,6 @@ class CartesianForceController : public CartesianForceControllerBase
 {
     friend class CartesianForceControllerBase;
 protected:
-
-    base::samples::Wrench setpoint, feedback;
-    base::samples::RigidBodyState control_output;
-
     /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
     virtual bool readSetpoint();
     /** Read all feedback values of the controller. Return false if there is no feedback, true otherwise */
@@ -27,16 +23,13 @@ protected:
     /** Reset function. Implemented in derived task. This sets the control output to zero by setting setpoint and feedback to the same value.*/
     virtual void reset();
 
-    bool isValid(const base::Wrench &w){
-        return !base::isNaN(w.force(0)) && !base::isNaN(w.force(1)) && !base::isNaN(w.force(2)) &&
-               !base::isNaN(w.torque(0)) && !base::isNaN(w.torque(1)) && !base::isNaN(w.torque(2));
-    }
-    void invalidate(base::Wrench& w){
-        for(uint i = 0; i < 3; i++){
-            w.force(i) = base::NaN<double>();
-            w.torque(i) = base::NaN<double>();
-        }
-    }
+    bool isValid(const base::Wrench &w);
+    void invalidate(base::Wrench& w);
+    const base::VectorXd wrenchToRaw(const base::samples::Wrench& wrench, base::VectorXd& raw);
+
+    base::samples::Wrench setpoint, feedback;
+    base::samples::RigidBodyState control_output;
+    base::VectorXd feedback_raw, setpoint_raw;
 
 public:
     CartesianForceController(std::string const& name = "ctrl_lib::CartesianForceController");

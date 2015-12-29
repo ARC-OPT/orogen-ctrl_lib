@@ -17,11 +17,11 @@ Orocos.run "ctrl_lib::JointPositionController" => "controller" do
    ff_gain[0],ff_gain[1]                       = 0,0
    max_control_output[0],max_control_output[1] = 1e10,1e10
 
-   controller.field_names                = ["Joint_1", "Joint_2"]
-   controller.initial_prop_gain          = prop_gain
-   controller.initial_dead_zone          = dead_zone
-   controller.initial_ff_gain            = ff_gain
-   controller.initial_max_control_output = max_control_output
+   controller.field_names        = ["Joint_1", "Joint_2"]
+   controller.prop_gain          = prop_gain
+   controller.dead_zone          = dead_zone
+   controller.ff_gain            = ff_gain
+   controller.max_control_output = max_control_output
 
    controller.configure
    controller.start
@@ -46,11 +46,15 @@ Orocos.run "ctrl_lib::JointPositionController" => "controller" do
    control_output_reader = controller.control_output.reader
    control_output        = Types::Base::Commands::Joints.new
 
+   setpoint.time = Types::Base::Time.now
    setpoint_writer.write(setpoint)
+
+   controller.startEvaluation(true)
 
    cycle_time = 0.01
    puts "Press Ctrl-C to stop ..."
    while true
+      feedback.time = Types::Base::Time.now
       feedback_writer.write(feedback)
       if not control_output_reader.read(control_output)
          sleep(cycle_time)

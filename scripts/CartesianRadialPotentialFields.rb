@@ -3,9 +3,9 @@ require 'orocos'
 Orocos.initialize
 Orocos.load_typekit("base")
 
-Orocos.run do#{}"ctrl_lib::CartesianRadialPotentialFields" => "controller" do
+Orocos.run "ctrl_lib::CartesianRadialPotentialFields" => "controller" do
 
-   controller = Orocos::TaskContext.get "orogen_default_ctrl_lib__CartesianRadialPotentialFields"
+   controller = Orocos::TaskContext.get "controller"
 
    prop_gain             = Types::Base::VectorXd.new(3)
    max_control_output    = Types::Base::VectorXd.new(3)
@@ -53,10 +53,15 @@ Orocos.run do#{}"ctrl_lib::CartesianRadialPotentialFields" => "controller" do
 
       for i in (0..2) do feedback.position[i] += cycle_time*control_output.velocity[i] end
 
-      print "Potential Field position: #{'%.04f' % pot_field.position[0]} #{'%.04f' % pot_field.position[1]} #{'%.04f' % pot_field.position[2]}\n"
-      print "Control Output:             #{'%.04f' % control_output.velocity[0]} #{'%.04f' % control_output.velocity[1]} #{'%.04f' % control_output.velocity[2]}\n"
-      print "Actual Position:            #{'%.04f' % feedback.position[0]} #{'%.04f' % feedback.position[1]} #{'%.04f' % feedback.position[2]}"
-      print " #{'%.04f' % feedback.orientation.to_euler[0]} #{'%.04f' % feedback.orientation.to_euler[1]} #{'%.04f' % feedback.orientation.to_euler[2]}\n\n"
+      print "Potential Field position:  "
+      pot_field.position.data.each do |d| print "#{'%.04f' % d} " end
+      print "\nMax control output:        "
+      max_control_output.to_a.each do |m| print "#{'%.04f' % m} " end
+      print "\nControl Output:            "
+      control_output.velocity.data.each do |v| print "#{'%.04f' % v} " end
+      print "\nActual Position:           "
+      feedback.position.data.each do |p| print "#{'%.04f' % p} " end
+      print "\n\n"
       sleep(cycle_time)
    end
 

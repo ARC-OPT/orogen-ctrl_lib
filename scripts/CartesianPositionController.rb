@@ -64,12 +64,24 @@ Orocos.run "ctrl_lib::CartesianPositionController" => "controller" do
       end
       feedback.orientation.from_euler(euler,0,1,2)
 
-      print "Goal Pose:       X: #{'%.04f' % setpoint.position[0]}  Y: #{'%.04f' % setpoint.position[1]}  Z: #{'%.04f' % setpoint.position[2]} "
-      print "rotX: #{'%.04f' % setpoint.orientation.to_euler[2]} rotY: #{'%.04f' % setpoint.orientation.to_euler[1]} rotZ: #{'%.04f' % setpoint.orientation.to_euler[0]}\n"
-      print "Control Output: vx: #{'%.04f' % control_output.velocity[0]} vy: #{'%.04f' % control_output.velocity[1]} vz: #{'%.04f' % control_output.velocity[2]} "
-      print "r_vx: #{'%.04f' % control_output.angular_velocity[0]} r_vy: #{'%.04f' % control_output.angular_velocity[1]} r_vz: #{'%.04f' % control_output.angular_velocity[2]}\n"
-      print "Actual Position: X: #{'%.04f' % feedback.position[0]}  Y: #{'%.04f' % feedback.position[1]}  Z: #{'%.04f' % feedback.position[2]} "
-      print "rotX: #{'%.04f' % feedback.orientation.to_euler[2]} rotY: #{'%.04f' % feedback.orientation.to_euler[1]} rotZ: #{'%.04f' % feedback.orientation.to_euler[0]}\n\n"
+      print "Goal Pose (x/y/z/rx/ry/rz): "
+      setpoint.position.data.each do |p| print "#{'%.04f' % p} " end
+      setpoint.orientation.to_euler.data.each do |e| print "#{'%.04f' % e} " end
+
+      print "\nMax control output:         "
+      max_control_output.to_a.each do |m| print "#{'%.04f' % m} " end
+
+      print "\nDead zone:                  "
+      dead_zone.to_a.each do |m| print "#{'%.04f' % m} " end
+
+      print "\nControl Output:             "
+      control_output.velocity.data.each do |v| print "#{'%.04f' % v} " end
+      control_output.angular_velocity.data.each do |v| print "#{'%.04f' % v} " end
+
+      print "\nActual Position:            "
+      feedback.position.data.each do |p| print "#{'%.04f' % p} " end
+      feedback.orientation.to_euler.data.each do |e| print "#{'%.04f' % e} " end
+      print "\n\n"
       sleep(cycle_time)
    end
 end

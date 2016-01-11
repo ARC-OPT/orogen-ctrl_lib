@@ -67,15 +67,17 @@ bool JointLimitAvoidance::readFeedback(){
                 position_raw(i) = joint_limits[i].max.position - 1e-5;
             if(position_raw(i) <= joint_limits[i].min.position)
                 position_raw(i) = joint_limits[i].min.position + 1e-5;
+        }
 
-            ctrl->setFeedback(position_raw);
+        ctrl->setFeedback(position_raw);
 
+        for(uint i = 0; i < position_raw.size(); i++){
             base::VectorXd center(1);
             if(fabs(joint_limits[i].max.position - position_raw(i))  < fabs(position_raw(i) - joint_limits[i].min.position))
                 center(0) = joint_limits[i].max.position;
             else
                 center(0) = joint_limits[i].min.position;
-           ctrl->setPotFieldCenters(i, center);
+            ctrl->setPotFieldCenters(i, center);
         }
 
         _current_feedback.write(feedback);

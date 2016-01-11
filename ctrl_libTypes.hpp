@@ -22,6 +22,7 @@ struct PotentialFieldInfo{
         distance = field->distance;
         gradient = field->gradient;
         pot_field_center = field->pot_field_center;
+        position = field->position;
     }
 
     /** Dimension of the potential field, e.g. a potential field in 3d space would have size 3.*/
@@ -41,6 +42,9 @@ struct PotentialFieldInfo{
 
     /** Potential field center position*/
     base::VectorXd pot_field_center;
+
+    /** Current position*/
+    base::VectorXd position;
 };
 
 }

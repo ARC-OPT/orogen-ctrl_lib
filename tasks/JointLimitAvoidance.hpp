@@ -5,6 +5,7 @@
 
 #include "ctrl_lib/JointLimitAvoidanceBase.hpp"
 #include <base/commands/Joints.hpp>
+#include <ctrl_libTypes.hpp>
 
 namespace ctrl_lib{
 
@@ -29,6 +30,7 @@ protected:
     base::samples::Joints feedback;
     base::VectorXd position_raw;
     base::commands::Joints control_output;
+    std::vector<PotentialFieldInfo> field_infos;
 
 public:
     JointLimitAvoidance(std::string const& name = "ctrl_lib::JointLimitAvoidance");

@@ -58,7 +58,6 @@ bool JointLimitAvoidance::readFeedback(){
 
     if(_feedback.read(feedback) == RTT::NewData){
 
-
         extractPositions(feedback, field_names, position_raw);
 
         for(uint i = 0; i < position_raw.size(); i++){
@@ -116,6 +115,12 @@ bool JointLimitAvoidance::startHook(){
 void JointLimitAvoidance::updateHook(){
     PotentialFieldsController* ctrl = (PotentialFieldsController*)controller;
     ctrl->setInfluenceDistance(_influence_distance.get());
+    _current_influence_distance.write(_influence_distance.get());
+
+    field_infos.resize(ctrl->getNoOfFields());
+    for(size_t i = 0; i < ctrl->getNoOfFields(); i++)
+        field_infos[i].setFromField(ctrl->getFields()[i]);
+    _field_infos.write(field_infos);
 
     JointLimitAvoidanceBase::updateHook();
 }

@@ -86,6 +86,9 @@ void ControllerTask::cleanupHook(){
 }
 
 void ControllerTask::startEvaluation(bool start){
-    if(controller)
+    if(controller){
+        if(start)
+            controller->resetEvaluation();
         controller->startEvaluation(start);
+    }
 }

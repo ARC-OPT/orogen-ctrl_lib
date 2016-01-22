@@ -3,6 +3,7 @@ name "ctrl_lib"
 using_library "ctrl_lib"
 import_types_from "ctrl_libTypes.hpp"
 import_types_from "ctrl_lib/ActivationFunction.hpp"
+import_types_from "ctrl_lib/ControllerPerformance.hpp"
 import_types_from "base"
 using_library "kdl_conversions"
 
@@ -60,7 +61,7 @@ task_context "ControllerTask" do abstract
    output_port("current_prop_gain", "base/VectorXd")
 
    # Control performance. Performance measure that reflects the quality of the control action
-   output_port("ctrl_performance", "base/VectorXd")
+   output_port("ctrl_performance", "ctrl_lib/ControllerPerformance")
 
 
    # Start/Stop evaluation

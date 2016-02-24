@@ -73,7 +73,7 @@ void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<
 
             ctrl->clearPotentialFields();
 
-            std::vector<PotentialField*> fields(centers.size());
+            std::vector<PotentialField*> fields;
             for(size_t i = 0; i < centers.size(); i++)
             {
                 if(!centers[i].hasValidPosition()){
@@ -82,8 +82,12 @@ void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<
                     throw std::invalid_argument("Invalid potential field centers");
                 }
 
-                fields[i] = new RadialPotentialField(3, order);
-                fields[i]->pot_field_center = centers[i].position;
+
+                if(centers[i].targetFrame.compare(feedback.sourceFrame) == 0 ){
+                    RadialPotentialField *field = new RadialPotentialField(3, order);
+                    field->pot_field_center = centers[i].position;
+                    fields.push_back(field);
+                }
             }
             ctrl->setFields(fields);
             ctrl->setInfluenceDistance(_influence_distance.get());

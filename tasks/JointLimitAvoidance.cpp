@@ -3,7 +3,7 @@
 #include "JointLimitAvoidance.hpp"
 #include <ctrl_lib/RadialPotentialField.hpp>
 #include <base/Logging.hpp>
-#include <ctrl_lib/PotentialFieldsController.hpp>
+#include <ctrl_lib/JointPotentialFieldsController.hpp>
 
 using namespace ctrl_lib;
 
@@ -23,7 +23,7 @@ JointLimitAvoidance::~JointLimitAvoidance()
 
 bool JointLimitAvoidance::configureHook()
 {
-    controller = new PotentialFieldsController(_field_names.get().size());
+    controller = new JointPotentialFieldsController(_field_names.get().size());
 
     if (! JointLimitAvoidanceBase::configureHook())
         return false;
@@ -39,8 +39,8 @@ bool JointLimitAvoidance::configureHook()
     for(size_t i = 0; i < field_names.size(); i++)
         fields.push_back(new RadialPotentialField(1, _order.get()));
 
-    ((PotentialFieldsController*)controller)->setFields(fields);
-    ((PotentialFieldsController*)controller)->setInfluenceDistance(_influence_distance.get());
+    ((JointPotentialFieldsController*)controller)->setFields(fields);
+    ((JointPotentialFieldsController*)controller)->setInfluenceDistance(_influence_distance.get());
 
     control_output.resize(field_names.size());
     control_output.names = field_names;

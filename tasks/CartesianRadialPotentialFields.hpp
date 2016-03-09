@@ -19,6 +19,8 @@ protected:
     base::samples::RigidBodyState control_output, feedback;
     std::vector<base::samples::RigidBodyState> pot_field_centers;
     int order;
+    std::vector<PotentialFieldInfo> field_infos;
+    bool has_pot_field_centers;
 
     /** Read actual position. Return false if there is no valid actual position*/
     virtual bool readFeedback();

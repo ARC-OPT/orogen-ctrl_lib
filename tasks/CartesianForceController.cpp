@@ -18,6 +18,9 @@ CartesianForceController::~CartesianForceController(){
 }
 
 bool CartesianForceController::configureHook(){
+
+    controller = new ProportionalFeedForwardController(6);
+
     if (! CartesianForceControllerBase::configureHook())
         return false;
     return true;
@@ -46,7 +49,7 @@ bool CartesianForceController::readFeedback(){
 
 bool CartesianForceController::readSetpoint(){
 
-    if(_feedback.readNewest(setpoint) == RTT::NewData){
+    if(_setpoint.readNewest(setpoint) == RTT::NewData){
         if(!isValid(setpoint)){
             LOG_ERROR("%s: Setpoint has an invalid force or torque value", this->getName().c_str());
             throw std::invalid_argument("Invalid setpoint");

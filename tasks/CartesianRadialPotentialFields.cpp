@@ -3,6 +3,7 @@
 #include "CartesianRadialPotentialFields.hpp"
 #include <ctrl_lib/RadialPotentialField.hpp>
 #include <base/Logging.hpp>
+#include <ctrl_lib/CartesianPotentialFieldsController.hpp>
 
 using namespace ctrl_lib;
 
@@ -14,25 +15,13 @@ CartesianRadialPotentialFields::CartesianRadialPotentialFields(std::string const
     : CartesianRadialPotentialFieldsBase(name, engine){
 }
 
-CartesianRadialPotentialFields::~CartesianRadialPotentialFields(){
-}
-
 bool CartesianRadialPotentialFields::configureHook(){
-
-    controller = new PotentialFieldsController(3);
-
-    if (! CartesianRadialPotentialFieldsBase::configureHook())
+    controller = new CartesianPotentialFieldsController(_field_names.get().size());
+    if(!CartesianRadialPotentialFieldsBase::configureHook())
         return false;
-
-    field_names = _field_names.get();
-    if(field_names.size() != 3){
-        LOG_ERROR("%s: Size of field name vector has to be be 3, but is %i", field_names.size(), this->getName().c_str());
-        return false;
-    }
-    order = _order.get();
-
     return true;
 }
+
 bool CartesianRadialPotentialFields::readSetpoint(){
 
     if(_pot_field_centers.readNewest(pot_field_centers) == RTT::NewData)
@@ -48,9 +37,9 @@ bool CartesianRadialPotentialFields::readFeedback(){
             LOG_ERROR("%s: Actual position is invalid, e.g. NaN", this->getName().c_str());
             throw std::invalid_argument("Invalid actual position");
         }
-        controller->setFeedback(feedback.position);
+        controller->setPosition(feedback.position);
     }
-    return controller->hasFeedback();
+    return controller->hasPosition();
 }
 
 void CartesianRadialPotentialFields::writeControlOutput(const base::VectorXd &ctrl_output_raw){
@@ -63,15 +52,13 @@ void CartesianRadialPotentialFields::writeControlOutput(const base::VectorXd &ct
 
 void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<base::samples::RigidBodyState> &centers){
 
-    PotentialFieldsController* ctrl = (PotentialFieldsController*)controller;
-
     assert(ctrl != 0);
 
     if(!centers.empty())
     {
-        if(centers.size() != ctrl->getNoOfFields()){
+        if(centers.size() != controller->getNoOfFields()){
 
-            ctrl->clearPotentialFields();
+            controller->clearPotentialFields();
 
             std::vector<PotentialField*> fields(centers.size());
             for(size_t i = 0; i < centers.size(); i++)
@@ -82,31 +69,31 @@ void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<
                     throw std::invalid_argument("Invalid potential field centers");
                 }
 
-                fields[i] = new RadialPotentialField(3, order);
+                fields[i] = new RadialPotentialField(3);
                 fields[i]->pot_field_center = centers[i].position;
             }
-            ctrl->setFields(fields);
-            ctrl->setInfluenceDistance(_influence_distance.get());
+            controller->setFields(fields);
+            controller->setInfluenceDistance(_influence_distance.get());
         }
     }
 }
 
-bool CartesianRadialPotentialFields::startHook(){
-    if (! CartesianRadialPotentialFieldsBase::startHook())
-        return false;
-    return true;
-}
-void CartesianRadialPotentialFields::updateHook(){
-    CartesianRadialPotentialFieldsBase::updateHook();
-}
-void CartesianRadialPotentialFields::errorHook(){
-    CartesianRadialPotentialFieldsBase::errorHook();
-}
-void CartesianRadialPotentialFields::stopHook(){
-    CartesianRadialPotentialFieldsBase::stopHook();
-}
-void CartesianRadialPotentialFields::cleanupHook(){
-    PotentialFieldsController* ctrl = (PotentialFieldsController*)controller;
-    ctrl->clearPotentialFields();
-    CartesianRadialPotentialFieldsBase::cleanupHook();
+const base::VectorXd& CartesianRadialPotentialFields::computeActivation(ActivationFunction &activation_function){
+    base::VectorXd tmp(6);
+    tmp.setZero();
+
+    // Get highest activation from all fields
+    double max_activation = 0;
+    const std::vector<PotentialField*> &fields = controller->getFields();
+    for(uint i = 0; i < fields.size(); i++){
+        double activation = fabs(fields[i]->distance.norm() - fields[i]->influence_distance) / fields[i]->influence_distance;
+        if(activation > max_activation)
+            max_activation = activation;
+    }
+
+    // Use maximum activation for all dof
+    for(uint i = 0; i < controller->getDimension(); i++)
+        tmp(i) = max_activation;
+
+    return activation_function.compute(tmp);
 }

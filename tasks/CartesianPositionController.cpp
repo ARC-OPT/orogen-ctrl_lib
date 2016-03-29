@@ -3,7 +3,6 @@
 #include "CartesianPositionController.hpp"
 #include <base/Logging.hpp>
 #include <kdl_conversions/KDLConversions.hpp>
-#include <ctrl_lib/ProportionalFeedForwardController.hpp>
 
 using namespace ctrl_lib;
 
@@ -15,54 +14,11 @@ CartesianPositionController::CartesianPositionController(std::string const& name
     : CartesianPositionControllerBase(name, engine){
 }
 
-CartesianPositionController::~CartesianPositionController(){
-}
-
-bool CartesianPositionController::configureHook(){
-
-    controller = new ProportionalFeedForwardController(6);
-    ((ProportionalFeedForwardController*)controller)->setFeedForwardGain(_ff_gain.get());
-
-    if (! CartesianPositionControllerBase::configureHook())
-        return false;
-
-    return true;
-}
-
-bool CartesianPositionController::startHook(){
-    if (! CartesianPositionControllerBase::startHook())
-        return false;
-    return true;
-}
-
-void CartesianPositionController::updateHook(){
-    ProportionalFeedForwardController* ctrl = (ProportionalFeedForwardController*)controller;
-    ctrl->setFeedForwardGain(_ff_gain.get());
-    _current_ff_gain.write(ctrl->getFeedForwardGain());
-
-    CartesianPositionControllerBase::updateHook();
-}
-
-void CartesianPositionController::errorHook(){
-    CartesianPositionControllerBase::errorHook();
-}
-
-void CartesianPositionController::stopHook(){
-    CartesianPositionControllerBase::stopHook();
-}
-
-void CartesianPositionController::cleanupHook(){
-    CartesianPositionControllerBase::cleanupHook();
-}
-
 bool CartesianPositionController::readSetpoint(){
-    if(_setpoint.readNewest(setpoint) == RTT::NewData)
+    if(_setpoint.readNewest(setpoint) == RTT::NewData){
         _current_setpoint.write(setpoint);
-
-    if( ( setpoint.hasValidOrientation() && setpoint.hasValidPosition()) ||
-        ( setpoint.hasValidVelocity()    && setpoint.hasValidAngularVelocity()) )
         setControlInput();
-
+    }
     return controller->hasSetpoint();
 }
 
@@ -99,26 +55,28 @@ void CartesianPositionController::setControlInput(){
 
     // TODO: This ignores invalid input and can lead to silent errors! However, it may be useful
     // if we only want to use the feed forward term...
-    if(!setpoint.hasValidPosition() || !setpoint.hasValidOrientation() ||
-            !feedback.hasValidPosition() || !feedback.hasValidOrientation()){
-        setpoint_raw.setZero();
-        feedback_raw.setZero();
+    if(!setpoint.hasValidPosition() || !setpoint.hasValidOrientation()){
+        LOG_ERROR("Invalid setpoint. Either NaN or invalid orientation quaternion.");
+        throw std::invalid_argument("Invalid setpoint");
     }
-    else{
-        KDL::Frame setpoint_kdl, feedback_kdl;
-        kdl_conversions::RigidBodyState2KDL(setpoint,setpoint_kdl);
-        kdl_conversions::RigidBodyState2KDL(feedback,feedback_kdl);
-
-        // Set reference value to control error and actual value to zero, since the controller
-        // cannot deal with full poses. Use KDL::diff to compute the orientation-error
-        // as zyx-rotation, since the controller cannot deal with full poses. This will give the
-        // rotational velocity in 3D space that rotates the actual pose (feedback) onto the setpoint
-        KDL::Twist diff = KDL::diff(feedback_kdl, setpoint_kdl);
-
-        for(int i = 0; i < 6; i++)
-            setpoint_raw(i) = diff(i);
-        feedback_raw.setZero();
+    if(!feedback.hasValidPosition() || !feedback.hasValidOrientation()){
+        LOG_ERROR("Invalid feedback. Either NaN or invalid orientation quaternion.");
+        throw std::invalid_argument("Invalid feedback");
     }
+
+    KDL::Frame setpoint_kdl, feedback_kdl;
+    kdl_conversions::RigidBodyState2KDL(setpoint,setpoint_kdl);
+    kdl_conversions::RigidBodyState2KDL(feedback,feedback_kdl);
+
+    // Set reference value to control error and actual value to zero, since the controller
+    // cannot deal with full poses. Use KDL::diff to compute the orientation-error
+    // as zyx-rotation, since the controller cannot deal with full poses. This will give the
+    // rotational velocity in 3D space that rotates the actual pose (feedback) onto the setpoint
+    KDL::Twist diff = KDL::diff(feedback_kdl, setpoint_kdl);
+
+    for(int i = 0; i < 6; i++)
+        setpoint_raw(i) = diff(i);
+    feedback_raw.setZero();
 
     // Set feedforward to given velocity setpoint. Set to zero if no valid velocitiy is given.
     if(setpoint.hasValidVelocity() && setpoint.hasValidAngularVelocity()){
@@ -128,9 +86,8 @@ void CartesianPositionController::setControlInput(){
     else
         feedforward_raw.setZero();
 
-    ProportionalFeedForwardController* ctrl = (ProportionalFeedForwardController*)controller;
-    ctrl->setFeedback(feedback_raw);
-    ctrl->setSetpoint(setpoint_raw);
-    ctrl->setFeedForward(feedforward_raw);
+    controller->setFeedback(feedback_raw);
+    controller->setSetpoint(setpoint_raw);
+    controller->setFeedforward(feedforward_raw);
 }
 

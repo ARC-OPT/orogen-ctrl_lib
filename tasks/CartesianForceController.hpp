@@ -14,13 +14,14 @@ class CartesianForceController : public CartesianForceControllerBase
 {
     friend class CartesianForceControllerBase;
 protected:
-    /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
-    virtual bool readSetpoint();
+
     /** Read all feedback values of the controller. Return false if there is no feedback, true otherwise */
     virtual bool readFeedback();
-    /** Write the output of the controller to a port */
-    virtual void writeControlOutput(const base::VectorXd &ctrl_output_raw);
-    /** Reset function. Implemented in derived task. This sets the control output to zero by setting setpoint and feedback to the same value.*/
+    /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
+    virtual bool readSetpoint();
+    /** Write control output to port*/
+    virtual void writeControlOutput(const base::VectorXd& control_output_raw);
+    /** Set setpoint to actual value*/
     virtual void reset();
 
     bool isValid(const base::Wrench &w);
@@ -34,13 +35,13 @@ protected:
 public:
     CartesianForceController(std::string const& name = "ctrl_lib::CartesianForceController");
     CartesianForceController(std::string const& name, RTT::ExecutionEngine* engine);
-    ~CartesianForceController();
-    bool configureHook();
-    bool startHook();
-    void updateHook();
-    void errorHook();
-    void stopHook();
-    void cleanupHook();
+    ~CartesianForceController(){}
+    bool configureHook(){return CartesianForceControllerBase::configureHook();}
+    bool startHook(){return CartesianForceControllerBase::startHook();}
+    void updateHook(){CartesianForceControllerBase::updateHook();}
+    void errorHook(){CartesianForceControllerBase::errorHook();}
+    void stopHook(){CartesianForceControllerBase::stopHook();}
+    void cleanupHook(){CartesianForceControllerBase::cleanupHook();}
 };
 }
 

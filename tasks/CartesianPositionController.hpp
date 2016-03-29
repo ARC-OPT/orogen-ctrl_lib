@@ -4,7 +4,7 @@
 #define CTRL_LIB_CARTESIANPOSITIONCONTROLLER_TASK_HPP
 
 #include "ctrl_lib/CartesianPositionControllerBase.hpp"
-#include <base/commands/Joints.hpp>
+#include <base/samples/RigidBodyState.hpp>
 
 namespace ctrl_lib {
 
@@ -13,13 +13,14 @@ class CartesianPositionController : public CartesianPositionControllerBase
 {
     friend class CartesianPositionControllerBase;
 protected:
-    /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
-    virtual bool readSetpoint();
+
     /** Read all feedback values of the controller. Return false if there is no feedback, true otherwise */
     virtual bool readFeedback();
-    /** Write the output of the controller to a port */
-    virtual void writeControlOutput(const base::VectorXd &ctrl_output_raw);
-    /** Reset function. Implemented in derived task. This sets the control output to zero by setting setpoint and feedback to the same value.*/
+    /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
+    virtual bool readSetpoint();
+    /** Write control output to port*/
+    virtual void writeControlOutput(const base::VectorXd& control_output_raw);
+    /** Set setpoint to actual value*/
     virtual void reset();
 
     void setControlInput();
@@ -30,13 +31,13 @@ protected:
 public:
     CartesianPositionController(std::string const& name = "ctrl_lib::CartesianPositionController");
     CartesianPositionController(std::string const& name, RTT::ExecutionEngine* engine);
-    ~CartesianPositionController();
-    bool configureHook();
-    bool startHook();
-    void updateHook();
-    void errorHook();
-    void stopHook();
-    void cleanupHook();
+    ~CartesianPositionController(){}
+    bool configureHook(){return CartesianPositionControllerBase::configureHook();}
+    bool startHook(){return CartesianPositionControllerBase::startHook();}
+    void updateHook(){CartesianPositionControllerBase::updateHook();}
+    void errorHook(){CartesianPositionControllerBase::errorHook();}
+    void stopHook(){CartesianPositionControllerBase::stopHook();}
+    void cleanupHook(){CartesianPositionControllerBase::cleanupHook();}
 };
 }
 

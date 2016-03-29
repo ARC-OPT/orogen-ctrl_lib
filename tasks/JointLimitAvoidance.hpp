@@ -14,15 +14,15 @@ class JointLimitAvoidance : public JointLimitAvoidanceBase
 {
     friend class JointLimitAvoidanceBase;
 protected:
-    /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
-    virtual bool readSetpoint();
     /** Read all feedback values of the controller. Return false if there is no feedback, true otherwise */
     virtual bool readFeedback();
-    /** Compute output of the controller and write it to port. Returns control output */
+    /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
+    virtual bool readSetpoint();
+    /** Write control output to port*/
     virtual void writeControlOutput(const base::VectorXd& control_output_raw);
-    /** Implementation of reset behavior does not make sense for a Potential Field Controller */
-    virtual void reset(){}
-
+    /** Compute Activation function*/
+    virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function);
+    /** Extract positions from joint state*/
     void extractPositions(const base::samples::Joints& joints, const std::vector<std::string> &names, base::VectorXd& positions);
 
     base::JointLimits joint_limits;
@@ -33,13 +33,13 @@ protected:
 public:
     JointLimitAvoidance(std::string const& name = "ctrl_lib::JointLimitAvoidance");
     JointLimitAvoidance(std::string const& name, RTT::ExecutionEngine* engine);
-    ~JointLimitAvoidance();
+    ~JointLimitAvoidance(){}
     bool configureHook();
-    bool startHook();
-    void updateHook();
-    void errorHook();
-    void stopHook();
-    void cleanupHook();
+    bool startHook(){return JointLimitAvoidance::startHook();}
+    void updateHook(){JointLimitAvoidance::updateHook();}
+    void errorHook(){JointLimitAvoidance::errorHook();}
+    void stopHook(){JointLimitAvoidance::stopHook();}
+    void cleanupHook(){JointLimitAvoidance::cleanupHook();}
 };
 }
 

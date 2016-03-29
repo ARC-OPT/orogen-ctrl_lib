@@ -1,0 +1,61 @@
+/* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
+
+#include "ProportionalControllerTask.hpp"
+
+using namespace ctrl_lib;
+
+ProportionalControllerTask::ProportionalControllerTask(std::string const& name)
+    : ProportionalControllerTaskBase(name){
+}
+
+ProportionalControllerTask::ProportionalControllerTask(std::string const& name, RTT::ExecutionEngine* engine)
+    : ProportionalControllerTaskBase(name, engine){
+}
+
+bool ProportionalControllerTask::configureHook(){
+    controller = new ProportionalFeedForwardController(_field_names.get().size());
+    if (! ProportionalControllerTaskBase::configureHook())
+        return false;
+
+    return true;
+}
+
+bool ProportionalControllerTask::startHook(){
+    if (! ProportionalControllerTaskBase::startHook())
+        return false;
+
+    controller->setSetpoint(base::VectorXd());
+    controller->setFeedback(base::VectorXd());
+    activation.setZero();
+
+    return true;
+}
+
+void ProportionalControllerTask::cleanupHook(){
+    ProportionalControllerTaskBase::cleanupHook();
+    delete controller;
+}
+
+void ProportionalControllerTask::updateControllerProperties(){
+    controller->setPropGain(_prop_gain.get());
+    controller->setFeedforwardGain(_ff_gain.get());
+    controller->setMaxControlOutput(_max_control_output.get());
+    controller->setDeadZone(_dead_zone.get());
+
+    _current_prop_gain.write(controller->getPropGain());
+    _current_ff_gain.write(controller->getFeedForwardGain());
+    _current_max_control_output.write(controller->getMaxControlOutput());
+    _current_dead_zone.write(controller->getDeadZone());
+}
+
+const base::VectorXd& ProportionalControllerTask::updateController(){
+    const base::VectorXd &control_output = controller->update();
+    _control_error.write(controller->getControlError());
+    return control_output;
+}
+
+const base::VectorXd& ProportionalControllerTask::computeActivation(ActivationFunction &activation_function){
+    for(uint i = 0; i < controller->getDimension(); i++)
+        activation(i) = fabs(controller->getControlOutput()(i))/controller->getMaxControlOutput()(i);
+    return activation_function.compute(activation);
+}

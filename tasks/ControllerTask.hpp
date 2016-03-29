@@ -4,36 +4,49 @@
 #define CTRL_LIB_CONTROLLERTASK_TASK_HPP
 
 #include "ctrl_lib/ControllerTaskBase.hpp"
+#include <ctrl_lib/ActivationFunction.hpp>
 
 namespace ctrl_lib {
 
-class Controller;
-
-/*! \class ControllerTask Base task for all controllers */
+/*!
+* Base class for all controllers. Implements the controller state machine. Basic functionality is as follows:
+*
+*  1. Update Properties
+*  2. Read Feedback term.
+*  3. If a feedback term is available, read setpoint. Once there is a setpoint, control output will be written at all times.
+*  3. Compute and write control output, depending on the implementation of the controller (derived task)
+*  4. Compute activation. The activation indicates how much influence a control output has, compared to the other control outputs. Activation
+*     values will be within 0..1. The activation ports can e.g. be connected to WBC in order to deactivate constraint variables and make unneeded
+*     dof available for other tasks. A typical example is Joint limits avoidance. Usually one wants to activate the avoidance behavior only when
+*     being close to the joint limits and not disturb other tasks when moving freely. Different activation functions can be chosen (e.g. linear, quadratic, ...)
+*     in order to achieve smooth transitions.
+*/
 class ControllerTask : public ControllerTaskBase
 {
     friend class ControllerTaskBase;
 protected:
 
-    /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
-    virtual bool readSetpoint() = 0;
+    /** Update all available (dynamic) controller properties*/
+    virtual void updateControllerProperties() = 0;
     /** Read all feedback values of the controller. Return false if there is no feedback, true otherwise */
     virtual bool readFeedback() = 0;
-    /** Compute output of the controller and write it to port. Returns control output */
+    /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
+    virtual bool readSetpoint() = 0;
+    /** Compute output of the controller*/
+    virtual const base::VectorXd& updateController() = 0;
+    /** Write control output to port*/
     virtual void writeControlOutput(const base::VectorXd& control_output_raw) = 0;
-    /** Operation: Start evaluation. Reset measurements.*/
-    virtual void startEvaluation(bool start);
-    /** Operation: Reset function. Implemented in derived task. This sets the control output to zero by setting setpoint and feedback to the same value.*/
-    virtual void reset() = 0;
+    /** Compute Activation function*/
+    virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function) = 0;
 
-    base::VectorXd control_output_raw;
-    Controller *controller;
     std::vector<std::string> field_names;
+    ActivationFunction activation_function;
+    base::VectorXd activation;
 
 public:
     ControllerTask(std::string const& name = "ctrl_lib::ControllerTask");
     ControllerTask(std::string const& name, RTT::ExecutionEngine* engine);
-    ~ControllerTask();
+    ~ControllerTask(){}
     bool configureHook();
     bool startHook();
     void updateHook();

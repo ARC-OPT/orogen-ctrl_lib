@@ -29,7 +29,6 @@ protected:
     base::commands::Joints setpoint, control_output;
     base::VectorXd setpoint_raw, feedback_raw, feedforward_raw;
     base::samples::Joints feedback;
-    ProportionalFeedForwardController *controller;
 
 public:
     JointPositionController(std::string const& name = "ctrl_lib::JointPositionController");

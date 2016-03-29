@@ -15,14 +15,13 @@ JointPositionController::JointPositionController(std::string const& name, RTT::E
 }
 
 bool JointPositionController::readSetpoint(){
+
     if(_setpoint.readNewest(setpoint) == RTT::NewData){
         extractPositions(setpoint, field_names, setpoint_raw);
         extractVelocities(setpoint, field_names, feedforward_raw);
 
-        ProportionalFeedForwardController* ctrl = (ProportionalFeedForwardController*)controller;
-        ctrl->setSetpoint(setpoint_raw);
-        ctrl->setFeedforward(feedforward_raw);
-
+        controller->setSetpoint(setpoint_raw);
+        controller->setFeedforward(feedforward_raw);
         _current_setpoint.write(setpoint);
     }
     return controller->hasSetpoint();

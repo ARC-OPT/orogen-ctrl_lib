@@ -32,13 +32,13 @@ protected:
 public:
     PotentialFieldsControllerTask(std::string const& name = "ctrl_lib::PotentialFieldsControllerTask");
     PotentialFieldsControllerTask(std::string const& name, RTT::ExecutionEngine* engine);
-    ~PotentialFieldsControllerTask();
+    ~PotentialFieldsControllerTask(){}
     bool configureHook(){return PotentialFieldsControllerTaskBase::configureHook();}
-    bool startHook();
+    bool startHook(){return PotentialFieldsControllerTaskBase::startHook();}
     void updateHook(){PotentialFieldsControllerTaskBase::updateHook();}
     void errorHook(){PotentialFieldsControllerTaskBase::errorHook();}
     void stopHook(){PotentialFieldsControllerTaskBase::stopHook();}
-    void cleanupHook();
+    void cleanupHook(){PotentialFieldsControllerTaskBase::cleanupHook();}
 };
 }
 

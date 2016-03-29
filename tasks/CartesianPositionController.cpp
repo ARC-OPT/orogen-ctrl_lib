@@ -15,10 +15,11 @@ CartesianPositionController::CartesianPositionController(std::string const& name
 }
 
 bool CartesianPositionController::readSetpoint(){
-    if(_setpoint.readNewest(setpoint) == RTT::NewData){
+    RTT::FlowStatus fs = _setpoint.readNewest(setpoint);
+    if(fs == RTT::NewData)
         _current_setpoint.write(setpoint);
+    if(fs != RTT::NoData)
         setControlInput();
-    }
     return controller->hasSetpoint();
 }
 
@@ -53,8 +54,6 @@ void CartesianPositionController::setControlInput(){
     feedback_raw.resize(6);
     feedforward_raw.resize(6);
 
-    // TODO: This ignores invalid input and can lead to silent errors! However, it may be useful
-    // if we only want to use the feed forward term...
     if(!setpoint.hasValidPosition() || !setpoint.hasValidOrientation()){
         LOG_ERROR("Invalid setpoint. Either NaN or invalid orientation quaternion.");
         throw std::invalid_argument("Invalid setpoint");
@@ -79,12 +78,11 @@ void CartesianPositionController::setControlInput(){
     feedback_raw.setZero();
 
     // Set feedforward to given velocity setpoint. Set to zero if no valid velocitiy is given.
+    feedforward_raw.setZero();
     if(setpoint.hasValidVelocity() && setpoint.hasValidAngularVelocity()){
         feedforward_raw.segment(0,3) = setpoint.velocity;
         feedforward_raw.segment(3,3) = setpoint.angular_velocity;
     }
-    else
-        feedforward_raw.setZero();
 
     controller->setFeedback(feedback_raw);
     controller->setSetpoint(setpoint_raw);

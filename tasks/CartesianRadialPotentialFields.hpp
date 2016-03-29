@@ -36,11 +36,11 @@ public:
     CartesianRadialPotentialFields(std::string const& name, RTT::ExecutionEngine* engine);
     ~CartesianRadialPotentialFields(){}
     bool configureHook();
-    bool startHook(){return CartesianRadialPotentialFields::startHook();}
-    void updateHook(){CartesianRadialPotentialFields::updateHook();}
-    void errorHook(){CartesianRadialPotentialFields::errorHook();}
-    void stopHook(){CartesianRadialPotentialFields::stopHook();}
-    void cleanupHook(){CartesianRadialPotentialFields::cleanupHook();}
+    bool startHook(){return CartesianRadialPotentialFieldsBase::startHook();}
+    void updateHook(){CartesianRadialPotentialFieldsBase::updateHook();}
+    void errorHook(){CartesianRadialPotentialFieldsBase::errorHook();}
+    void stopHook(){CartesianRadialPotentialFieldsBase::stopHook();}
+    void cleanupHook();
 
     /** Implementation of reset behavior does not make sense for a Potential Field Controller */
     virtual void reset(){}

@@ -16,17 +16,14 @@ bool ProportionalControllerTask::configureHook(){
     controller = new ProportionalFeedForwardController(_field_names.get().size());
     if (! ProportionalControllerTaskBase::configureHook())
         return false;
-
     return true;
 }
 
 bool ProportionalControllerTask::startHook(){
     if (! ProportionalControllerTaskBase::startHook())
         return false;
-
-    controller->setSetpoint(base::VectorXd());
-    controller->setFeedback(base::VectorXd());
-
+    controller->clearSetpoint();
+    controller->clearFeedback();
     return true;
 }
 
@@ -36,6 +33,7 @@ void ProportionalControllerTask::cleanupHook(){
 }
 
 void ProportionalControllerTask::updateControllerProperties(){
+
     controller->setPropGain(_prop_gain.get());
     controller->setFeedforwardGain(_ff_gain.get());
     controller->setMaxControlOutput(_max_control_output.get());

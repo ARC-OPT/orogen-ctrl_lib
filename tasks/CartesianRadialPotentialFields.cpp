@@ -22,6 +22,11 @@ bool CartesianRadialPotentialFields::configureHook(){
     return true;
 }
 
+void CartesianRadialPotentialFields::cleanupHook(){
+    CartesianRadialPotentialFieldsBase::cleanupHook();
+    delete controller;
+}
+
 bool CartesianRadialPotentialFields::readSetpoint(){
 
     if(_pot_field_centers.readNewest(pot_field_centers) == RTT::NewData)
@@ -51,8 +56,6 @@ void CartesianRadialPotentialFields::writeControlOutput(const base::VectorXd &ct
 }
 
 void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<base::samples::RigidBodyState> &centers){
-
-    assert(ctrl != 0);
 
     if(!centers.empty())
     {

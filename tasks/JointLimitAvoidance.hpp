@@ -35,11 +35,11 @@ public:
     JointLimitAvoidance(std::string const& name, RTT::ExecutionEngine* engine);
     ~JointLimitAvoidance(){}
     bool configureHook();
-    bool startHook(){return JointLimitAvoidance::startHook();}
-    void updateHook(){JointLimitAvoidance::updateHook();}
-    void errorHook(){JointLimitAvoidance::errorHook();}
-    void stopHook(){JointLimitAvoidance::stopHook();}
-    void cleanupHook(){JointLimitAvoidance::cleanupHook();}
+    bool startHook(){return JointLimitAvoidanceBase::startHook();}
+    void updateHook(){JointLimitAvoidanceBase::updateHook();}
+    void errorHook(){JointLimitAvoidanceBase::errorHook();}
+    void stopHook(){JointLimitAvoidanceBase::stopHook();}
+    void cleanupHook();
 };
 }
 

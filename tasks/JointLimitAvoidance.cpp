@@ -16,32 +16,40 @@ JointLimitAvoidance::JointLimitAvoidance(std::string const& name, RTT::Execution
 }
 
 bool JointLimitAvoidance::configureHook(){
-    controller = new JointPotentialFieldsController(_field_names.get().size());
+    field_names = _field_names.get();
+    controller = new JointPotentialFieldsController(field_names.size());
+
+    joint_limits = _joint_limits.get();
+    if(joint_limits.size() != field_names.size()){
+        LOG_ERROR("Joint limit vector has to have same size as field names");
+        return false;
+    }
+
+    std::vector<PotentialField*> fields;
+    for(size_t i = 0; i < _field_names.get().size(); i++)
+        fields.push_back(new RadialPotentialField(1));
+    controller->setFields(fields);
+
     if(!JointLimitAvoidanceBase::configureHook())
         return false;
+
     return true;
 }
 
+void JointLimitAvoidance::cleanupHook(){
+    JointLimitAvoidanceBase::cleanupHook();
+    delete controller;
+}
+
 bool JointLimitAvoidance::readSetpoint(){
-    if(!controller->hasPotFieldCenters()){
-        joint_limits = _joint_limits.get();
-
-        if(joint_limits.size() != field_names.size())
-            throw std::invalid_argument("Joint limit vector has to have same size as field names");
-
-        std::vector<PotentialField*> fields;
-        for(size_t i = 0; i < field_names.size(); i++)
-            fields.push_back(new RadialPotentialField(1));
-        controller->setFields(fields);
-        controller->setInfluenceDistance(_influence_distance.get());
-    }
-
     return controller->hasPotFieldCenters();
 }
 
 bool JointLimitAvoidance::readFeedback(){
 
     if(_feedback.read(feedback) == RTT::NewData){
+
+        std::cout<<"Got new feedback"<<std::endl;
 
         extractPositions(feedback, field_names, position_raw);
 

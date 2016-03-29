@@ -12,20 +12,6 @@ PotentialFieldsControllerTask::PotentialFieldsControllerTask(std::string const& 
     : PotentialFieldsControllerTaskBase(name, engine){
 }
 
-PotentialFieldsControllerTask::~PotentialFieldsControllerTask(){
-}
-
-bool PotentialFieldsControllerTask::startHook(){
-    if (! PotentialFieldsControllerTaskBase::startHook())
-        return false;
-    return true;
-}
-
-void PotentialFieldsControllerTask::cleanupHook(){
-    PotentialFieldsControllerTaskBase::cleanupHook();
-    delete controller;
-}
-
 void PotentialFieldsControllerTask::updateControllerProperties(){
     controller->setPropGain(_prop_gain.get());
     controller->setMaxControlOutput(_max_control_output.get());

@@ -28,6 +28,7 @@ protected:
     virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function);
 
     ProportionalFeedForwardController* controller;
+    base::VectorXd tmp;
 
 public:
     ProportionalControllerTask(std::string const& name = "ctrl_lib::ProportionalControllerTask");

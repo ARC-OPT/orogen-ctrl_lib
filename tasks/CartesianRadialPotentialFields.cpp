@@ -79,7 +79,7 @@ void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<
 }
 
 const base::VectorXd& CartesianRadialPotentialFields::computeActivation(ActivationFunction &activation_function){
-    base::VectorXd tmp(6);
+    tmp.resize(6);
     tmp.setZero();
 
     // Get highest activation from all fields

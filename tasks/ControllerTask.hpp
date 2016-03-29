@@ -41,7 +41,6 @@ protected:
 
     std::vector<std::string> field_names;
     ActivationFunction activation_function;
-    base::VectorXd activation;
 
 public:
     ControllerTask(std::string const& name = "ctrl_lib::ControllerTask");

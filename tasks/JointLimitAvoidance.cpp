@@ -79,7 +79,7 @@ void JointLimitAvoidance::writeControlOutput(const base::VectorXd& control_outpu
 }
 
 const base::VectorXd& JointLimitAvoidance::computeActivation(ActivationFunction &activation_function){
-    base::VectorXd tmp(controller->getDimension());
+    tmp.resize(controller->getDimension());
     tmp.setZero();
 
     const std::vector<PotentialField*> &fields = controller->getFields();

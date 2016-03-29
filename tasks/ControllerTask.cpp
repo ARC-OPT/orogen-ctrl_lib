@@ -20,7 +20,6 @@ bool ControllerTask::configureHook(){
 
     field_names = _field_names.get();
     activation_function = _activation_function.get();
-    activation.resize(_field_names.get().size());
 
     updateControllerProperties();
 

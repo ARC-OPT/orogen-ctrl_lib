@@ -27,6 +27,7 @@ protected:
 
     PotentialFieldsController* controller;
     std::vector<PotentialFieldInfo> field_infos;
+    base::VectorXd tmp;
 
 public:
     PotentialFieldsControllerTask(std::string const& name = "ctrl_lib::PotentialFieldsControllerTask");

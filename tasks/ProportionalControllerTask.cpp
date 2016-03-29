@@ -26,7 +26,6 @@ bool ProportionalControllerTask::startHook(){
 
     controller->setSetpoint(base::VectorXd());
     controller->setFeedback(base::VectorXd());
-    activation.setZero();
 
     return true;
 }
@@ -55,7 +54,8 @@ const base::VectorXd& ProportionalControllerTask::updateController(){
 }
 
 const base::VectorXd& ProportionalControllerTask::computeActivation(ActivationFunction &activation_function){
+    tmp.resize(controller->getDimension());
     for(uint i = 0; i < controller->getDimension(); i++)
-        activation(i) = fabs(controller->getControlOutput()(i))/controller->getMaxControlOutput()(i);
-    return activation_function.compute(activation);
+        tmp(i) = fabs(controller->getControlOutput()(i))/controller->getMaxControlOutput()(i);
+    return activation_function.compute(tmp);
 }

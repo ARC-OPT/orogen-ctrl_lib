@@ -35,12 +35,14 @@ void ProportionalControllerTask::cleanupHook(){
 void ProportionalControllerTask::updateControllerProperties(){
 
     controller->setPropGain(_prop_gain.get());
-    controller->setFeedforwardGain(_ff_gain.get());
+    if(_ff_gain.get().size() > 0)
+        controller->setFeedforwardGain(_ff_gain.get());
     controller->setMaxControlOutput(_max_control_output.get());
     controller->setDeadZone(_dead_zone.get());
 
     _current_prop_gain.write(controller->getPropGain());
-    _current_ff_gain.write(controller->getFeedForwardGain());
+    if(_ff_gain.get().size() > 0)
+        _current_ff_gain.write(controller->getFeedForwardGain());
     _current_max_control_output.write(controller->getMaxControlOutput());
     _current_dead_zone.write(controller->getDeadZone());
 }

@@ -21,6 +21,8 @@ struct PotentialFieldInfo{
         distance = field->distance;
         gradient = field->gradient;
         pot_field_center = field->pot_field_center;
+        euclidean_distance = distance.norm();
+        name = field->name;
     }
 
     /** Dimension of the potential field, e.g. a potential field in 3d space would have size 3.*/
@@ -32,13 +34,23 @@ struct PotentialFieldInfo{
     /** Distance vector to the potential field. */
     base::VectorXd distance;
 
+    /** Euclidean distance of the distance vector*/
+    double euclidean_distance;
+
     /** Gradient vector for this field*/
     base::VectorXd gradient;
 
     /** Potential field center position*/
     base::VectorXd pot_field_center;
+
+    /** ID of the potential field*/
+    std::string name;
 };
 
+struct InfluenceDistancePerField{
+    std::string name;
+    double distance;
+};
 }
 
 #endif

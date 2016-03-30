@@ -16,7 +16,12 @@ CartesianRadialPotentialFields::CartesianRadialPotentialFields(std::string const
 }
 
 bool CartesianRadialPotentialFields::configureHook(){
+    has_pot_fields = false;
     controller = new CartesianPotentialFieldsController(_field_names.get().size());
+
+    default_influence_distance = _influence_distance.get();
+    influence_distance_map = makeMap(_influence_distance_per_field.get());
+
     if(!CartesianRadialPotentialFieldsBase::configureHook())
         return false;
     return true;
@@ -28,12 +33,11 @@ void CartesianRadialPotentialFields::cleanupHook(){
 }
 
 bool CartesianRadialPotentialFields::readSetpoint(){
-
-    if(_pot_field_centers.readNewest(pot_field_centers) == RTT::NewData)
+    if(_pot_field_centers.readNewest(pot_field_centers) == RTT::NewData){
+        has_pot_fields = true;
         setPotentialFieldCenters(pot_field_centers);
-
-    PotentialFieldsController* ctrl = (PotentialFieldsController*)controller;
-    return ctrl->hasPotFieldCenters();
+    }
+    return has_pot_fields;
 }
 
 bool CartesianRadialPotentialFields::readFeedback(){
@@ -51,33 +55,41 @@ void CartesianRadialPotentialFields::writeControlOutput(const base::VectorXd &ct
     //Control output will only have linear components, since radial fields cannot generate rotational components
     for(uint i = 0; i < 3; i++)
         control_output.velocity(i) = ctrl_output_raw(i);
+    control_output.angular_velocity.setZero();
     control_output.time = base::Time::now();
     _control_output.write(control_output);
 }
 
 void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<base::samples::RigidBodyState> &centers){
+    controller->clearPotentialFields();
+    if(!centers.empty()){
 
-    if(!centers.empty())
-    {
-        if(centers.size() != controller->getNoOfFields()){
-
-            controller->clearPotentialFields();
-
-            std::vector<PotentialField*> fields(centers.size());
-            for(size_t i = 0; i < centers.size(); i++)
-            {
-                if(!centers[i].hasValidPosition()){
-                    LOG_ERROR("%s: Potential fields center number %i (source: %s, target: %s) has invalid position, e.g. NaN",
-                              this->getName().c_str(), i, centers[i].sourceFrame.c_str(), centers[i].targetFrame.c_str());
-                    throw std::invalid_argument("Invalid potential field centers");
-                }
-
-                fields[i] = new RadialPotentialField(3);
-                fields[i]->pot_field_center = centers[i].position;
+        std::vector<PotentialField*> fields;
+        std::vector<double> influence_distance;
+        for(size_t i = 0; i < centers.size(); i++)
+        {
+            if(!centers[i].hasValidPosition()){
+                LOG_ERROR("%s: Potential fields center number %i (source: %s, target: %s) has invalid position, e.g. NaN",
+                          this->getName().c_str(), i, centers[i].sourceFrame.c_str(), centers[i].targetFrame.c_str());
+                throw std::invalid_argument("Invalid potential field centers");
             }
-            controller->setFields(fields);
-            controller->setInfluenceDistance(_influence_distance.get());
+
+            // Only use potential fields with correct frame id
+            if(centers[i].targetFrame == feedback.sourceFrame){
+                RadialPotentialField *field = new RadialPotentialField(3, centers[i].sourceFrame);
+                field->pot_field_center = centers[i].position;
+                fields.push_back(field);
+
+                // In a specific influence distance is given for this field, use it. Otherwise use default.
+                if(influence_distance_map.count(centers[i].sourceFrame) > 0)
+                    influence_distance.push_back(influence_distance_map[centers[i].sourceFrame]);
+                else
+                    influence_distance.push_back(default_influence_distance);
+            }
         }
+
+        controller->setFields(fields);
+        controller->setInfluenceDistance(influence_distance);
     }
 }
 
@@ -89,7 +101,11 @@ const base::VectorXd& CartesianRadialPotentialFields::computeActivation(Activati
     double max_activation = 0;
     const std::vector<PotentialField*> &fields = controller->getFields();
     for(uint i = 0; i < fields.size(); i++){
-        double activation = fabs(fields[i]->distance.norm() - fields[i]->influence_distance) / fields[i]->influence_distance;
+        double activation;
+        if(fields[i]->distance.norm() > fields[i]->influence_distance)
+            activation = 0;
+        else
+            activation = fabs(fields[i]->distance.norm() - fields[i]->influence_distance) / fields[i]->influence_distance;
         if(activation > max_activation)
             max_activation = activation;
     }

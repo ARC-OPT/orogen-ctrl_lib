@@ -151,12 +151,13 @@ task_context "PotentialFieldsControllerTask" do subclasses "ControllerTask"
    abstract
    needs_configuration
 
-   # Influence distance per potential field. All entries have to be > 0! Size has to be same as number
-   # of potential fields.
-   property("influence_distance_per_field", "base::VectorXd").dynamic
+   # Influence distance per potential field. All entries have to be > 0! If size of this vector is > 0
+   # the derived component will try to map the influence distances by potential field name. If a
+   # field name is not given here, the default influence distance will be used
+   property("influence_distance_per_field", "std::vector<ctrl_lib/InfluenceDistancePerField>")
 
-   # Influence distance of all potential fields. Has to be > 0!
-   property("influence_distance", "double").dynamic
+   # Default influence distance. Has to be > 0!
+   property("influence_distance", "double")
 
    # Proportional gain. Size has to be the same as size of field_names.
    property("prop_gain", "base/VectorXd").dynamic

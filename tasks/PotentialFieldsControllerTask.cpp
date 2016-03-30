@@ -15,10 +15,6 @@ PotentialFieldsControllerTask::PotentialFieldsControllerTask(std::string const& 
 void PotentialFieldsControllerTask::updateControllerProperties(){
     controller->setPropGain(_prop_gain.get());
     controller->setMaxControlOutput(_max_control_output.get());
-    if( _influence_distance_per_field.get().size() == 0)
-        controller->setInfluenceDistance(_influence_distance.get());
-    else
-        controller->setInfluenceDistance(_influence_distance_per_field.get());
 
     _current_prop_gain.write(controller->getPropGain());
     _current_max_control_output.write(controller->getMaxControlOutput());

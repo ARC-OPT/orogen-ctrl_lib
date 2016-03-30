@@ -24,11 +24,15 @@ Orocos.run "ctrl_lib::CartesianRadialPotentialFields" => "controller" do
    controller.start
 
    feedback = Types::Base::Samples::RigidBodyState.new
+   feedback.sourceFrame = "ee"
+   feedback.targetFrame = "base_link"
    feedback.position[0],feedback.position[1],feedback.position[2] = 0,0,0.1
    feedback.orientation.x,feedback.orientation.y,feedback.orientation.z,feedback.orientation.w = 0,0,0,1
 
    pot_field = Types::Base::Samples::RigidBodyState.new
    pot_field.position[0],pot_field.position[1],pot_field.position[2] = 0,0,0
+   pot_field.sourceFrame = "collision_point"
+   pot_field.targetFrame = "ee"
 
    feedback_writer        = controller.feedback.writer
    pot_field_writer       = controller.pot_field_centers.writer

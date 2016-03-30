@@ -27,8 +27,20 @@ bool JointLimitAvoidance::configureHook(){
 
     std::vector<PotentialField*> fields;
     for(size_t i = 0; i < _field_names.get().size(); i++)
-        fields.push_back(new RadialPotentialField(1));
+        fields.push_back(new RadialPotentialField(1, field_names[i]));
     controller->setFields(fields);
+
+    default_influence_distance = _influence_distance.get();
+    influence_distance_map = makeMap(_influence_distance_per_field.get());
+
+    std::vector<double> influence_distance;
+    for(uint i = 0; i < field_names.size(); i++){
+        if(influence_distance_map.count(field_names[i]) > 0)
+            influence_distance.push_back(influence_distance_map[field_names[i]]);
+        else
+            influence_distance.push_back(default_influence_distance);
+    }
+    controller->setInfluenceDistance(influence_distance);
 
     if(!JointLimitAvoidanceBase::configureHook())
         return false;
@@ -48,8 +60,6 @@ bool JointLimitAvoidance::readSetpoint(){
 bool JointLimitAvoidance::readFeedback(){
 
     if(_feedback.read(feedback) == RTT::NewData){
-
-        std::cout<<"Got new feedback"<<std::endl;
 
         extractPositions(feedback, field_names, position_raw);
 

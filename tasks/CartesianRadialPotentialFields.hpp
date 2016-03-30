@@ -30,6 +30,7 @@ protected:
 
     base::samples::RigidBodyState control_output, feedback;
     std::vector<base::samples::RigidBodyState> pot_field_centers;
+    bool has_pot_fields;
 
 public:
     CartesianRadialPotentialFields(std::string const& name = "ctrl_lib::CartesianRadialPotentialFields");

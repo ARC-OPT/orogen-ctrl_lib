@@ -73,7 +73,6 @@ task_context "ProportionalControllerTask" do subclasses "ControllerTask"
    # Reset setpoint to actual value
    operation("reset")
 
-
    # The controllers should be called periodically to achieve best performance.
    periodic 0.01
 end
@@ -84,15 +83,8 @@ end
 task_context "JointPositionController" do subclasses "ProportionalControllerTask"
    needs_configuration
 
-   # Feed Forward gain. Size has to be the same as size of field_names.
-   property("ff_gain", "base/VectorXd").dynamic
-
-   # Debug: Current proportional gain
-   output_port("current_ff_gain", "base/VectorXd")
-
    # Setpoint of the controller. Joints will be mapped by name internally. Size has to be >= size of field_names. All field names have to be present.
    input_port("setpoint", "base/commands/Joints")
-
    # Feedback term of the controller. Joints will be mapped by name internally. Size has to be >= size of field_names. All field names have to be present.
    input_port("feedback", "base/samples/Joints")
 
@@ -114,15 +106,8 @@ end
 task_context "CartesianPositionController" do subclasses "ProportionalControllerTask"
    needs_configuration
 
-   # Feed Forward gain. Size has to be the same as size of field_names.
-   property("ff_gain", "base/VectorXd").dynamic
-
-   # Debug: Current proportional gain
-   output_port("current_ff_gain", "base/VectorXd")
-
    # Setpoint of the controller.
    input_port("setpoint", "base/samples/RigidBodyState")
-
    # Feedback term of the controller.
    input_port("feedback", "base/samples/RigidBodyState")
 
@@ -159,6 +144,37 @@ task_context "CartesianForceController" do subclasses "ProportionalControllerTas
    periodic 0.01
 end
 
+#
+# Base class for all potential field controllers
+#
+task_context "PotentialFieldsControllerTask" do subclasses "ControllerTask"
+   abstract
+   needs_configuration
+
+   # Influence distance per potential field. All entries have to be > 0! If size of this vector is > 0
+   # the derived component will try to map the influence distances by potential field name. If a
+   # field name is not given here, the default influence distance will be used
+   property("influence_distance_per_field", "std::vector<ctrl_lib/InfluenceDistancePerField>")
+
+   # Default influence distance. Has to be > 0!
+   property("influence_distance", "double")
+
+   # Proportional gain. Size has to be the same as size of field_names.
+   property("prop_gain", "base/VectorXd").dynamic
+
+   # Maximum control output (saturation). If one output value exceeds maximum, all
+   # other values will be scaled accordingly. Size has to be the same as size of field_names.
+   property("max_control_output", "base/VectorXd").dynamic
+
+   # Debug ports:
+
+   output_port("field_infos", "std/vector<ctrl_lib/PotentialFieldInfo>")
+   output_port("current_prop_gain", "base/VectorXd")
+   output_port("current_max_control_output", "base/VectorXd")
+
+   periodic 0.01
+end
+
 
 #
 # Implementation of RadialPotentialFields in joint space. Each joint will have one 1-dimensional potential field.
@@ -191,13 +207,6 @@ end
 task_context "CartesianRadialPotentialFields" do subclasses "PotentialFieldsControllerTask"
    needs_configuration
 
-   # Order of all potential fields. If order = 0 => control_output = const,
-   # if order = 1 => control_output ~ 1/d. If order = 2, => control_output ~ 1/d^2 and so on.
-   property("order", "int", 1)
-
-   # Influence distance of the potential fields. Size has to be the same as size of field_names. Values have to be > 0!
-   property("influence_distance", "double").dynamic
-
    # Set new centers of the potential fields here. Number of fields can be anything > 0.
    input_port("pot_field_centers",  "std/vector<base/samples/RigidBodyState>")
 
@@ -209,7 +218,6 @@ task_context "CartesianRadialPotentialFields" do subclasses "PotentialFieldsCont
 
    # Debug ports:
 
-   output_port("field_infos", "std/vector<ctrl_lib/PotentialFieldInfo>")
    output_port("current_feedback", "base/samples/RigidBodyState")
 
    periodic 0.01

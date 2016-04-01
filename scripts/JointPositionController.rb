@@ -49,8 +49,6 @@ Orocos.run "ctrl_lib::JointPositionController" => "controller" do
    setpoint.time = Types::Base::Time.now
    setpoint_writer.write(setpoint)
 
-   controller.startEvaluation(true)
-
    cycle_time = 0.01
    puts "Press Ctrl-C to stop ..."
    while true

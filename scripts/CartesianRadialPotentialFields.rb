@@ -9,31 +9,30 @@ Orocos.run "ctrl_lib::CartesianRadialPotentialFields" => "controller" do
 
    prop_gain             = Types::Base::VectorXd.new(3)
    max_control_output    = Types::Base::VectorXd.new(3)
-   dead_zone             = Types::Base::VectorXd.new(3)
-   influence_distance    = 1.0
 
    for i in (0..2) do
       prop_gain[i]             = 1.0
       max_control_output[i]    = 0.3
-      dead_zone[i]             = 0
    end
 
    controller.field_names        = ["X", "Y", "Z"]
    controller.prop_gain          = prop_gain
    controller.max_control_output = max_control_output
-   controller.influence_distance = influence_distance
-   controller.dead_zone          = dead_zone
-   controller.order              = 1
+   controller.influence_distance = 1.0
 
    controller.configure
    controller.start
 
    feedback = Types::Base::Samples::RigidBodyState.new
+   feedback.sourceFrame = "ee"
+   feedback.targetFrame = "base_link"
    feedback.position[0],feedback.position[1],feedback.position[2] = 0,0,0.1
    feedback.orientation.x,feedback.orientation.y,feedback.orientation.z,feedback.orientation.w = 0,0,0,1
 
    pot_field = Types::Base::Samples::RigidBodyState.new
    pot_field.position[0],pot_field.position[1],pot_field.position[2] = 0,0,0
+   pot_field.sourceFrame = "collision_point"
+   pot_field.targetFrame = "ee"
 
    feedback_writer        = controller.feedback.writer
    pot_field_writer       = controller.pot_field_centers.writer

@@ -8,53 +8,56 @@
 using namespace ctrl_lib;
 
 JointLimitAvoidance::JointLimitAvoidance(std::string const& name)
-    : JointLimitAvoidanceBase(name)
-{
+    : JointLimitAvoidanceBase(name){
 }
 
 JointLimitAvoidance::JointLimitAvoidance(std::string const& name, RTT::ExecutionEngine* engine)
-    : JointLimitAvoidanceBase(name, engine)
-{
+    : JointLimitAvoidanceBase(name, engine){
 }
 
-JointLimitAvoidance::~JointLimitAvoidance()
-{
-}
-
-bool JointLimitAvoidance::configureHook()
-{
-    controller = new JointPotentialFieldsController(_field_names.get().size());
-
-    if (! JointLimitAvoidanceBase::configureHook())
-        return false;
+bool JointLimitAvoidance::configureHook(){
+    field_names = _field_names.get();
+    controller = new JointPotentialFieldsController(field_names.size());
 
     joint_limits = _joint_limits.get();
-
     if(joint_limits.size() != field_names.size()){
-        LOG_ERROR("%s: Joint limit vector has size %i, but field names has size %i", this->getName().c_str(), joint_limits.size(), field_names.size());
+        LOG_ERROR("Joint limit vector has to have same size as field names");
         return false;
     }
 
     std::vector<PotentialField*> fields;
-    for(size_t i = 0; i < field_names.size(); i++)
-        fields.push_back(new RadialPotentialField(1, _order.get()));
+    for(size_t i = 0; i < _field_names.get().size(); i++)
+        fields.push_back(new RadialPotentialField(1, field_names[i]));
+    controller->setFields(fields);
 
-    ((JointPotentialFieldsController*)controller)->setFields(fields);
-    ((JointPotentialFieldsController*)controller)->setInfluenceDistance(_influence_distance.get());
+    default_influence_distance = _influence_distance.get();
+    influence_distance_map = makeMap(_influence_distance_per_field.get());
 
-    control_output.resize(field_names.size());
-    control_output.names = field_names;
+    std::vector<double> influence_distance;
+    for(uint i = 0; i < field_names.size(); i++){
+        if(influence_distance_map.count(field_names[i]) > 0)
+            influence_distance.push_back(influence_distance_map[field_names[i]]);
+        else
+            influence_distance.push_back(default_influence_distance);
+    }
+    controller->setInfluenceDistance(influence_distance);
+
+    if(!JointLimitAvoidanceBase::configureHook())
+        return false;
 
     return true;
 }
 
+void JointLimitAvoidance::cleanupHook(){
+    JointLimitAvoidanceBase::cleanupHook();
+    delete controller;
+}
+
 bool JointLimitAvoidance::readSetpoint(){
-    return true; //always return true here, since we configure the potential field centers by setting the joint limits
+    return controller->hasPotFieldCenters();
 }
 
 bool JointLimitAvoidance::readFeedback(){
-
-    PotentialFieldsController* ctrl = (PotentialFieldsController*)controller;
 
     if(_feedback.read(feedback) == RTT::NewData){
 
@@ -66,26 +69,26 @@ bool JointLimitAvoidance::readFeedback(){
                 position_raw(i) = joint_limits[i].max.position - 1e-5;
             if(position_raw(i) <= joint_limits[i].min.position)
                 position_raw(i) = joint_limits[i].min.position + 1e-5;
-        }
 
-        ctrl->setFeedback(position_raw);
+            controller->setPosition(position_raw);
 
-        for(uint i = 0; i < position_raw.size(); i++){
             base::VectorXd center(1);
             if(fabs(joint_limits[i].max.position - position_raw(i))  < fabs(position_raw(i) - joint_limits[i].min.position))
                 center(0) = joint_limits[i].max.position;
             else
                 center(0) = joint_limits[i].min.position;
-            ctrl->setPotFieldCenters(i, center);
+            controller->setPotFieldCenters(i, center);
         }
 
         _current_feedback.write(feedback);
     }
 
-    return ctrl->hasFeedback();
+    return controller->hasPosition();
 }
 
 void JointLimitAvoidance::writeControlOutput(const base::VectorXd& control_output_raw){
+    control_output.resize(field_names.size());
+    control_output.names = field_names;
     for(size_t i = 0; i < field_names.size(); i++)
         control_output[i].speed = control_output_raw(i);
 
@@ -93,6 +96,21 @@ void JointLimitAvoidance::writeControlOutput(const base::VectorXd& control_outpu
     _control_output.write(control_output);
 }
 
+const base::VectorXd& JointLimitAvoidance::computeActivation(ActivationFunction &activation_function){
+    tmp.resize(controller->getDimension());
+    tmp.setZero();
+
+    const std::vector<PotentialField*> &fields = controller->getFields();
+    for(uint i = 0; i < fields.size(); i++){
+        double dist = fabs(fields[i]->position(0) - fields[i]->pot_field_center(0));
+        if(dist > fields[i]->influence_distance)
+            tmp(i) = 0;
+        else
+            tmp(i) = fabs(dist - fields[i]->influence_distance) / fields[i]->influence_distance;
+    }
+
+    return activation_function.compute(tmp);
+}
 
 void JointLimitAvoidance::extractPositions(const base::samples::Joints& joints, const std::vector<std::string> &names, base::VectorXd& positions){
     positions.resize(names.size());
@@ -104,35 +122,4 @@ void JointLimitAvoidance::extractPositions(const base::samples::Joints& joints, 
         }
         positions(i) = elem.position;
     }
-}
-
-bool JointLimitAvoidance::startHook(){
-    if (! JointLimitAvoidanceBase::startHook())
-        return false;
-    return true;
-}
-
-void JointLimitAvoidance::updateHook(){
-    PotentialFieldsController* ctrl = (PotentialFieldsController*)controller;
-    ctrl->setInfluenceDistance(_influence_distance.get());
-    _current_influence_distance.write(_influence_distance.get());
-
-    field_infos.resize(ctrl->getNoOfFields());
-    for(size_t i = 0; i < ctrl->getNoOfFields(); i++)
-        field_infos[i].setFromField(ctrl->getFields()[i]);
-    _field_infos.write(field_infos);
-
-    JointLimitAvoidanceBase::updateHook();
-}
-
-void JointLimitAvoidance::errorHook(){
-    JointLimitAvoidanceBase::errorHook();
-}
-
-void JointLimitAvoidance::stopHook(){
-    JointLimitAvoidanceBase::stopHook();
-}
-
-void JointLimitAvoidance::cleanupHook(){
-    JointLimitAvoidanceBase::cleanupHook();
 }

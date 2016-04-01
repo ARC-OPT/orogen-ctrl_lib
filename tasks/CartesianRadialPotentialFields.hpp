@@ -5,7 +5,6 @@
 
 #include "ctrl_lib/CartesianRadialPotentialFieldsBase.hpp"
 #include <base/samples/RigidBodyState.hpp>
-#include <ctrl_lib/PotentialFieldsController.hpp>
 
 namespace ctrl_lib {
 
@@ -16,34 +15,32 @@ class CartesianRadialPotentialFields : public CartesianRadialPotentialFieldsBase
     friend class CartesianRadialPotentialFieldsBase;
 protected:
 
-    base::samples::RigidBodyState control_output, feedback;
-    std::vector<base::samples::RigidBodyState> pot_field_centers;
-    int order;
-    std::vector<PotentialFieldInfo> field_infos;
-    bool has_pot_field_centers;
-
-    /** Read actual position. Return false if there is no valid actual position*/
+    /** Read all feedback values of the controller. Return false if there is no feedback, true otherwise */
     virtual bool readFeedback();
-    /** Read potential field centers. Return false if there are no valid potential centers*/
-    virtual bool readSetpoint() ;
-    /** Write the output of the controller to a port */
-    virtual void writeControlOutput(const base::VectorXd &ctrl_output_raw);
-    /** Write activation function to port*/
-    virtual void writeActivationFunction(){}
+    /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
+    virtual bool readSetpoint();
+    /** Write control output to port*/
+    virtual void writeControlOutput(const base::VectorXd& control_output_raw);
+    /** Compute Activation function*/
+    virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function);
     /** Set new potential field centers*/
     void setPotentialFieldCenters(const std::vector<base::samples::RigidBodyState> &centers);
     /** Delete all potential fields*/
     void clearPotentialFields();
 
+    base::samples::RigidBodyState control_output, feedback;
+    std::vector<base::samples::RigidBodyState> pot_field_centers;
+    bool has_pot_fields;
+
 public:
     CartesianRadialPotentialFields(std::string const& name = "ctrl_lib::CartesianRadialPotentialFields");
     CartesianRadialPotentialFields(std::string const& name, RTT::ExecutionEngine* engine);
-    ~CartesianRadialPotentialFields();
+    ~CartesianRadialPotentialFields(){}
     bool configureHook();
-    bool startHook();
-    void updateHook();
-    void errorHook();
-    void stopHook();
+    bool startHook(){return CartesianRadialPotentialFieldsBase::startHook();}
+    void updateHook(){CartesianRadialPotentialFieldsBase::updateHook();}
+    void errorHook(){CartesianRadialPotentialFieldsBase::errorHook();}
+    void stopHook(){CartesianRadialPotentialFieldsBase::stopHook();}
     void cleanupHook();
 
     /** Implementation of reset behavior does not make sense for a Potential Field Controller */

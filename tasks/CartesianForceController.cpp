@@ -1,7 +1,6 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "CartesianForceController.hpp"
-#include <ctrl_lib/ProportionalFeedForwardController.hpp>
 #include <base/Logging.hpp>
 
 using namespace ctrl_lib;
@@ -12,27 +11,6 @@ CartesianForceController::CartesianForceController(std::string const& name)
 
 CartesianForceController::CartesianForceController(std::string const& name, RTT::ExecutionEngine* engine)
     : CartesianForceControllerBase(name, engine){
-}
-
-CartesianForceController::~CartesianForceController(){
-}
-
-bool CartesianForceController::configureHook(){
-
-    controller = new ProportionalFeedForwardController(6);
-
-    if (! CartesianForceControllerBase::configureHook())
-        return false;
-    return true;
-}
-
-bool CartesianForceController::startHook(){
-    if (! CartesianForceControllerBase::startHook())
-        return false;
-
-    invalidate(setpoint);
-    invalidate(feedback);
-    return true;
 }
 
 bool CartesianForceController::readFeedback(){
@@ -48,7 +26,6 @@ bool CartesianForceController::readFeedback(){
 }
 
 bool CartesianForceController::readSetpoint(){
-
     if(_setpoint.readNewest(setpoint) == RTT::NewData){
         if(!isValid(setpoint)){
             LOG_ERROR("%s: Setpoint has an invalid force or torque value", this->getName().c_str());
@@ -92,21 +69,4 @@ const base::VectorXd CartesianForceController::wrenchToRaw(const base::samples::
     raw.segment(0,3) = wrench.force;
     raw.segment(3,3) = wrench.torque;
     return raw;
-}
-
-void CartesianForceController::updateHook()
-{
-    CartesianForceControllerBase::updateHook();
-}
-void CartesianForceController::errorHook()
-{
-    CartesianForceControllerBase::errorHook();
-}
-void CartesianForceController::stopHook()
-{
-    CartesianForceControllerBase::stopHook();
-}
-void CartesianForceController::cleanupHook()
-{
-    CartesianForceControllerBase::cleanupHook();
 }

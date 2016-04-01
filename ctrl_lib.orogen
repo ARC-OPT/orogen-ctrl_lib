@@ -3,26 +3,24 @@ name "ctrl_lib"
 using_library "ctrl_lib"
 import_types_from "ctrl_libTypes.hpp"
 import_types_from "ctrl_lib/ActivationFunction.hpp"
-import_types_from "ctrl_lib/ControllerPerformance.hpp"
 import_types_from "base"
 using_library "kdl_conversions"
 
 #
-# Base class for all controllers. Implements the controller state machine. Basic functionality is as follows:
-#
-#  1. Read Feedback term
-#  2. If a feedback term is available, read setpoint. Once there is a setpoint, control output will be written at all times. Use reset() to set the
-#     current setpoint equal to the feedback term and make the control output zero.
+# Base class for all controllers. State machine in RUNNING state:
+#  1. Update Properties
+#  2. Read Feedback term.
+#  3. If a feedback term is available, read setpoint. Once there is a setpoint, control output
+#     will be written at all times.
 #  3. Compute and write control output, depending on the implementation of the controller (derived task)
 #  4. Compute activation. The activation indicates how much influence a control output has, compared to the other control outputs. Activation
 #     values will be within 0..1. The activation ports can e.g. be connected to WBC in order to deactivate constraint variables and make unneeded
 #     dof available for other tasks. A typical example is Joint limits avoidance. Usually one wants to activate the avoidance behavior only when
 #     being close to the joint limits and not disturb other tasks when moving freely. Different activation functions can be chosen (e.g. linear, quadratic, ...)
 #     in order to achieve smooth transitions.
-#  5. Compute controller performance. Controller dependent performance indicators will be computed and written to port. Use startEvaluation(bool) to start/stop
-#     computation of performance values
 #
-task_context "ControllerTask" do abstract
+task_context "ControllerTask" do
+   abstract
    needs_configuration
 
    runtime_states "NO_SETPOINT", # Never got a setpoint, no control output will be written
@@ -31,8 +29,31 @@ task_context "ControllerTask" do abstract
    # Unique name for each variable, e.g. joint names in case of a joint space controller.
    property("field_names", "std/vector<std/string>")
 
+   # Type of activation function used. See ctrl_lib/ActivationFunction.hpp for details.
+   property("activation_function", "ctrl_lib/ActivationFunction")
+
+   # Current activation values
+   output_port("activation", "base/VectorXd")
+
+   # Current time between two consecutive calls of updateHook()
+   output_port("actual_cycle_time", "double")
+
+   # The controllers should be called periodically to achieve best performance.
+   periodic 0.01
+end
+
+#
+# Base class for all proportional controllers.
+#
+task_context "ProportionalControllerTask" do subclasses "ControllerTask"
+   abstract
+   needs_configuration
+
    # Proportional gain. Size has to be the same as size of field_names.
    property("prop_gain", "base/VectorXd").dynamic
+
+   # Feed Forward gain. Size has to be the same as size of field_names.
+   property("ff_gain", "base/VectorXd").dynamic
 
    # Maximum control output (saturation). If one output value exceeds maximum, all
    # other values will be scaled accordingly. Size has to be the same as size of field_names.
@@ -41,34 +62,15 @@ task_context "ControllerTask" do abstract
    # Minimum control error (dead zone). If one control error value falls below this minimum, it will be set to zero.
    property("dead_zone", "base/VectorXd").dynamic
 
-   # Type of activation function used. See ctrl_lib/ActivationFunction.hpp for details.
-   property("activation_function", "ctrl_lib/ActivationFunction")
+   # Debug Ports
 
-
-   # Current activation values
-   output_port("activation", "base/VectorXd")
-
-   # Debug: Current control error.
+   output_port("current_prop_gain", "base/VectorXd")
+   output_port("current_ff_gain", "base/VectorXd")
+   output_port("current_max_control_output", "base/VectorXd")
+   output_port("current_dead_zone", "base/VectorXd")
    output_port("control_error", "base/VectorXd")
 
-   # Debug: Current max control output.
-   output_port("current_max_control_output", "base/VectorXd")
-
-   # Debug: Current dead zone.
-   output_port("current_dead_zone", "base/VectorXd")
-
-   # Debug: Current proportional gain
-   output_port("current_prop_gain", "base/VectorXd")
-
-   # Control performance. Performance measure that reflects the quality of the control action
-   output_port("ctrl_performance", "ctrl_lib/ControllerPerformance")
-
-
-   # Start/Stop evaluation
-   operation("startEvaluation").
-       argument("start", "bool")
-
-   # Reset function. Implemented in derived task. This sets the control output to zero by setting setpoint and feedback to the same value.
+   # Reset setpoint to actual value
    operation("reset")
 
 
@@ -79,7 +81,7 @@ end
 #
 # Implementation of a proportional position controller in joint space.
 #
-task_context "JointPositionController" do subclasses "ControllerTask"
+task_context "JointPositionController" do subclasses "ProportionalControllerTask"
    needs_configuration
 
    # Feed Forward gain. Size has to be the same as size of field_names.
@@ -94,14 +96,13 @@ task_context "JointPositionController" do subclasses "ControllerTask"
    # Feedback term of the controller. Joints will be mapped by name internally. Size has to be >= size of field_names. All field names have to be present.
    input_port("feedback", "base/samples/Joints")
 
+   # Debug Ports
+
+   output_port("current_setpoint", "base/commands/Joints")
+   output_port("current_feedback", "base/samples/Joints")
+
    # Control output as velocity. Size will be same as size of field_names.
    output_port("control_output", "base/commands/Joints")
-
-   # Debug: Current setpoint
-   output_port("current_setpoint", "base/commands/Joints")
-
-   # Debug: Current feedback term
-   output_port("current_feedback", "base/samples/Joints")
 
    periodic 0.01
 end
@@ -110,7 +111,7 @@ end
 # Implementation of proportional position controller in Cartesian space. Size of field_names has to be 6. The orientation error will be computed
 # using zyx rotation. So the control output will be <velocity(xyz), angular_velocity(zyx)>
 # 
-task_context "CartesianPositionController" do subclasses "ControllerTask"
+task_context "CartesianPositionController" do subclasses "ProportionalControllerTask"
    needs_configuration
 
    # Feed Forward gain. Size has to be the same as size of field_names.
@@ -125,38 +126,35 @@ task_context "CartesianPositionController" do subclasses "ControllerTask"
    # Feedback term of the controller.
    input_port("feedback", "base/samples/RigidBodyState")
 
+   # Debug Ports
+
+   output_port("current_setpoint", "base/samples/RigidBodyState")
+   output_port("current_feedback", "base/samples/RigidBodyState")
+
    # Control output as Cartesian velocity/angular velocity.
    output_port("control_output", "base/samples/RigidBodyState")
-
-   # Debug: Current setpoint.
-   output_port("current_setpoint", "base/samples/RigidBodyState")
-
-   # Debug: Current feedback term.
-   output_port("current_feedback", "base/samples/RigidBodyState")
 
    periodic 0.01
 end
 
 #
-# Implementation of a proportional force/torque controller in Cartesian space.
+# Implementation of a proportional force/torque controller in Cartesian space
 #
-task_context "CartesianForceController" do subclasses "ControllerTask"
+task_context "CartesianForceController" do subclasses "ProportionalControllerTask"
    needs_configuration
 
    # Setpoint of the controller
    input_port("setpoint", "base/samples/Wrench")
-
    # Feedback term of the controller.
    input_port("feedback", "base/samples/Wrench")
 
+   # Debug Ports
+
+   output_port("current_setpoint", "base/samples/Wrench")
+   output_port("current_feedback", "base/samples/Wrench")
+
    # Control output as Cartesian velocity/angular velocity.
    output_port("control_output", "base/samples/RigidBodyState")
-
-   # Debug: Current setpoint.
-   output_port("current_setpoint", "base/samples/Wrench")
-
-   # Debug: Current feedback term.
-   output_port("current_feedback", "base/samples/Wrench")
 
    periodic 0.01
 end
@@ -164,17 +162,10 @@ end
 
 #
 # Implementation of RadialPotentialFields in joint space. Each joint will have one 1-dimensional potential field.
-# See ctrl_lib/RadialPotentialField.hpp and ctrl_lib/PotentialFieldsController.hpp for details
+# See ctrl_lib/RadialPotentialField.hpp and ctrl_lib/JointPotentialFieldsController.hpp for details
 #
-task_context "JointLimitAvoidance" do subclasses "ControllerTask"
+task_context "JointLimitAvoidance" do subclasses "PotentialFieldsControllerTask"
    needs_configuration
-
-   # Order of all potential fields. If order = 0 => control_output = const,
-   # if order = 1 => control_output ~ 1/d. If order = 2, => control_output ~ 1/d^2 and so on.
-   property("order", "int", 1)
-
-   # Influence distance of the potential fields. Size has to be the same as size of field_names. Values have to be > 0!
-   property("influence_distance", "base/VectorXd").dynamic
 
    # centers of the potential fields. Size has to be either empty or same as size of field_names
    property("joint_limits", "base/JointLimits")
@@ -186,13 +177,8 @@ task_context "JointLimitAvoidance" do subclasses "ControllerTask"
    # Control output as joint velocity. Size will be same as size of field_names.
    output_port("control_output", "base/commands/Joints")
 
-   # Debug: Current influence distance
-   output_port("current_influence_distance", "base/VectorXd")
+   # Debug ports
 
-   # Debug: Current status and settings for all potential fields.
-   output_port("field_infos", "std/vector<ctrl_lib/PotentialFieldInfo>")
-
-   # Debug: Current feedback term.
    output_port("current_feedback", "base/samples/Joints")
 
    periodic 0.01
@@ -202,7 +188,7 @@ end
 # Implementation of RadialPotentialFields in Cartesian space. Dimension of all fields has to be 3! See ctrl_lib/RadialPotentialField.hpp and
 # ctrl_lib/PotentialFieldsController.hpp for details
 #
-task_context "CartesianRadialPotentialFields" do subclasses "ControllerTask"
+task_context "CartesianRadialPotentialFields" do subclasses "PotentialFieldsControllerTask"
    needs_configuration
 
    # Order of all potential fields. If order = 0 => control_output = const,
@@ -221,13 +207,9 @@ task_context "CartesianRadialPotentialFields" do subclasses "ControllerTask"
    # Control output as cartesian velocity.
    output_port("control_output",   "base/samples/RigidBodyState")
 
-   # Debug: Current max control output.
-   output_port("current_influence_distance", "base/VectorXd")
+   # Debug ports:
 
-   # Debug: Current status and settings for all potential fields.
    output_port("field_infos", "std/vector<ctrl_lib/PotentialFieldInfo>")
-
-   # Debug: Current feedback term.
    output_port("current_feedback", "base/samples/RigidBodyState")
 
    periodic 0.01

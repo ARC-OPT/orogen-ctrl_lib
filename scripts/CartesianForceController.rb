@@ -1,9 +1,7 @@
 require 'orocos'
-require 'readline'
 
 Orocos.initialize
 Orocos.load_typekit("base")
-
 
 Orocos.run "ctrl_lib::CartesianForceController" => "controller" do
 
@@ -27,19 +25,19 @@ Orocos.run "ctrl_lib::CartesianForceController" => "controller" do
    controller.configure
    controller.start
 
+   setpoint = Types::Base::Samples::Wrench.new
+   setpoint.time = Types::Base::Time.now
+   setpoint.force[0],setpoint.force[1],setpoint.force[2] = 1.0,2.0,3.0
+   setpoint.torque[0],setpoint.torque[1],setpoint.torque[2] = 0.0,0.0,0.0
+
+   feedback = Types::Base::Samples::Wrench.new
+   feedback.force[0],feedback.force[1],feedback.force[2] = 0.0,0.0,0.0
+   feedback.torque[0],feedback.torque[1],feedback.torque[2] = 0.0,0.0,0.0
+
    setpoint_writer      = controller.setpoint.writer
    feedback_writer      = controller.feedback.writer
    control_output_reader = controller.control_output.reader
-
-   setpoint = Types::Base::Samples::Wrench.new
-   feedback = Types::Base::Samples::Wrench.new
    control_output        = Types::Base::Samples::RigidBodyState.new
- 
-   setpoint.time = Types::Base::Time.now
-   setpoint.force = Types::Base::Vector3d.new(2,3,4)
-   setpoint.torque = Types::Base::Vector3d.new(0,0,0)
-   feedback.force = Types::Base::Vector3d.new(0,0,0)
-   feedback.torque = Types::Base::Vector3d.new(0,0,0)
 
    setpoint_writer.write(setpoint)
 
@@ -58,9 +56,9 @@ Orocos.run "ctrl_lib::CartesianForceController" => "controller" do
          feedback.torque[i] += cycle_time*control_output.angular_velocity[i]
       end
 
-      print "Goal Force (Fx/Fy/Fz/Tx/Ty/Tz): "
+      print "Goal Wrench (x/y/z/rx/ry/rz): "
       setpoint.force.data.each do |p| print "#{'%.04f' % p} " end
-      setpoint.torque.data.each do |e| print "#{'%.04f' % e} " end
+      setpoint.torque.data.each do |p| print "#{'%.04f' % p} " end
 
       print "\nMax control output:         "
       max_control_output.to_a.each do |m| print "#{'%.04f' % m} " end
@@ -72,11 +70,10 @@ Orocos.run "ctrl_lib::CartesianForceController" => "controller" do
       control_output.velocity.data.each do |v| print "#{'%.04f' % v} " end
       control_output.angular_velocity.data.each do |v| print "#{'%.04f' % v} " end
 
-      print "\nActual Force:            "
+      print "\nActual Wrench:            "
       feedback.force.data.each do |p| print "#{'%.04f' % p} " end
-      feedback.torque.data.each do |e| print "#{'%.04f' % e} " end
+      feedback.torque.data.each do |p| print "#{'%.04f' % p} " end
       print "\n\n"
-
-     sleep cycle_time
+      sleep(cycle_time)
    end
 end

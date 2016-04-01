@@ -14,62 +14,16 @@ JointPositionController::JointPositionController(std::string const& name, RTT::E
     : JointPositionControllerBase(name, engine){
 }
 
-JointPositionController::~JointPositionController(){
-}
-
-bool JointPositionController::configureHook(){
-
-    field_names = _field_names.get();
-    controller = new ProportionalFeedForwardController(field_names.size());
-    ((ProportionalFeedForwardController*)controller)->setFeedForwardGain(_ff_gain.get());
-
-    control_output.resize(field_names.size());
-    control_output.names = field_names;
-
-    if (!JointPositionControllerBase::configureHook())
-        return false;
-
-    return true;
-}
-
-bool JointPositionController::startHook(){
-    if (! JointPositionControllerBase::startHook())
-        return false;
-    return true;
-}
-
-void JointPositionController::updateHook(){
-    ProportionalFeedForwardController* ctrl = (ProportionalFeedForwardController*)controller;
-    ctrl->setFeedForwardGain(_ff_gain.get());
-    _current_ff_gain.write(ctrl->getFeedForwardGain());
-
-    JointPositionControllerBase::updateHook();
-}
-
-void JointPositionController::errorHook(){
-    JointPositionControllerBase::errorHook();
-}
-
-void JointPositionController::stopHook(){
-    JointPositionControllerBase::stopHook();
-}
-
-void JointPositionController::cleanupHook(){
-    JointPositionControllerBase::cleanupHook();
-}
-
 bool JointPositionController::readSetpoint(){
+
     if(_setpoint.readNewest(setpoint) == RTT::NewData){
         extractPositions(setpoint, field_names, setpoint_raw);
         extractVelocities(setpoint, field_names, feedforward_raw);
 
-        ProportionalFeedForwardController* ctrl = (ProportionalFeedForwardController*)controller;
-        ctrl->setSetpoint(setpoint_raw);
-        ctrl->setFeedForward(feedforward_raw);
-
+        controller->setSetpoint(setpoint_raw);
+        controller->setFeedforward(feedforward_raw);
         _current_setpoint.write(setpoint);
     }
-
     return controller->hasSetpoint();
 }
 
@@ -79,13 +33,16 @@ bool JointPositionController::readFeedback(){
         controller->setFeedback(feedback_raw);
         _current_feedback.write(feedback);
     }
-
     return controller->hasFeedback();
 }
 
-void JointPositionController::writeControlOutput(const base::VectorXd &ctrl_output_raw){
+void JointPositionController::writeControlOutput(const base::VectorXd& control_output_raw){
+    if(control_output.size() != controller->getDimension()){
+        control_output.resize(field_names.size());
+        control_output.names = field_names;
+    }
     for(size_t i = 0; i < field_names.size(); i++)
-        control_output[i].speed = ctrl_output_raw(i);
+        control_output[i].speed = control_output_raw(i);
     control_output.time = base::Time::now();
     _control_output.write(control_output);
 }
@@ -102,7 +59,7 @@ void JointPositionController::reset(){
         extractPositions(setpoint, field_names, setpoint_raw);
         controller->setSetpoint(setpoint_raw);
         feedforward_raw.resize(controller->getDimension(), 0);
-        ((ProportionalFeedForwardController*)controller)->setFeedForward(feedforward_raw);
+        controller->setFeedforward(feedforward_raw);
     }
 }
 

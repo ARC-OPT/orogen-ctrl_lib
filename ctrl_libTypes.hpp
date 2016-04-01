@@ -15,21 +15,18 @@ namespace ctrl_lib {
 
 struct PotentialFieldInfo{
 
-    void setFromField(PotentialField* field){
+    void fromPotentialField(PotentialField* field){
         dimension = field->dimension;
-        order = field->order;
         influence_distance = field->influence_distance;
         distance = field->distance;
         gradient = field->gradient;
         pot_field_center = field->pot_field_center;
-        position = field->position;
+        euclidean_distance = distance.norm();
+        name = field->name;
     }
 
     /** Dimension of the potential field, e.g. a potential field in 3d space would have size 3.*/
     uint dimension;
-
-    /** Order of the potential field. Defines the relation to the distance of the field. Default will be 1*/
-    uint order;
 
     /** Maximum influence distance of the field. Default will be inf*/
     double influence_distance;
@@ -37,16 +34,23 @@ struct PotentialFieldInfo{
     /** Distance vector to the potential field. */
     base::VectorXd distance;
 
+    /** Euclidean distance of the distance vector*/
+    double euclidean_distance;
+
     /** Gradient vector for this field*/
     base::VectorXd gradient;
 
     /** Potential field center position*/
     base::VectorXd pot_field_center;
 
-    /** Current position*/
-    base::VectorXd position;
+    /** ID of the potential field*/
+    std::string name;
 };
 
+struct InfluenceDistancePerField{
+    std::string name;
+    double distance;
+};
 }
 
 #endif

@@ -63,7 +63,7 @@ void JointPositionController::reset(){
         _current_setpoint.write(setpoint);
         extractPositions(setpoint, field_names, setpoint_raw);
         controller->setSetpoint(setpoint_raw);
-        feedforward_raw.resize(controller->getDimension(), 0);
+        feedforward_raw.setConstant(controller->getDimension(), 0);
         controller->setFeedforward(feedforward_raw);
     }
 }

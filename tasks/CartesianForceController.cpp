@@ -44,6 +44,11 @@ void CartesianForceController::writeControlOutput(const base::VectorXd &ctrl_out
     _control_output.write(control_output);
 }
 
+void CartesianForceController::clearSetpoint(){
+    if(controller)
+        controller->clearSetpoint();
+}
+
 void CartesianForceController::reset(){
     if(controller->hasFeedback()){
         setpoint = feedback;

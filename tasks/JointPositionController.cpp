@@ -47,6 +47,11 @@ void JointPositionController::writeControlOutput(const base::VectorXd& control_o
     _control_output.write(control_output);
 }
 
+void JointPositionController::clearSetpoint(){
+    if(controller)
+        controller->clearSetpoint();
+}
+
 void JointPositionController::reset(){
     if(controller->hasFeedback()){
         setpoint.resize(field_names.size());

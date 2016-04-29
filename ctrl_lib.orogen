@@ -70,8 +70,10 @@ task_context "ProportionalControllerTask" do subclasses "ControllerTask"
    output_port("current_dead_zone", "base/VectorXd")
    output_port("control_error", "base/VectorXd")
 
-   # Reset setpoint to actual value
+   # Reset setpoint to actual value. Control output will be approx. zero after that action
    operation("reset")
+   # Clear setpoint. No control output will be written after that
+   operation("clearSetpoint")
 
    # The controllers should be called periodically to achieve best performance.
    periodic 0.01

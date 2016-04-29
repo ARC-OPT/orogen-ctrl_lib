@@ -20,8 +20,10 @@ protected:
     virtual bool readSetpoint();
     /** Write control output to port*/
     virtual void writeControlOutput(const base::VectorXd& control_output_raw);
-    /** Set setpoint to actual value*/
+    /** Reset setpoint to actual value. Control output will be approx. zero after that action*/
     virtual void reset();
+    /** Clear setpoint. No control output will be written after that*/
+    virtual void clearSetpoint();
 
     void extractPositions(const base::samples::Joints& joints, const std::vector<std::string> &names, base::VectorXd& positions);
     void extractVelocities(const base::samples::Joints& joints, const std::vector<std::string> &names, base::VectorXd& velocities);

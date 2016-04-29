@@ -39,6 +39,11 @@ void CartesianPositionController::writeControlOutput(const base::VectorXd &ctrl_
     _control_output.write(control_output);
 }
 
+void CartesianPositionController::clearSetpoint(){
+    if(controller)
+        controller->clearSetpoint();
+}
+
 void CartesianPositionController::reset(){
     if(feedback.hasValidPosition() && feedback.hasValidOrientation()){
         setpoint.position = feedback.position;

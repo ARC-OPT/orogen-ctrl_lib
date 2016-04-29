@@ -6,10 +6,12 @@ using namespace ctrl_lib;
 
 ProportionalControllerTask::ProportionalControllerTask(std::string const& name)
     : ProportionalControllerTaskBase(name){
+    controller = 0;
 }
 
 ProportionalControllerTask::ProportionalControllerTask(std::string const& name, RTT::ExecutionEngine* engine)
     : ProportionalControllerTaskBase(name, engine){
+    controller = 0;
 }
 
 bool ProportionalControllerTask::configureHook(){
@@ -30,6 +32,7 @@ bool ProportionalControllerTask::startHook(){
 void ProportionalControllerTask::cleanupHook(){
     ProportionalControllerTaskBase::cleanupHook();
     delete controller;
+    controller = 0;
 }
 
 void ProportionalControllerTask::updateControllerProperties(){

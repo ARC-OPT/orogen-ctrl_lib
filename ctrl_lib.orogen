@@ -72,6 +72,7 @@ task_context "ProportionalControllerTask" do subclasses "ControllerTask"
 
    # Reset setpoint to actual value. Control output will be approx. zero after that action
    operation("reset")
+
    # Clear setpoint. No control output will be written after that
    operation("clearSetpoint")
 
@@ -153,14 +154,6 @@ task_context "PotentialFieldsControllerTask" do subclasses "ControllerTask"
    abstract
    needs_configuration
 
-   # Influence distance per potential field. All entries have to be > 0! If size of this vector is > 0
-   # the derived component will try to map the influence distances by potential field name. If a
-   # field name is not given here, the default influence distance will be used
-   property("influence_distance_per_field", "std::vector<ctrl_lib/InfluenceDistancePerField>")
-
-   # Default influence distance. Has to be > 0!
-   property("influence_distance", "double")
-
    # Proportional gain. Size has to be the same as size of field_names.
    property("prop_gain", "base/VectorXd").dynamic
 
@@ -185,8 +178,11 @@ end
 task_context "JointLimitAvoidance" do subclasses "PotentialFieldsControllerTask"
    needs_configuration
 
+   # Default influence distance. Has to be > 0!
+   property("influence_distance", "base/VectorXd").dynamic
+
    # centers of the potential fields. Size has to be either empty or same as size of field_names
-   property("joint_limits", "base/JointLimits")
+   property("joint_limits", "base/JointLimits").dynamic
 
    # Controller feedback: Actual joint position. Size has to be same as size of field_names. Joints will mapped internally by names.
    # All joints from field_names have to be available here!
@@ -198,6 +194,8 @@ task_context "JointLimitAvoidance" do subclasses "PotentialFieldsControllerTask"
    # Debug ports
 
    output_port("current_feedback", "base/samples/Joints")
+   output_port("current_influence_distance", "base/VectorXd")
+   output_port("current_joint_limits", "base/JointLimits")
 
    periodic 0.01
 end
@@ -208,6 +206,14 @@ end
 #
 task_context "CartesianRadialPotentialFields" do subclasses "PotentialFieldsControllerTask"
    needs_configuration
+
+   # Influence distance per potential field. All entries have to be > 0! If size of this vector is > 0
+   # the derived component will try to map the influence distances by potential field name. If a
+   # field name is not given here, the default influence distance will be used
+   property("influence_distance_per_field", "std::vector<ctrl_lib/InfluenceDistancePerField>")
+
+   # Default influence distance. Has to be > 0!
+   property("influence_distance", "double")
 
    # Set new centers of the potential fields here. Number of fields can be anything > 0.
    input_port("pot_field_centers",  "std/vector<base/samples/RigidBodyState>")

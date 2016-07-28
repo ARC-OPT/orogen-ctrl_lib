@@ -28,15 +28,6 @@ protected:
     PotentialFieldsController* controller;
     std::vector<PotentialFieldInfo> field_infos;
     base::VectorXd tmp;
-    double default_influence_distance;
-    std::map<std::string, double> influence_distance_map;
-
-    std::map<std::string, double> makeMap(const std::vector<InfluenceDistancePerField>& influence_distance_per_field){
-        std::map<std::string, double> tmp_map;
-        for(uint i = 0; i < influence_distance_per_field.size(); i++)
-            tmp_map[influence_distance_per_field[i].name] = influence_distance_per_field[i].distance;
-        return tmp_map;
-    }
 
 public:
     PotentialFieldsControllerTask(std::string const& name = "ctrl_lib::PotentialFieldsControllerTask");

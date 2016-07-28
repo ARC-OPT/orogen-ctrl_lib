@@ -30,16 +30,7 @@ bool JointLimitAvoidance::configureHook(){
         fields.push_back(new RadialPotentialField(1, field_names[i]));
     controller->setFields(fields);
 
-    default_influence_distance = _influence_distance.get();
-    influence_distance_map = makeMap(_influence_distance_per_field.get());
-
-    std::vector<double> influence_distance;
-    for(uint i = 0; i < field_names.size(); i++){
-        if(influence_distance_map.count(field_names[i]) > 0)
-            influence_distance.push_back(influence_distance_map[field_names[i]]);
-        else
-            influence_distance.push_back(default_influence_distance);
-    }
+    influence_distance = _influence_distance.get();
     controller->setInfluenceDistance(influence_distance);
 
     if(!JointLimitAvoidanceBase::configureHook())
@@ -62,6 +53,9 @@ bool JointLimitAvoidance::readFeedback(){
     if(_feedback.read(feedback) == RTT::NewData){
 
         extractPositions(feedback, field_names, position_raw);
+
+        joint_limits = _joint_limits.get();
+        influence_distance = _influence_distance.get();
 
         for(uint i = 0; i < position_raw.size(); i++){
             // Prevent infinite control action:

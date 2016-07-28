@@ -29,6 +29,7 @@ protected:
     base::samples::Joints feedback;
     base::VectorXd position_raw;
     base::commands::Joints control_output;
+    base::VectorXd influence_distance;
 
 public:
     JointLimitAvoidance(std::string const& name = "ctrl_lib::JointLimitAvoidance");

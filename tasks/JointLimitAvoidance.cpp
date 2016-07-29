@@ -56,6 +56,7 @@ bool JointLimitAvoidance::readFeedback(){
 
         joint_limits = _joint_limits.get();
         influence_distance = _influence_distance.get();
+        controller->setInfluenceDistance(influence_distance);
 
         for(uint i = 0; i < position_raw.size(); i++){
             // Prevent infinite control action:
@@ -75,6 +76,8 @@ bool JointLimitAvoidance::readFeedback(){
         }
 
         _current_feedback.write(feedback);
+        _current_joint_limits.write(joint_limits);
+        _current_influence_distance.write(influence_distance);
     }
 
     return controller->hasPosition();

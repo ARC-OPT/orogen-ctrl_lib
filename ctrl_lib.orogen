@@ -178,8 +178,11 @@ end
 task_context "JointLimitAvoidance" do subclasses "PotentialFieldsControllerTask"
    needs_configuration
 
+   # Default influence distance for each joint. All entries have ot be > 0! If empty influence_distance will be used
+   property("influence_distance_per_joint", "base/VectorXd").dynamic
+
    # Default influence distance. Has to be > 0!
-   property("influence_distance", "base/VectorXd").dynamic
+   property("influence_distance", "double")
 
    # centers of the potential fields. Size has to be either empty or same as size of field_names
    property("joint_limits", "base/JointLimits").dynamic

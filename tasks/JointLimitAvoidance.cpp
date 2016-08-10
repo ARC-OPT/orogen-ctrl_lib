@@ -30,8 +30,7 @@ bool JointLimitAvoidance::configureHook(){
         fields.push_back(new RadialPotentialField(1, field_names[i]));
     controller->setFields(fields);
 
-    influence_distance = _influence_distance.get();
-    controller->setInfluenceDistance(influence_distance);
+    setInfluenceDistance();
 
     if(!JointLimitAvoidanceBase::configureHook())
         return false;
@@ -55,8 +54,7 @@ bool JointLimitAvoidance::readFeedback(){
         extractPositions(feedback, field_names, position_raw);
 
         joint_limits = _joint_limits.get();
-        influence_distance = _influence_distance.get();
-        controller->setInfluenceDistance(influence_distance);
+        setInfluenceDistance();
 
         for(uint i = 0; i < position_raw.size(); i++){
             // Prevent infinite control action:
@@ -119,4 +117,17 @@ void JointLimitAvoidance::extractPositions(const base::samples::Joints& joints, 
         }
         positions(i) = elem.position;
     }
+}
+
+void JointLimitAvoidance::setInfluenceDistance(){
+    base::VectorXd influence_distance_per_joint = _influence_distance_per_joint.get();
+    if(influence_distance_per_joint.size() == 0){
+        influence_distance.resize(controller->getNoOfFields());
+        influence_distance.setConstant(_influence_distance.get());
+    }
+    else
+        influence_distance = influence_distance_per_joint;
+
+    controller->setInfluenceDistance(influence_distance);
+
 }

@@ -31,6 +31,8 @@ protected:
     base::commands::Joints control_output;
     base::VectorXd influence_distance;
 
+    void setInfluenceDistance();
+
 public:
     JointLimitAvoidance(std::string const& name = "ctrl_lib::JointLimitAvoidance");
     JointLimitAvoidance(std::string const& name, RTT::ExecutionEngine* engine);

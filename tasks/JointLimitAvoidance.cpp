@@ -120,14 +120,21 @@ void JointLimitAvoidance::extractPositions(const base::samples::Joints& joints, 
 }
 
 void JointLimitAvoidance::setInfluenceDistance(){
-    base::VectorXd influence_distance_per_joint = _influence_distance_per_joint.get();
-    if(influence_distance_per_joint.size() == 0){
-        influence_distance.resize(controller->getNoOfFields());
+
+    influence_distance.resize(controller->getNoOfFields());
+
+    std::vector<InfluenceDistancePerField> influence_distance_per_field = _influence_distance_per_field.get();
+    if(influence_distance_per_field.size() == 0)
         influence_distance.setConstant(_influence_distance.get());
+    else{
+        if((int)influence_distance_per_field.size() != influence_distance.size()){
+            LOG_ERROR("Influence Distance per field should have size %i but has size %i", controller->getNoOfFields(), influence_distance_per_field.size());
+            throw std::invalid_argument("Invalid influence distance");
+        }
+
+        for(size_t i = 0; i < influence_distance_per_field.size(); i++)
+            influence_distance(i) = influence_distance_per_field[i].distance;
     }
-    else
-        influence_distance = influence_distance_per_joint;
 
     controller->setInfluenceDistance(influence_distance);
-
 }

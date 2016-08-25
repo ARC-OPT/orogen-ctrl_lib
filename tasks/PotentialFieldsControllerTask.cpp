@@ -25,9 +25,14 @@ const base::VectorXd& PotentialFieldsControllerTask::updateController(){
 
     const std::vector<PotentialField*> fields = controller->getFields();
     field_infos.resize(fields.size());
-    for(uint i = 0; i < fields.size(); i++)
+    base::VectorXd euclidean_distance(fields.size());
+    for(uint i = 0; i < fields.size(); i++){
         field_infos[i].fromPotentialField(fields[i]);
+        euclidean_distance(i) = field_infos[i].euclidean_distance;
+    }
+
     _field_infos.write(field_infos);
+    _euclidean_distance.write(euclidean_distance);
 
     return control_output;
 }

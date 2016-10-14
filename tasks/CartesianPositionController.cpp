@@ -16,8 +16,11 @@ CartesianPositionController::CartesianPositionController(std::string const& name
 
 bool CartesianPositionController::readSetpoint(){
     RTT::FlowStatus fs = _setpoint.readNewest(setpoint);
-    if(fs == RTT::NewData)
+    if(fs == RTT::NewData){
+        setpoint.targetFrame = feedback.targetFrame;
+        setpoint.sourceFrame = feedback.sourceFrame + "_setpoint";
         _current_setpoint.write(setpoint);
+    }
     if(fs != RTT::NoData)
         setControlInput();
     return controller->hasSetpoint();
@@ -35,6 +38,8 @@ bool CartesianPositionController::readFeedback(){
 void CartesianPositionController::writeControlOutput(const base::VectorXd &ctrl_output_raw){
     control_output.velocity = ctrl_output_raw.segment(0,3);
     control_output.angular_velocity = ctrl_output_raw.segment(3,3);
+    control_output.sourceFrame = feedback.sourceFrame + "_setpoint";
+    control_output.targetFrame = feedback.targetFrame;
     control_output.time = base::Time::now();
     _control_output.write(control_output);
 }

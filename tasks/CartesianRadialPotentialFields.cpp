@@ -47,6 +47,7 @@ bool CartesianRadialPotentialFields::readFeedback(){
             throw std::invalid_argument("Invalid actual position");
         }
         controller->setPosition(feedback.position);
+        _current_feedback.write(feedback);
     }
     return controller->hasPosition();
 }

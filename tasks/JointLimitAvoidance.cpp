@@ -16,9 +16,13 @@ JointLimitAvoidance::JointLimitAvoidance(std::string const& name, RTT::Execution
 }
 
 bool JointLimitAvoidance::configureHook(){
-    field_names = _field_names.get();
-    controller = new JointPotentialFieldsController(field_names.size());
 
+    if(!JointLimitAvoidanceBase::configureHook())
+        return false;
+
+    controller = new JointPotentialFieldsController(field_names.size());
+    controller->setPropGain(_prop_gain.get());
+    controller->setMaxControlOutput(_max_control_output.get());
     joint_limits = _joint_limits.get();
     if(joint_limits.size() != field_names.size()){
         LOG_ERROR("Joint limit vector has to have same size as field names");
@@ -29,13 +33,25 @@ bool JointLimitAvoidance::configureHook(){
     for(size_t i = 0; i < _field_names.get().size(); i++)
         fields.push_back(new RadialPotentialField(1, field_names[i]));
     controller->setFields(fields);
-
-    setInfluenceDistance();
-
-    if(!JointLimitAvoidanceBase::configureHook())
-        return false;
+    controller->setInfluenceDistance(_influence_distance.get());
 
     return true;
+}
+
+bool JointLimitAvoidance::startHook(){
+    return JointLimitAvoidanceBase::startHook();
+}
+
+void JointLimitAvoidance::updateHook(){
+    JointLimitAvoidanceBase::updateHook();
+}
+
+void JointLimitAvoidance::errorHook(){
+    JointLimitAvoidanceBase::errorHook();
+}
+
+void JointLimitAvoidance::stopHook(){
+    JointLimitAvoidanceBase::stopHook();
 }
 
 void JointLimitAvoidance::cleanupHook(){
@@ -43,18 +59,11 @@ void JointLimitAvoidance::cleanupHook(){
     delete controller;
 }
 
-bool JointLimitAvoidance::readSetpoint(){
-    return controller->hasPotFieldCenters();
-}
-
 bool JointLimitAvoidance::readFeedback(){
 
     if(_feedback.read(feedback) == RTT::NewData){
 
         extractPositions(feedback, field_names, position_raw);
-
-        joint_limits = _joint_limits.get();
-        setInfluenceDistance();
 
         for(uint i = 0; i < position_raw.size(); i++){
             // Prevent infinite control action:
@@ -74,11 +83,17 @@ bool JointLimitAvoidance::readFeedback(){
         }
 
         _current_feedback.write(feedback);
-        _current_joint_limits.write(joint_limits);
-        _current_influence_distance.write(influence_distance);
     }
 
     return controller->hasPosition();
+}
+
+bool JointLimitAvoidance::readSetpoint(){
+    return controller->hasPotFieldCenters();
+}
+
+const base::VectorXd& JointLimitAvoidance::updateController(){
+    return controller->update();
 }
 
 void JointLimitAvoidance::writeControlOutput(const base::VectorXd& control_output_raw){
@@ -89,6 +104,13 @@ void JointLimitAvoidance::writeControlOutput(const base::VectorXd& control_outpu
 
     control_output.time = base::Time::now();
     _control_output.write(control_output);
+
+
+    const std::vector<PotentialField*> fields = controller->getFields();
+    field_infos.resize(fields.size());
+    for(uint i = 0; i < fields.size(); i++)
+        field_infos[i].fromPotentialField(fields[i]);
+    _field_infos.write(field_infos);
 }
 
 const base::VectorXd& JointLimitAvoidance::computeActivation(ActivationFunction &activation_function){
@@ -117,24 +139,4 @@ void JointLimitAvoidance::extractPositions(const base::samples::Joints& joints, 
         }
         positions(i) = elem.position;
     }
-}
-
-void JointLimitAvoidance::setInfluenceDistance(){
-
-    influence_distance.resize(controller->getNoOfFields());
-
-    std::vector<InfluenceDistancePerField> influence_distance_per_field = _influence_distance_per_field.get();
-    if(influence_distance_per_field.size() == 0)
-        influence_distance.setConstant(_influence_distance.get());
-    else{
-        if((int)influence_distance_per_field.size() != influence_distance.size()){
-            LOG_ERROR("Influence Distance per field should have size %i but has size %i", controller->getNoOfFields(), influence_distance_per_field.size());
-            throw std::invalid_argument("Invalid influence distance");
-        }
-
-        for(size_t i = 0; i < influence_distance_per_field.size(); i++)
-            influence_distance(i) = influence_distance_per_field[i].distance;
-    }
-
-    controller->setInfluenceDistance(influence_distance);
 }

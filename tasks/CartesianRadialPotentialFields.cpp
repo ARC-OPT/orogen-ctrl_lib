@@ -16,28 +16,42 @@ CartesianRadialPotentialFields::CartesianRadialPotentialFields(std::string const
 }
 
 bool CartesianRadialPotentialFields::configureHook(){
-    has_pot_fields = false;
-    controller = new CartesianPotentialFieldsController(_field_names.get().size());
+    if(!CartesianRadialPotentialFieldsBase::configureHook())
+        return false;
 
+    has_pot_fields = false;
+    controller = new CartesianPotentialFieldsController(field_names.size());
+    controller->setPropGain(_prop_gain.get());
+    controller->setMaxControlOutput(_max_control_output.get());
     default_influence_distance = _influence_distance.get();
     influence_distance_map = makeMap(_influence_distance_per_field.get());
 
-    if(!CartesianRadialPotentialFieldsBase::configureHook())
-        return false;
     return true;
 }
+
+bool CartesianRadialPotentialFields::startHook(){
+    if(!CartesianRadialPotentialFieldsBase::startHook())
+        return false;
+    controller->clearPotentialFields();
+    return true;
+}
+
+void CartesianRadialPotentialFields::updateHook(){
+    CartesianRadialPotentialFieldsBase::updateHook();
+}
+
+void CartesianRadialPotentialFields::errorHook(){
+    CartesianRadialPotentialFieldsBase::errorHook();
+}
+
+void CartesianRadialPotentialFields::stopHook(){
+    CartesianRadialPotentialFieldsBase::stopHook();
+}
+
 
 void CartesianRadialPotentialFields::cleanupHook(){
     CartesianRadialPotentialFieldsBase::cleanupHook();
     delete controller;
-}
-
-bool CartesianRadialPotentialFields::readSetpoint(){
-    if(_pot_field_centers.readNewest(pot_field_centers) == RTT::NewData){
-        has_pot_fields = true;
-        setPotentialFieldCenters(pot_field_centers);
-    }
-    return has_pot_fields;
 }
 
 bool CartesianRadialPotentialFields::readFeedback(){
@@ -52,6 +66,18 @@ bool CartesianRadialPotentialFields::readFeedback(){
     return controller->hasPosition();
 }
 
+bool CartesianRadialPotentialFields::readSetpoint(){
+    if(_pot_field_centers.readNewest(pot_field_centers) == RTT::NewData){
+        has_pot_fields = true;
+        setPotentialFieldCenters(pot_field_centers);
+    }
+    return has_pot_fields;
+}
+
+const base::VectorXd& CartesianRadialPotentialFields::updateController(){
+    return controller->update();
+}
+
 void CartesianRadialPotentialFields::writeControlOutput(const base::VectorXd &ctrl_output_raw){
     //Control output will only have linear components, since radial fields cannot generate rotational components
     for(uint i = 0; i < 3; i++)
@@ -59,6 +85,13 @@ void CartesianRadialPotentialFields::writeControlOutput(const base::VectorXd &ct
     control_output.angular_velocity.setZero();
     control_output.time = base::Time::now();
     _control_output.write(control_output);
+
+    const std::vector<PotentialField*> fields = controller->getFields();
+    field_infos.resize(fields.size());
+    for(uint i = 0; i < fields.size(); i++)
+        field_infos[i].fromPotentialField(fields[i]);
+
+    _field_infos.write(field_infos);
 }
 
 void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<base::samples::RigidBodyState> &centers){

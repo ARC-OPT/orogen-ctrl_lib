@@ -2,6 +2,7 @@
 
 #include "CartesianForceController.hpp"
 #include <base/Logging.hpp>
+#include <ctrl_lib/ProportionalFeedForwardController.hpp>
 
 using namespace ctrl_lib;
 
@@ -11,6 +12,43 @@ CartesianForceController::CartesianForceController(std::string const& name)
 
 CartesianForceController::CartesianForceController(std::string const& name, RTT::ExecutionEngine* engine)
     : CartesianForceControllerBase(name, engine){
+}
+
+bool CartesianForceController::configureHook(){
+    if (! CartesianForceControllerBase::configureHook())
+        return false;
+
+    controller = new ProportionalFeedForwardController(_field_names.get().size());
+    controller->setPropGain(_prop_gain.get());
+    controller->setMaxControlOutput(_max_control_output.get());
+    controller->setDeadZone(_dead_zone.get());
+
+    return true;
+}
+
+bool CartesianForceController::startHook(){
+    if (! CartesianForceControllerBase::startHook())
+        return false;
+    controller->clearSetpoint();
+    controller->clearFeedback();
+    return true;
+}
+
+void CartesianForceController::updateHook(){
+    CartesianForceControllerBase::updateHook();
+}
+
+void CartesianForceController::errorHook(){
+    CartesianForceControllerBase::errorHook();
+}
+
+void CartesianForceController::stopHook(){
+    CartesianForceControllerBase::stopHook();
+}
+
+void CartesianForceController::cleanupHook(){
+    CartesianForceControllerBase::cleanupHook();
+    delete controller;
 }
 
 bool CartesianForceController::readFeedback(){
@@ -37,24 +75,23 @@ bool CartesianForceController::readSetpoint(){
     return controller->hasSetpoint();
 }
 
+const base::VectorXd& CartesianForceController::updateController(){
+    return controller->update();
+}
+
 void CartesianForceController::writeControlOutput(const base::VectorXd &ctrl_output_raw){
     control_output.velocity = ctrl_output_raw.segment(0,3);
     control_output.angular_velocity = ctrl_output_raw.segment(3,3);
     control_output.time = base::Time::now();
     _control_output.write(control_output);
+    _control_error.write(controller->getControlError());
 }
 
-void CartesianForceController::clearSetpoint(){
-    if(controller)
-        controller->clearSetpoint();
-}
-
-void CartesianForceController::reset(){
-    if(controller->hasFeedback()){
-        setpoint = feedback;
-        controller->setSetpoint(wrenchToRaw(setpoint, setpoint_raw));
-        _current_setpoint.write(setpoint);
-    }
+const base::VectorXd& CartesianForceController::computeActivation(ActivationFunction &activation_function){
+    tmp.resize(controller->getDimension());
+    for(uint i = 0; i < controller->getDimension(); i++)
+        tmp(i) = fabs(controller->getControlOutput()(i))/controller->getMaxControlOutput()(i);
+    return activation_function.compute(tmp);
 }
 
 bool CartesianForceController::isValid(const base::Wrench &w){

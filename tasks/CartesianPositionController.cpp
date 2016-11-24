@@ -3,6 +3,7 @@
 #include "CartesianPositionController.hpp"
 #include <base/Logging.hpp>
 #include <kdl_conversions/KDLConversions.hpp>
+#include <ctrl_lib/ProportionalFeedForwardController.hpp>
 
 using namespace ctrl_lib;
 
@@ -12,6 +13,53 @@ CartesianPositionController::CartesianPositionController(std::string const& name
 
 CartesianPositionController::CartesianPositionController(std::string const& name, RTT::ExecutionEngine* engine)
     : CartesianPositionControllerBase(name, engine){
+}
+
+bool CartesianPositionController::configureHook(){
+    if (! CartesianPositionControllerBase::configureHook())
+        return false;
+
+    controller = new ProportionalFeedForwardController(_field_names.get().size());
+    controller->setPropGain(_prop_gain.get());
+    controller->setFeedforwardGain(_ff_gain.get());
+    controller->setMaxControlOutput(_max_control_output.get());
+    controller->setDeadZone(_dead_zone.get());
+
+    return true;
+}
+
+bool CartesianPositionController::startHook(){
+    if (! CartesianPositionControllerBase::startHook())
+        return false;
+    controller->clearSetpoint();
+    controller->clearFeedback();
+    return true;
+}
+
+void CartesianPositionController::updateHook(){
+    CartesianPositionControllerBase::updateHook();
+}
+
+void CartesianPositionController::errorHook(){
+    CartesianPositionControllerBase::errorHook();
+}
+
+void CartesianPositionController::stopHook(){
+    CartesianPositionControllerBase::stopHook();
+}
+
+void CartesianPositionController::cleanupHook(){
+    CartesianPositionController::cleanupHook();
+    delete controller;
+}
+
+bool CartesianPositionController::readFeedback(){
+    if(_feedback.readNewest(feedback) == RTT::NoData)
+        return false;
+    else{
+        _current_feedback.write(feedback);
+        return true;
+    }
 }
 
 bool CartesianPositionController::readSetpoint(){
@@ -26,13 +74,15 @@ bool CartesianPositionController::readSetpoint(){
     return controller->hasSetpoint();
 }
 
-bool CartesianPositionController::readFeedback(){
-    if(_feedback.readNewest(feedback) == RTT::NoData)
-        return false;
-    else{
-        _current_feedback.write(feedback);
-        return true;
-    }
+const base::VectorXd& CartesianPositionController::updateController(){
+    return controller->update();
+}
+
+const base::VectorXd& CartesianPositionController::computeActivation(ActivationFunction &activation_function){
+    tmp.resize(controller->getDimension());
+    for(uint i = 0; i < controller->getDimension(); i++)
+        tmp(i) = fabs(controller->getControlOutput()(i))/controller->getMaxControlOutput()(i);
+    return activation_function.compute(tmp);
 }
 
 void CartesianPositionController::writeControlOutput(const base::VectorXd &ctrl_output_raw){
@@ -42,20 +92,7 @@ void CartesianPositionController::writeControlOutput(const base::VectorXd &ctrl_
     control_output.targetFrame = feedback.targetFrame;
     control_output.time = base::Time::now();
     _control_output.write(control_output);
-}
-
-void CartesianPositionController::clearSetpoint(){
-    if(controller)
-        controller->clearSetpoint();
-}
-
-void CartesianPositionController::reset(){
-    if(feedback.hasValidPosition() && feedback.hasValidOrientation()){
-        setpoint.position = feedback.position;
-        setpoint.orientation = feedback.orientation;
-        _current_setpoint.write(setpoint);
-        setControlInput();
-    }
+    _control_error.write(controller->getControlError());
 }
 
 void CartesianPositionController::setControlInput(){
@@ -98,4 +135,3 @@ void CartesianPositionController::setControlInput(){
     controller->setSetpoint(setpoint_raw);
     controller->setFeedforward(feedforward_raw);
 }
-

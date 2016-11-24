@@ -25,9 +25,6 @@ class ControllerTask : public ControllerTaskBase
 {
     friend class ControllerTaskBase;
 protected:
-
-    /** Update all available (dynamic) controller properties*/
-    virtual void updateControllerProperties() = 0;
     /** Read all feedback values of the controller. Return false if there is no feedback, true otherwise */
     virtual bool readFeedback() = 0;
     /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
@@ -41,6 +38,7 @@ protected:
 
     std::vector<std::string> field_names;
     ActivationFunction activation_function;
+    base::VectorXd tmp;
 
 public:
     ControllerTask(std::string const& name = "ctrl_lib::ControllerTask");

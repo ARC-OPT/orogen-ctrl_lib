@@ -20,8 +20,6 @@ bool ControllerTask::configureHook(){
     field_names = _field_names.get();
     activation_function = _activation_function.get();
 
-    updateControllerProperties();
-
     return true;
 }
 
@@ -34,8 +32,6 @@ bool ControllerTask::startHook(){
 
 void ControllerTask::updateHook(){
     ControllerTaskBase::updateHook();
-
-    updateControllerProperties();
 
     if(!readFeedback()){
         if(state() != NO_FEEDBACK)

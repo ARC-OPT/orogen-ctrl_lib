@@ -49,7 +49,7 @@ void CartesianPositionController::stopHook(){
 }
 
 void CartesianPositionController::cleanupHook(){
-    CartesianPositionController::cleanupHook();
+    CartesianPositionControllerBase::cleanupHook();
     delete controller;
 }
 

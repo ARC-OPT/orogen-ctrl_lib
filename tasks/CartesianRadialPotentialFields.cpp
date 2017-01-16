@@ -92,6 +92,11 @@ void CartesianRadialPotentialFields::writeControlOutput(const base::VectorXd &ct
         field_infos[i].fromPotentialField(fields[i]);
 
     _field_infos.write(field_infos);
+
+    euclidean_distance.resize(field_infos.size());
+    for(size_t i = 0; i < field_infos.size(); i++)
+        euclidean_distance(i) = field_infos[i].euclidean_distance;
+    _euclidean_distance.write(euclidean_distance);
 }
 
 void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<base::samples::RigidBodyState> &centers){

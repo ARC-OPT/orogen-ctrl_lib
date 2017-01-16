@@ -214,6 +214,7 @@ task_context "CartesianRadialPotentialFields" do subclasses "ControllerTask"
    # Debug ports:
    output_port("current_feedback", "base/samples/RigidBodyState")
    output_port("field_infos", "std/vector<ctrl_lib/PotentialFieldInfo>")
+   output_port("euclidean_distance", "base/VectorXd")
 
    periodic 0.01
 end
@@ -221,4 +222,6 @@ end
 typekit do
    export_types "ctrl_lib/ActivationFunction"
    export_types "ctrl_lib/InfluenceDistancePerField"
+   export_types "std/vector<ctrl_lib/PotentialFieldInfo>"
+   export_types "ctrl_lib/PotentialFieldInfo"
 end

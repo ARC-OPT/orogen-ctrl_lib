@@ -58,6 +58,7 @@ protected:
     bool has_pot_fields;
     PotentialFieldsController* controller;
     std::vector<PotentialFieldInfo> field_infos;
+    base::VectorXd euclidean_distance;
 };
 }
 

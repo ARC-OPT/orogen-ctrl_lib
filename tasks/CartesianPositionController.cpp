@@ -2,7 +2,6 @@
 
 #include "CartesianPositionController.hpp"
 #include <base/Logging.hpp>
-#include <kdl_conversions/KDLConversions.hpp>
 #include <ctrl_lib/ProportionalFeedForwardController.hpp>
 
 using namespace ctrl_lib;
@@ -110,18 +109,11 @@ void CartesianPositionController::setControlInput(){
         throw std::invalid_argument("Invalid feedback");
     }
 
-    KDL::Frame setpoint_kdl, feedback_kdl;
-    kdl_conversions::RigidBodyState2KDL(setpoint,setpoint_kdl);
-    kdl_conversions::RigidBodyState2KDL(feedback,feedback_kdl);
-
     // Set reference value to control error and actual value to zero, since the controller
-    // cannot deal with full poses. Use KDL::diff to compute the orientation-error
+    // cannot deal with full poses. Use pose_diff to compute the orientation-error
     // as zyx-rotation, since the controller cannot deal with full poses. This will give the
     // rotational velocity in 3D space that rotates the actual pose (feedback) onto the setpoint
-    KDL::Twist diff = KDL::diff(feedback_kdl, setpoint_kdl);
-
-    for(int i = 0; i < 6; i++)
-        setpoint_raw(i) = diff(i);
+    pose_diff(feedback, setpoint, 1, setpoint_raw);
     feedback_raw.setZero();
 
     // Set feedforward to given velocity setpoint. Set to zero if no valid velocitiy is given.

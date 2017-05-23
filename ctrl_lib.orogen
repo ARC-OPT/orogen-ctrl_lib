@@ -4,7 +4,6 @@ using_library "ctrl_lib"
 import_types_from "ctrl_libTypes.hpp"
 import_types_from "ctrl_lib/ActivationFunction.hpp"
 import_types_from "base"
-using_library "kdl_conversions"
 
 #
 # Base class for all controllers. State machine in RUNNING state:

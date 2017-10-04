@@ -113,8 +113,11 @@ void CartesianRadialPotentialFields::setPotentialFieldCenters(const std::vector<
                 throw std::invalid_argument("Invalid potential field centers");
             }
 
-            // Only use potential fields with correct frame id
-            if(centers[i].targetFrame == feedback.sourceFrame){
+            // Only use potential fields with correct frame id.
+            // TODO: Remove this! It is hard to understand & debug, and does not work in all situations!
+            if(centers[i].targetFrame == feedback.sourceFrame ||
+               centers[i].targetFrame == feedback.targetFrame ||
+               centers[i].sourceFrame == feedback.sourceFrame){
                 RadialPotentialField *field = new RadialPotentialField(3, centers[i].sourceFrame);
                 field->pot_field_center = centers[i].position;
                 fields.push_back(field);

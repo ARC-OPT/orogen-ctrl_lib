@@ -31,6 +31,11 @@ bool ControllerTask::startHook(){
 }
 
 void ControllerTask::updateHook(){
+    base::Time now = base::Time::now();
+    if(!stamp.isNull())
+        _actual_cycle_time.write((now-stamp).toSeconds());
+    stamp = now;
+
     ControllerTaskBase::updateHook();
 
     if(!readFeedback()){

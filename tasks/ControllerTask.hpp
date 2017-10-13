@@ -5,6 +5,7 @@
 
 #include "ctrl_lib/ControllerTaskBase.hpp"
 #include <ctrl_lib/ActivationFunction.hpp>
+#include <base/Time.hpp>
 
 namespace ctrl_lib {
 
@@ -39,6 +40,7 @@ protected:
     std::vector<std::string> field_names;
     ActivationFunction activation_function;
     base::VectorXd tmp;
+    base::Time stamp;
 
 public:
     ControllerTask(std::string const& name = "ctrl_lib::ControllerTask");

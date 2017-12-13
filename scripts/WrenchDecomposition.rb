@@ -10,73 +10,54 @@ def createWrench(fx, fy, fz, tx, ty, tz)
    return w
 end
 
+def sendWrenches(writer, wrenches, n_loops, increment)
+    (0..n_loops).each do |i|
+       wrenches.time = Types.base.Time.now
+       writer.write wrenches
+       sleep 0.5
+       wrenches.elements.each do |e|
+           (0..2).each{|i| e.force[i] += increment}
+           (0..2).each{|i| e.torque[i] += increment}
+       end
+    end
+end
+
+def reconfigure(task, wrench_names)
+    task.stop
+    task.cleanup
+    task.wrench_names = wrench_names
+    task.configure
+    task.start
+end
+
 Orocos.run "ctrl_lib::WrenchDecomposition" => "wrench_decomp" do
 
    wrench_decomp = Orocos::TaskContext.get "wrench_decomp"
    wrench_decomp.wrench_names = ["ft_sensor_right", "ft_sensor_left"]
    wrench_decomp.configure
    wrench_decomp.start
-  
    Readline.readline("Press Enter to send a wrench vector")
- 
+
    wrenches = Types.base.samples.Wrenches.new
    wrenches.elements << createWrench(1,2,3,4,5,6)
    wrenches.names << "ft_sensor_right"
    wrenches.elements << createWrench(7,8,9,10,11,12)
    wrenches.names << "ft_sensor_left"
-
    writer = wrench_decomp.wrenches.writer
-
-   (0..20).each do |i|
-      wrenches.time = Types.base.Time.now
-      writer.write wrenches
-      sleep 0.5
-   end
-  
+   sendWrenches(writer, wrenches, 10, 0.01)
    Readline.readline("Press Enter to reconfigure")
 
-   wrench_decomp.stop
-   wrench_decomp.cleanup
-   wrench_decomp.configure
-   wrench_decomp.start
-   
-
-   (0..20).each do |i|
-      wrenches.time = Types.base.Time.now
-      writer.write wrenches
-      sleep 0.5
-   end
-  
+   reconfigure(wrench_decomp, ["ft_sensor_right", "ft_sensor_left"])
+   sendWrenches(writer, wrenches, 10, 0.01)
    Readline.readline("Press Enter to add a wrench and reconfigure")
 
-   wrench_decomp.stop
-   wrench_decomp.cleanup
-   wrench_decomp.wrench_names = ["ft_sensor_right", "ft_sensor_left", "ft_sensor_middle"]
-   wrench_decomp.configure
-   wrench_decomp.start
-
+   reconfigure(wrench_decomp, ["ft_sensor_right", "ft_sensor_left", "ft_sensor_middle"])
    wrenches.elements << createWrench(13,14,15,16,17,18)
    wrenches.names << "ft_sensor_middle"
-
-   (0..20).each do |i|
-      wrenches.time = Types.base.Time.now
-      writer.write wrenches
-      sleep 0.5
-   end
-  
+   sendWrenches(writer, wrenches, 10, 0.01)
    Readline.readline("Press Enter to test not configured wrench names")
 
-   wrench_decomp.stop
-   wrench_decomp.cleanup
-   wrench_decomp.wrench_names = ["ft_sensor_right", "ft_sensor_left"]
-   wrench_decomp.configure
-   wrench_decomp.start
-
-   (0..20).each do |i|
-      wrenches.time = Types.base.Time.now
-      writer.write wrenches
-      sleep 0.5
-   end
-  
+   reconfigure(wrench_decomp, ["ft_sensor_right", "ft_sensor_left"])
+   sendWrenches(writer, wrenches, 10, 0.01)
    Readline.readline("Press Enter to exit")
 end

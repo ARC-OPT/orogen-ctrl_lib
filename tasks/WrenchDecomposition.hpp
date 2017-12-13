@@ -4,8 +4,35 @@
 #define CTRL_LIB_WRENCHDECOMPOSITION_TASK_HPP
 
 #include "ctrl_lib/WrenchDecompositionBase.hpp"
+#include <base/samples/Wrenches.hpp>
+
+typedef std::map<std::string, base::samples::Wrench> WrenchPortMap;
 
 namespace ctrl_lib{
+
+     struct WrenchInterface{
+         WrenchInterface(const std::string &interface_name, RTT::TaskContext* task_context),
+             task_context_ptr(task_context){
+
+             wrench_out_port = new RTT::OutputPort<base::samples::Wrench>(interface_name);
+             task_context->ports()->addPort(wrench_out_port->getName(), *(wrench_out_port));
+         }
+         ~WrenchOutPort(){
+             task_context_ptr->removePort(wrench_out_port->getName());
+             delete wrench_out_port;
+         }
+         void writeSample(const base::Wrench& wrench, const base::Time& time){
+             wrench_out = wrench;
+             wrench_out.time = time;
+             wrench_out_port.write(wrench_out);
+         }
+         RTT::TaskContext* task_context_ptr;
+         base::samples::Wrench wrench_out;
+         RTT::OutputPort<base::samples::Wrench>* wrench_out_port;
+     };
+     
+     typedef std::shared_ptr<WrenchInterface> WrenchInterfacePtr;
+     typedef std::map<std::string, WrenchInterfacePtr> WrenchInterfaceMap;
 
     /*! \class WrenchDecomposition
      * \brief The task context provides and requires services. It uses an ExecutionEngine to perform its functions.
@@ -27,8 +54,8 @@ Helper task for decomposing a vector of wrenches into single wrench samples
     {
 	friend class WrenchDecompositionBase;
     protected:
-
-
+        base::samples::Wrenches wrenches_in;
+        WrenchInterfaceMap wrench_interface_map;
 
     public:
         /** TaskContext constructor for WrenchDecomposition

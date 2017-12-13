@@ -5,26 +5,27 @@
 
 #include "ctrl_lib/WrenchDecompositionBase.hpp"
 #include <base/samples/Wrenches.hpp>
-
-typedef std::map<std::string, base::samples::Wrench> WrenchPortMap;
+#include <rtt/TaskContext.hpp>
+#include <rtt/Port.hpp>
 
 namespace ctrl_lib{
 
      struct WrenchInterface{
-         WrenchInterface(const std::string &interface_name, RTT::TaskContext* task_context),
+         WrenchInterface(const std::string &interface_name, RTT::TaskContext* task_context) :
              task_context_ptr(task_context){
 
              wrench_out_port = new RTT::OutputPort<base::samples::Wrench>(interface_name);
              task_context->ports()->addPort(wrench_out_port->getName(), *(wrench_out_port));
          }
-         ~WrenchOutPort(){
-             task_context_ptr->removePort(wrench_out_port->getName());
+         ~WrenchInterface(){
+             task_context_ptr->ports()->removePort(wrench_out_port->getName());
              delete wrench_out_port;
          }
          void writeSample(const base::Wrench& wrench, const base::Time& time){
-             wrench_out = wrench;
+             wrench_out.force = wrench.force;
+             wrench_out.torque = wrench.torque;
              wrench_out.time = time;
-             wrench_out_port.write(wrench_out);
+             wrench_out_port->write(wrench_out);
          }
          RTT::TaskContext* task_context_ptr;
          base::samples::Wrench wrench_out;

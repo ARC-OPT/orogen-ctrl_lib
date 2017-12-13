@@ -29,8 +29,9 @@ bool WrenchDecomposition::configureHook(){
     
     // Remove ports which are not required anymore
     for(auto it : wrench_interface_map){
-        if(std::find(wrenches_names.begin(), wrenches_names.end(), it->first) == wrenches_names.end())
-            wrench_interface_map.erase(it->first);
+        if(std::find(wrench_names.begin(), wrench_names.end(), it.first) == wrench_names.end())
+            wrench_interface_map.erase(it.first);
+    }
 
     return true;
 }
@@ -50,7 +51,7 @@ void WrenchDecomposition::updateHook(){
             if(wrench_interface_map.count(n) == 0)
                 throw std::runtime_error("Name " + n + " has not been configured! Check your config of wrenches_names!");
 
-            _wrench_interface_map[n]->writeSample(wrenches_in.getElementByName(n), wrenches_in.time);
+            wrench_interface_map[n]->writeSample(wrenches_in.getElementByName(n), wrenches_in.time);
         }        
     }
 }

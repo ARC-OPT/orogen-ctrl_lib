@@ -148,7 +148,8 @@ task_context "CartesianForceController" do subclasses "ControllerTask"
 end
 
 #
-# Helper task for decomposing a vector of wrenches into single wrench samples
+# Helper task for decomposing a vector of wrenches into single wrench samples. This has been introduced
+# because some people at RIC think it is wise to represent data from 6-DoF FT sensors as "vectors of wrenches"
 #
 task_context "WrenchDecomposition" do
    needs_configuration

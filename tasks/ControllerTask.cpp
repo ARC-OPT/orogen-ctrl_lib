@@ -1,7 +1,6 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "ControllerTask.hpp"
-#include <base/Logging.hpp>
 
 using namespace ctrl_lib;
 

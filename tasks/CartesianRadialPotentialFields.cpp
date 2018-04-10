@@ -2,7 +2,7 @@
 
 #include "CartesianRadialPotentialFields.hpp"
 #include <ctrl_lib/RadialPotentialField.hpp>
-#include <base/Logging.hpp>
+#include <base-logging/Logging.hpp>
 #include <ctrl_lib/CartesianPotentialFieldsController.hpp>
 
 using namespace ctrl_lib;

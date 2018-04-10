@@ -115,6 +115,22 @@ task_context "CartesianPositionController" do subclasses "ControllerTask"
 end
 
 #
+# Helper task to get Poses from Transformer
+#
+task_context "ControllerTransformationProxy" do
+    needs_configuration
+
+    # Transformation read from transformer
+    output_port("transform", "base/samples/RigidBodyState")
+
+    transformer do
+        transform "source", "target"
+        max_latency 0.5
+    end
+    periodic 0.01
+end
+
+#
 # Implementation of a proportional force/torque controller in Cartesian space
 #
 task_context "CartesianForceController" do subclasses "ControllerTask"

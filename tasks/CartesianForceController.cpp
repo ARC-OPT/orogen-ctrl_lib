@@ -1,7 +1,7 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "CartesianForceController.hpp"
-#include <base/Logging.hpp>
+#include <base-logging/Logging.hpp>
 #include <ctrl_lib/ProportionalFeedForwardController.hpp>
 
 using namespace ctrl_lib;

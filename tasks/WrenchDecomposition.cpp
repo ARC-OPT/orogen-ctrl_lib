@@ -46,13 +46,8 @@ void WrenchDecomposition::updateHook(){
     WrenchDecompositionBase::updateHook();
 
     if(_wrenches.readNewest(wrenches_in) == RTT::NewData){
-        for(auto n : wrenches_in.names){
-            // Check correctness of wrench names
-            if(wrench_interface_map.count(n) == 0)
-                throw std::runtime_error("Name " + n + " has not been configured! Check your config of wrenches_names!");
-
-            wrench_interface_map[n]->writeSample(wrenches_in.getElementByName(n), wrenches_in.time);
-        }        
+        for(auto it : wrench_interface_map)
+            it.second->writeSample(wrenches_in.getElementByName(it.first), wrenches_in.time);
     }
 }
 

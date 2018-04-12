@@ -115,6 +115,22 @@ task_context "CartesianPositionController" do subclasses "ControllerTask"
 end
 
 #
+# Helper task to get Poses from Transformer
+#
+task_context "ControllerTransformationProxy" do
+    needs_configuration
+
+    # Transformation read from transformer
+    output_port("transform", "base/samples/RigidBodyState")
+
+    transformer do
+        transform "source", "target"
+        max_latency 0.5
+    end
+    periodic 0.01
+end
+
+#
 # Implementation of a proportional force/torque controller in Cartesian space
 #
 task_context "CartesianForceController" do subclasses "ControllerTask"
@@ -148,7 +164,8 @@ task_context "CartesianForceController" do subclasses "ControllerTask"
 end
 
 #
-# Helper task for decomposing a vector of wrenches into single wrench samples
+# Helper task for decomposing a vector of wrenches into single wrench samples. This has been introduced
+# because some people at RIC think it is wise to represent data from 6-DoF FT sensors as "vectors of wrenches"
 #
 task_context "WrenchDecomposition" do
    needs_configuration

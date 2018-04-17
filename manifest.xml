@@ -26,5 +26,6 @@
 
   <depend package="base/types" />
   <depend package="control/ctrl_lib" />
+  <depend package="drivers/orogen/transformer" />
    
 </package>

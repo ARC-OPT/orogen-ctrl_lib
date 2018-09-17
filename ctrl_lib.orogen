@@ -127,7 +127,7 @@ task_context "ControllerTransformationProxy" do
         transform "source", "target"
         max_latency 0.5
     end
-    periodic 0.01
+    port_driven
 end
 
 #

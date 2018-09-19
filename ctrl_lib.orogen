@@ -44,7 +44,7 @@ end
 #
 # Implementation of a proportional position controller in joint space.
 #
-task_context "JointPositionController" do subclasses "ControllerTask"
+task_context "JointPositionController", subclasses: "ControllerTask" do
    needs_configuration
 
    # Proportional gain. Size has to be the same as size of field_names.
@@ -81,7 +81,7 @@ end
 # Implementation of proportional position controller in Cartesian space. Size of field_names has to be 6. The orientation error will be computed
 # using zyx rotation. So the control output will be <velocity(xyz), angular_velocity(zyx)>
 #
-task_context "CartesianPositionController" do subclasses "ControllerTask"
+task_context "CartesianPositionController", subclasses: "ControllerTask" do
    needs_configuration
 
    # Proportional gain. Size has to be the same as size of field_names.
@@ -110,6 +110,7 @@ task_context "CartesianPositionController" do subclasses "ControllerTask"
    output_port("current_setpoint", "base/samples/RigidBodyState")
    output_port("current_feedback", "base/samples/RigidBodyState")
    output_port("control_error", "base/VectorXd")
+   output_port("time_diff", "double")
 
    periodic 0.01
 end
@@ -154,7 +155,7 @@ end
 #
 # Implementation of a proportional force/torque controller in Cartesian space
 #
-task_context "CartesianForceController" do subclasses "ControllerTask"
+task_context "CartesianForceController", subclasses: "ControllerTask" do
    needs_configuration
 
    # Proportional gain. Size has to be the same as size of field_names.
@@ -207,7 +208,7 @@ end
 # Implementation of RadialPotentialFields in joint space. Each joint will have one 1-dimensional potential field.
 # See ctrl_lib/RadialPotentialField.hpp and ctrl_lib/JointPotentialFieldsController.hpp for details
 #
-task_context "JointLimitAvoidance" do subclasses "ControllerTask"
+task_context "JointLimitAvoidance", subclasses: "ControllerTask" do
    needs_configuration
 
    # Default influence distance. Size has to be same as field_names and each entry has to be > 0!
@@ -241,7 +242,7 @@ end
 # Implementation of RadialPotentialFields in Cartesian space. Dimension of all fields has to be 3! See ctrl_lib/RadialPotentialField.hpp and
 # ctrl_lib/PotentialFieldsController.hpp for details
 #
-task_context "CartesianRadialPotentialFields" do subclasses "ControllerTask"
+task_context "CartesianRadialPotentialFields", subclasses: "ControllerTask" do
    needs_configuration
 
    # Default influence distance for each joint. All entries have ot be > 0! If empty influence_distance will be used

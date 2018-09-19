@@ -131,6 +131,27 @@ task_context "ControllerTransformationProxy" do
 end
 
 #
+# Helper to get a constat velocity output
+#
+task_context "ConstVelProvider" do
+    needs_configuration
+
+    # Source frame provided
+    property("source_frame", "std/string")
+    # Target frame provided
+    property("target_frame", "std/string")
+    # Constant linear velocity 
+    property("velocity", "base/Vector3d")
+    # Constant angular velocity 
+    property("angular_velocity", "base/Vector3d")
+
+    # Transformation read from transformer
+    output_port("control_output", "base/samples/RigidBodyState")
+
+    periodic 0.01
+end
+
+#
 # Implementation of a proportional force/torque controller in Cartesian space
 #
 task_context "CartesianForceController" do subclasses "ControllerTask"

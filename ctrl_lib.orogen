@@ -234,6 +234,7 @@ task_context "JointLimitAvoidance", subclasses: "ControllerTask" do
    # Debug ports
    output_port("current_feedback", "base/samples/Joints")
    output_port("field_infos", "std/vector<ctrl_lib/PotentialFieldInfo>")
+   output_port("current_joint_limits", "base/JointLimits")
 
    periodic 0.01
 end

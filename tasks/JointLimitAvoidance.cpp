@@ -111,6 +111,7 @@ void JointLimitAvoidance::writeControlOutput(const base::VectorXd& control_outpu
     for(uint i = 0; i < fields.size(); i++)
         field_infos[i].fromPotentialField(fields[i]);
     _field_infos.write(field_infos);
+    _current_joint_limits.write(joint_limits);
 }
 
 const base::VectorXd& JointLimitAvoidance::computeActivation(ActivationFunction &activation_function){

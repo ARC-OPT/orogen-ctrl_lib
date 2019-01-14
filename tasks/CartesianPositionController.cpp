@@ -101,11 +101,11 @@ void CartesianPositionController::setControlInput(){
     feedforward_raw.resize(6);
 
     if(!setpoint.hasValidPosition() || !setpoint.hasValidOrientation()){
-        LOG_ERROR("Invalid setpoint. Either NaN or invalid orientation quaternion.");
+        LOG_ERROR("%s: Invalid setpoint. Either NaN or invalid orientation quaternion.", this->getName().c_str());
         throw std::invalid_argument("Invalid setpoint");
     }
     if(!feedback.hasValidPosition() || !feedback.hasValidOrientation()){
-        LOG_ERROR("Invalid feedback. Either NaN or invalid orientation quaternion.");
+        LOG_ERROR("%s: Invalid feedback. Either NaN or invalid orientation quaternion.", this->getName().c_str());
         throw std::invalid_argument("Invalid feedback");
     }
 

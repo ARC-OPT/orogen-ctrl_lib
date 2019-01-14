@@ -25,7 +25,7 @@ bool JointLimitAvoidance::configureHook(){
     controller->setMaxControlOutput(_max_control_output.get());
     joint_limits = _joint_limits.get();
     if(joint_limits.size() != field_names.size()){
-        LOG_ERROR("Joint limit vector has to have same size as field names");
+        LOG_ERROR("%s: Joint limit vector has to have same size as field names", this->getName().c_str());
         return false;
     }
 

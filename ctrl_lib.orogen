@@ -186,25 +186,6 @@ task_context "CartesianForceController", subclasses: "ControllerTask" do
 end
 
 #
-# Helper task for decomposing a vector of wrenches into single wrench samples. This has been introduced
-# because some people at RIC think it is wise to represent data from 6-DoF FT sensors as "vectors of wrenches"
-#
-task_context "WrenchDecomposition" do
-   needs_configuration
-
-   # Names in the "wrenches" input. One output port will be created for each name.
-   property "wrench_names", "/std/vector<std/string>"
-
-   # Input vector of wrenches
-   input_port("wrenches", "base/samples/Wrenches")
-
-   # One dynamic output port for each wrench
-   dynamic_output_port /.*/, "/base/samples/Wrench"
-
-   port_driven "wrenches"
-end
-
-#
 # Implementation of RadialPotentialFields in joint space. Each joint will have one 1-dimensional potential field.
 # See ctrl_lib/RadialPotentialField.hpp and ctrl_lib/JointPotentialFieldsController.hpp for details
 #

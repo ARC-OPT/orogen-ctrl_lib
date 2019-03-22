@@ -2,7 +2,7 @@
 
 #include "CartesianPositionController.hpp"
 #include <base-logging/Logging.hpp>
-#include <ctrl_lib/ProportionalFeedForwardController.hpp>
+#include <ctrl_lib/CartesianPosPDController.hpp>
 
 using namespace ctrl_lib;
 
@@ -18,10 +18,10 @@ bool CartesianPositionController::configureHook(){
     if (! CartesianPositionControllerBase::configureHook())
         return false;
 
-    controller = new ProportionalFeedForwardController(_field_names.get().size());
-    controller->setPropGain(_prop_gain.get());
-    controller->setFeedforwardGain(_ff_gain.get());
-    controller->setMaxControlOutput(_max_control_output.get());
+    controller = new CartesianPosPDController();
+    controller->setPGain(_p_gain.get());
+    controller->setDGain(_d_gain.get());
+    controller->setMaxCtrlOutput(_max_control_output.get());
     controller->setDeadZone(_dead_zone.get());
 
     return true;
@@ -30,8 +30,8 @@ bool CartesianPositionController::configureHook(){
 bool CartesianPositionController::startHook(){
     if (! CartesianPositionControllerBase::startHook())
         return false;
-    controller->clearSetpoint();
-    controller->clearFeedback();
+    _setpoint.clear();
+    _feedback.clear();
     return true;
 }
 
@@ -62,72 +62,28 @@ bool CartesianPositionController::readFeedback(){
 }
 
 bool CartesianPositionController::readSetpoint(){
-    RTT::FlowStatus fs = _setpoint.readNewest(setpoint);
-    if(fs == RTT::NewData){
-        setpoint.targetFrame = feedback.targetFrame;
-        setpoint.sourceFrame = feedback.sourceFrame + "_setpoint";
+    if(_setpoint.readNewest(setpoint) == RTT::NoData)
+        return false;
+    else{        
         _current_setpoint.write(setpoint);
+        return true;
     }
-    if(fs != RTT::NoData)
-        setControlInput();
-    return controller->hasSetpoint();
 }
 
 const base::VectorXd& CartesianPositionController::updateController(){
-    return controller->update();
-}
 
-const base::VectorXd& CartesianPositionController::computeActivation(ActivationFunction &activation_function){
-    tmp.resize(controller->getDimension());
-    for(uint i = 0; i < controller->getDimension(); i++)
-        tmp(i) = fabs(controller->getControlOutput()(i))/controller->getMaxControlOutput()(i);
-    return activation_function.compute(tmp);
-}
+    control_output = controller->update(setpoint, feedback);
 
-void CartesianPositionController::writeControlOutput(const base::VectorXd &ctrl_output_raw){
-    control_output.velocity = ctrl_output_raw.segment(0,3);
-    control_output.angular_velocity = ctrl_output_raw.segment(3,3);
-    control_output.sourceFrame = feedback.sourceFrame + "_setpoint";
-    control_output.targetFrame = feedback.targetFrame;
     control_output.time = base::Time::now();
+    control_output.source_frame = setpoint.source_frame;
+    control_output.target_frame = setpoint.target_frame;
     _control_output.write(control_output);
     _control_error.write(controller->getControlError());
 }
 
-void CartesianPositionController::setControlInput(){
-
-    setpoint_raw.resize(6);
-    feedback_raw.resize(6);
-    feedforward_raw.resize(6);
-
-    if(!setpoint.hasValidPosition() || !setpoint.hasValidOrientation()){
-        LOG_ERROR("%s: Invalid setpoint. Either NaN or invalid orientation quaternion.", this->getName().c_str());
-        LOG_ERROR("Pos (x,y,z): %f %f %f, Ori (qx,qy,qz,qw): %f %f %f %f", setpoint.position(0), setpoint.position(1), setpoint.position(2),
-                                                                           setpoint.orientation.x(), setpoint.orientation.y(), setpoint.orientation.z(), setpoint.orientation.w());
-        throw std::invalid_argument("Invalid setpoint");
-    }
-    if(!feedback.hasValidPosition() || !feedback.hasValidOrientation()){
-        LOG_ERROR("%s: Invalid feedback. Either NaN or invalid orientation quaternion.", this->getName().c_str());
-        LOG_ERROR("Pos (x,y,z): %f %f %f, Ori (qx,qy,qz,qw): %f %f %f %f", feedback.position(0), feedback.position(1), feedback.position(2),
-                                                                           feedback.orientation.x(), feedback.orientation.y(), feedback.orientation.z(), feedback.orientation.w());
-        throw std::invalid_argument("Invalid feedback");
-    }
-
-    // Set reference value to control error and actual value to zero, since the controller
-    // cannot deal with full poses. Use pose_diff to compute the orientation-error
-    // as zyx-rotation, since the controller cannot deal with full poses. This will give the
-    // rotational velocity in 3D space that rotates the actual pose (feedback) onto the setpoint
-    pose_diff(feedback, setpoint, 1, setpoint_raw);
-    feedback_raw.setZero();
-
-    // Set feedforward to given velocity setpoint. Set to zero if no valid velocitiy is given.
-    feedforward_raw.setZero();
-    if(setpoint.hasValidVelocity() && setpoint.hasValidAngularVelocity()){
-        feedforward_raw.segment(0,3) = setpoint.velocity;
-        feedforward_raw.segment(3,3) = setpoint.angular_velocity;
-    }
-
-    controller->setFeedback(feedback_raw);
-    controller->setSetpoint(setpoint_raw);
-    controller->setFeedforward(feedforward_raw);
+const base::VectorXd& CartesianPositionController::computeActivation(ActivationFunction &activation_function){
+    tmp.resize(6);
+    /*for(uint i = 0; i < 6; i++)
+        tmp(i) = fabs(controller->getControlOutput()(i))/controller->getMaxControlOutput()(i);*/
+    return activation_function.compute(tmp);
 }

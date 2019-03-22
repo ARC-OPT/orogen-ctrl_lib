@@ -4,6 +4,7 @@ using_library "ctrl_lib"
 import_types_from "ctrl_libTypes.hpp"
 import_types_from "ctrl_lib/ActivationFunction.hpp"
 import_types_from "base"
+import_types_from "wbc_common/CartesianState.hpp"
 
 #
 # Base class for all controllers. State machine in RUNNING state:
@@ -79,38 +80,37 @@ end
 
 #
 # Implementation of proportional position controller in Cartesian space. Size of field_names has to be 6. The orientation error will be computed
-# using zyx rotation. So the control output will be <velocity(xyz), angular_velocity(zyx)>
+# using zyx rotation. So the control output will be <linear_velocity(xyz), angular_velocity(zyx)>,  <linear_acc(xyz), angular_acc(zyx)>
 #
 task_context "CartesianPositionController", subclasses: "ControllerTask" do
    needs_configuration
 
    # Proportional gain. Size has to be the same as size of field_names.
-   property("prop_gain", "base/VectorXd")
+   property("p_gain", "base/VectorXd")
 
-   # Feed Forward gain. Size has to be the same as size of field_names.
-   property("ff_gain", "base/VectorXd")
+   # Derivative gain. Size has to be the same as size of field_names.
+   property("d_gain", "base/VectorXd")
 
    # Maximum control output (saturation). If one output value exceeds maximum, all
    # other values will be scaled accordingly. Size has to be the same as size of field_names.
    property("max_control_output", "base/VectorXd")
 
-   # Minimum control error (dead zone). If one control error value falls below this minimum, it will be set to zero.
+   # Minimum position control error (dead zone). If one control error value falls below this minimum, it will be set to zero.
    property("dead_zone", "base/VectorXd")
 
    # Setpoint of the controller.
-   input_port("setpoint", "base/samples/RigidBodyState")
+   input_port("setpoint", "wbc/CartesianState")
 
    # Feedback term of the controller.
-   input_port("feedback", "base/samples/RigidBodyState")
+   input_port("feedback", "wbc/CartesianState")
 
-   # Control output as Cartesian velocity/angular velocity.
-   output_port("control_output", "base/samples/RigidBodyState")
+   # Control output as Cartesian linear/angular velocity as well as Cartesian linear/angular acceleration.
+   output_port("control_output", "wbc/CartesianState")
 
    # Debug Ports
-   output_port("current_setpoint", "base/samples/RigidBodyState")
-   output_port("current_feedback", "base/samples/RigidBodyState")
+   output_port("current_setpoint", "wbc/CartesianState")
+   output_port("current_feedback", "wbc/CartesianState")
    output_port("control_error", "base/VectorXd")
-   output_port("time_diff", "double")
 
    periodic 0.01
 end

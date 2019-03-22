@@ -50,7 +50,7 @@ void ControllerTask::updateHook(){
     if(state() != RUNNING)
         state(RUNNING);
 
-    writeControlOutput(updateController());
+    updateController();
     _activation.write(computeActivation(activation_function));
 }
 

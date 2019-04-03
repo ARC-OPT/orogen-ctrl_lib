@@ -4,7 +4,7 @@
 #define CTRL_LIB_CARTESIANRADIALPOTENTIALFIELDS_TASK_HPP
 
 #include "ctrl_lib/CartesianRadialPotentialFieldsBase.hpp"
-#include <base/samples/RigidBodyState.hpp>
+#include <wbc_common/CartesianState.hpp>
 
 namespace ctrl_lib {
 
@@ -35,30 +35,15 @@ protected:
     /** Compute output of the controller*/
     virtual const base::VectorXd& updateController();
     /** Write control output to port*/
-    virtual void writeControlOutput(const base::VectorXd& control_output_raw);
+    virtual void writeControlOutput(const base::VectorXd& control_output_raw){}
     /** Compute Activation function*/
     virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function);
-    /** Set new potential field centers*/
-    void setPotentialFieldCenters(const std::vector<base::samples::RigidBodyState> &centers);
-    /** Delete all potential fields*/
-    void clearPotentialFields();
 
-    double default_influence_distance;
-    std::map<std::string, double> influence_distance_map;
-
-    std::map<std::string, double> makeMap(const std::vector<InfluenceDistancePerField>& influence_distance_per_field){
-        std::map<std::string, double> tmp_map;
-        for(uint i = 0; i < influence_distance_per_field.size(); i++)
-            tmp_map[influence_distance_per_field[i].name] = influence_distance_per_field[i].distance;
-        return tmp_map;
-    }
-
-    base::samples::RigidBodyState control_output, feedback;
-    std::vector<base::samples::RigidBodyState> pot_field_centers;
-    bool has_pot_fields;
+    double influence_distance;
+    wbc::CartesianState control_output, feedback;
+    std::vector<wbc::CartesianState> pot_field_centers;
     PotentialFieldsController* controller;
     std::vector<PotentialFieldInfo> field_infos;
-    base::VectorXd euclidean_distance;
 };
 }
 

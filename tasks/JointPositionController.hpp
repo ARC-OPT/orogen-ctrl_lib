@@ -8,7 +8,7 @@
 
 namespace ctrl_lib {
 
-class ProportionalFeedForwardController;
+class JointPosPDController;
 
 /*! \class JointPositionController Implementation of PositionControlFeedForward in joint space. See ctrl_lib/PositionControlFeedForward.hpp for details*/
 class JointPositionController : public JointPositionControllerBase
@@ -34,17 +34,12 @@ protected:
     /** Compute output of the controller*/
     virtual const base::VectorXd& updateController();
     /** Write control output to port*/
-    virtual void writeControlOutput(const base::VectorXd& control_output_raw);
+    virtual void writeControlOutput(const base::VectorXd& control_output_raw){}
     /** Compute Activation function*/
     virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function);
 
-    void extractPositions(const base::samples::Joints& joints, const std::vector<std::string> &names, base::VectorXd& positions);
-    void extractVelocities(const base::samples::Joints& joints, const std::vector<std::string> &names, base::VectorXd& velocities);
-
-    base::commands::Joints setpoint, control_output;
-    base::VectorXd setpoint_raw, feedback_raw, feedforward_raw;
-    base::samples::Joints feedback;
-    ProportionalFeedForwardController* controller;
+    base::commands::Joints setpoint, control_output, feedback;
+    JointPosPDController* controller;
 };
 }
 

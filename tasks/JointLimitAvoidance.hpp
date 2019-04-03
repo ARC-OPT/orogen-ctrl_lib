@@ -5,6 +5,7 @@
 
 #include "ctrl_lib/JointLimitAvoidanceBase.hpp"
 #include <base/commands/Joints.hpp>
+#include <ctrl_lib/JointLimitAvoidanceController.hpp>
 
 namespace ctrl_lib{
 
@@ -35,19 +36,16 @@ protected:
     /** Compute output of the controller*/
     virtual const base::VectorXd& updateController();
     /** Write control output to port*/
-    virtual void writeControlOutput(const base::VectorXd& control_output_raw);
+    virtual void writeControlOutput(const base::VectorXd& control_output_raw){}
     /** Compute Activation function*/
     virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function);
-    /** Extract positions from joint state*/
-    void extractPositions(const base::samples::Joints& joints, const std::vector<std::string> &names, base::VectorXd& positions);
 
     base::JointLimits joint_limits;
     base::samples::Joints feedback;
     base::VectorXd position_raw;
     base::commands::Joints control_output;
     base::VectorXd influence_distance;
-    PotentialFieldsController* controller;
-    std::vector<PotentialFieldInfo> field_infos;
+    JointLimitAvoidanceController* controller;
 };
 }
 

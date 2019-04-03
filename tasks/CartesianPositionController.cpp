@@ -82,8 +82,8 @@ const base::VectorXd& CartesianPositionController::updateController(){
 }
 
 const base::VectorXd& CartesianPositionController::computeActivation(ActivationFunction &activation_function){
-    tmp.resize(6);
-    /*for(uint i = 0; i < 6; i++)
-        tmp(i) = fabs(controller->getControlOutput()(i))/controller->getMaxControlOutput()(i);*/
-    return activation_function.compute(tmp);
+//    tmp.resize(6);
+//    for(uint i = 0; i < 6; i++)
+//        tmp(i) = fabs(controller->getControlOutput()(i))/controller->getMaxControlOutput()(i);
+//    return activation_function.compute(tmp);
 }

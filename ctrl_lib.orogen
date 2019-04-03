@@ -1,7 +1,7 @@
 name "ctrl_lib"
 
 using_library "ctrl_lib"
-import_types_from "ctrl_libTypes.hpp"
+import_types_from "ctrl_lib/PotentialFieldInfo.hpp"
 import_types_from "ctrl_lib/ActivationFunction.hpp"
 import_types_from "base"
 import_types_from "wbc_common/CartesianState.hpp"
@@ -49,10 +49,10 @@ task_context "JointPositionController", subclasses: "ControllerTask" do
    needs_configuration
 
    # Proportional gain. Size has to be the same as size of field_names.
-   property("prop_gain", "base/VectorXd")
+   property("p_gain", "base/VectorXd")
 
    # Feed Forward gain. Size has to be the same as size of field_names.
-   property("ff_gain", "base/VectorXd")
+   property("d_gain", "base/VectorXd")
 
    # Maximum control output (saturation). If one output value exceeds maximum, all
    # other values will be scaled accordingly. Size has to be the same as size of field_names.
@@ -206,9 +206,6 @@ end
 task_context "CartesianRadialPotentialFields", subclasses: "ControllerTask" do
    needs_configuration
 
-   # Default influence distance for each joint. All entries have ot be > 0! If empty influence_distance will be used
-   property("influence_distance_per_field", "std/vector<ctrl_lib/InfluenceDistancePerField>")
-
    # Default influence distance. Has to be > 0!
    property("influence_distance", "double")
 
@@ -220,16 +217,16 @@ task_context "CartesianRadialPotentialFields", subclasses: "ControllerTask" do
    property("max_control_output", "base/VectorXd")
 
    # Set new centers of the potential fields here. Number of fields can be anything > 0.
-   input_port("pot_field_centers",  "std/vector<base/samples/RigidBodyState>")
+   input_port("pot_field_centers",  "std/vector<wbc/CartesianState>")
 
    # Controller feedback: Actual position of the control frame on the robot. Orientation is not used in this controller
-   input_port("feedback", "base/samples/RigidBodyState")
+   input_port("feedback", "wbc/CartesianState")
 
    # Control output as cartesian velocity.
-   output_port("control_output",   "base/samples/RigidBodyState")
+   output_port("control_output",   "wbc/CartesianState")
 
    # Debug ports:
-   output_port("current_feedback", "base/samples/RigidBodyState")
+   output_port("current_feedback", "wbc/CartesianState")
    output_port("field_infos", "std/vector<ctrl_lib/PotentialFieldInfo>")
    output_port("euclidean_distance", "base/VectorXd")
 
@@ -238,7 +235,6 @@ end
 
 typekit do
    export_types "ctrl_lib/ActivationFunction"
-   export_types "ctrl_lib/InfluenceDistancePerField"
    export_types "std/vector<ctrl_lib/PotentialFieldInfo>"
    export_types "ctrl_lib/PotentialFieldInfo"
 end

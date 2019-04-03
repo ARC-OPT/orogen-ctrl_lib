@@ -38,8 +38,6 @@ protected:
     /** Compute Activation function*/
     virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function);
 
-    void setControlInput();
-
     wbc::CartesianState setpoint, control_output, feedback;
     CartesianPosPDController* controller;
 };

@@ -31,9 +31,7 @@ protected:
     /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
     virtual bool readSetpoint() = 0;
     /** Compute output of the controller*/
-    virtual const base::VectorXd& updateController() = 0;
-    /** Write control output to port*/
-    virtual void writeControlOutput(const base::VectorXd& control_output_raw) = 0;
+    virtual void updateController() = 0;
     /** Compute Activation function*/
     virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function) = 0;
 

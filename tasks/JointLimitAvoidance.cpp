@@ -20,21 +20,18 @@ bool JointLimitAvoidance::configureHook(){
     if(!JointLimitAvoidanceBase::configureHook())
         return false;
 
-    controller = new JointLimitAvoidanceController(_joint_limits.get());
-    controller->setPGain(_prop_gain.get());
+    controller = new JointLimitAvoidanceController(_joint_limits.get(), _influence_distance.get());
+    controller->setPGain(_p_gain.get());
     controller->setMaxControlOutput(_max_control_output.get());
-    if(joint_limits.size() != field_names.size()){
-        LOG_ERROR("%s: Joint limit vector has to have same size as field names", this->getName().c_str());
-        return false;
-    }
 
     return true;
 }
 
 bool JointLimitAvoidance::startHook(){
-    if (! CartesianPositionControllerBase::startHook())
+    if (! JointLimitAvoidanceBase::startHook())
         return false;
     _feedback.clear();
+    return true;
 }
 
 void JointLimitAvoidance::updateHook(){
@@ -65,7 +62,7 @@ bool JointLimitAvoidance::readSetpoint(){
     return true;
 }
 
-const base::VectorXd& JointLimitAvoidance::updateController(){
+void JointLimitAvoidance::updateController(){
     control_output = controller->update(feedback);
 
     _control_output.write(control_output);
@@ -79,7 +76,7 @@ const base::VectorXd& JointLimitAvoidance::computeActivation(ActivationFunction 
 
     const std::vector<PotentialFieldPtr> &fields = controller->getFields();
     for(uint i = 0; i < fields.size(); i++){
-        double dist = fabs(fields[i]->position(0) - fields[i]->pot_field_center(0));
+        double dist = fields[i]->distance.norm();
         if(dist > fields[i]->influence_distance)
             tmp(i) = 0;
         else

@@ -70,17 +70,16 @@ bool JointPositionController::readSetpoint(){
     }
 }
 
-const base::VectorXd& JointPositionController::updateController(){
+void JointPositionController::updateController(){
     control_output = controller->update(setpoint, feedback);
 
-    control_output.time = base::Time::now();
     _control_output.write(control_output);
     _control_error.write(controller->getControlError());
 }
 
 const base::VectorXd& JointPositionController::computeActivation(ActivationFunction &activation_function){
-//    tmp.resize(controller->getDimension());
-//    for(uint i = 0; i < controller->getDimension(); i++)
-//        tmp(i) = fabs(controller->getControlOutput()(i))/controller->getMaxControlOutput()(i);
-//    return activation_function.compute(tmp);
+    tmp.resize(control_output.size());
+    for(uint i = 0; i < tmp.size(); i++)
+        tmp(i) = fabs(control_output[i].speed)/controller->maxCtrlOutput()(i);
+    return activation_function.compute(tmp);
 }

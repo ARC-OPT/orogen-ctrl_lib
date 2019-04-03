@@ -20,7 +20,7 @@ bool CartesianRadialPotentialFields::configureHook(){
         return false;
 
     controller = new CartesianPotentialFieldsController();
-    controller->setPGain(_prop_gain.get());
+    controller->setPGain(_p_gain.get());
     controller->setMaxControlOutput(_max_control_output.get());
     influence_distance = _influence_distance.get();
 
@@ -72,13 +72,13 @@ bool CartesianRadialPotentialFields::readSetpoint(){
         return true;
 }
 
-const base::VectorXd& CartesianRadialPotentialFields::updateController(){
+void CartesianRadialPotentialFields::updateController(){
 
     std::vector<PotentialFieldPtr> fields;
     for(size_t i = 0; i < pot_field_centers.size(); i++)
     {
         // Only use the fields with correct frame ID
-        if(pot_field_centers[i].source_frame == feedback.target_frame){
+        if(pot_field_centers[i].target_frame == feedback.source_frame){
 
             PotentialFieldPtr field = std::make_shared<RadialPotentialField>(3, pot_field_centers[i].source_frame);
             field->pot_field_center = pot_field_centers[i].pose.position;

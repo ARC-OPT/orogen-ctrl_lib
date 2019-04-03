@@ -6,10 +6,11 @@
 #include "ctrl_lib/CartesianForceControllerBase.hpp"
 #include <base/samples/Wrench.hpp>
 #include <base/samples/RigidBodyState.hpp>
+#include <wbc_common/CartesianState.hpp>
 
 namespace ctrl_lib{
 
-class ProportionalFeedForwardController;
+class PIDController;
 
 /*! \class CartesianForceController Implementation of a force controller in Cartesian space. See ctrl_lib/ProportionalController.hpp for details*/
 class CartesianForceController : public CartesianForceControllerBase
@@ -33,20 +34,27 @@ protected:
     /** Read all setpoints of the controller. Return false if there is no setpoint, true otherwise */
     virtual bool readSetpoint();
     /** Compute output of the controller*/
-    virtual const base::VectorXd& updateController();
-    /** Write control output to port*/
-    virtual void writeControlOutput(const base::VectorXd& control_output_raw);
+    virtual void updateController();
     /** Compute Activation function*/
     virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function);
 
-    bool isValid(const base::Wrench &w);
-    void invalidate(base::Wrench& w);
-    const base::VectorXd wrenchToRaw(const base::samples::Wrench& wrench, base::VectorXd& raw);
+
+    bool isValid(const base::Wrench &w){
+        return !base::isNaN(w.force(0)) && !base::isNaN(w.force(1)) && !base::isNaN(w.force(2)) &&
+               !base::isNaN(w.torque(0)) && !base::isNaN(w.torque(1)) && !base::isNaN(w.torque(2));
+    }
+
+    const base::VectorXd wrenchToRaw(const base::samples::Wrench& wrench, base::VectorXd& raw){
+        raw.resize(6);
+        raw.segment(0,3) = wrench.force;
+        raw.segment(3,3) = wrench.torque;
+        return raw;
+    }
 
     base::samples::Wrench setpoint, feedback;
-    base::samples::RigidBodyState control_output;
-    base::VectorXd feedback_raw, setpoint_raw;
-    ProportionalFeedForwardController* controller;
+    base::VectorXd setpoint_raw, feedback_raw, ctrl_output_raw;
+    wbc::CartesianState control_output;
+    PIDController* controller;
 
 };
 }

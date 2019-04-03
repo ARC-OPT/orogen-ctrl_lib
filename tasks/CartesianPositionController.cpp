@@ -70,20 +70,18 @@ bool CartesianPositionController::readSetpoint(){
     }
 }
 
-const base::VectorXd& CartesianPositionController::updateController(){
-
+void CartesianPositionController::updateController(){
     control_output = controller->update(setpoint, feedback);
 
-    control_output.time = base::Time::now();
-    control_output.source_frame = setpoint.source_frame;
-    control_output.target_frame = setpoint.target_frame;
     _control_output.write(control_output);
     _control_error.write(controller->getControlError());
 }
 
 const base::VectorXd& CartesianPositionController::computeActivation(ActivationFunction &activation_function){
-//    tmp.resize(6);
-//    for(uint i = 0; i < 6; i++)
-//        tmp(i) = fabs(controller->getControlOutput()(i))/controller->getMaxControlOutput()(i);
-//    return activation_function.compute(tmp);
+    tmp.resize(6);
+    tmp.segment(0,3) = control_output.twist.linear;
+    tmp.segment(3,3) = control_output.twist.angular;
+    for(uint i = 0; i < 6; i++)
+        tmp(i) = fabs(tmp(i))/controller->maxCtrlOutput()(i);
+    return activation_function.compute(tmp);
 }

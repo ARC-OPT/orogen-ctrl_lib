@@ -1,9 +1,9 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "CartesianRadialPotentialFields.hpp"
-#include <ctrl_lib/RadialPotentialField.hpp>
+#include <wbc/controllers/RadialPotentialField.hpp>
 #include <base-logging/Logging.hpp>
-#include <ctrl_lib/CartesianPotentialFieldsController.hpp>
+#include <wbc/controllers/CartesianPotentialFieldsController.hpp>
 
 using namespace ctrl_lib;
 

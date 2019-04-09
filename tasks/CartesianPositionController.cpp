@@ -2,7 +2,7 @@
 
 #include "CartesianPositionController.hpp"
 #include <base-logging/Logging.hpp>
-#include <ctrl_lib/CartesianPosPDController.hpp>
+#include <wbc/controllers/CartesianPosPDController.hpp>
 
 using namespace ctrl_lib;
 

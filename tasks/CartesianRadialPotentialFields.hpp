@@ -4,7 +4,7 @@
 #define CTRL_LIB_CARTESIANRADIALPOTENTIALFIELDS_TASK_HPP
 
 #include "ctrl_lib/CartesianRadialPotentialFieldsBase.hpp"
-#include <wbc_common/CartesianState.hpp>
+#include <wbc/types/CartesianState.hpp>
 
 namespace ctrl_lib {
 

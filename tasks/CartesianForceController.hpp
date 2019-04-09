@@ -6,7 +6,7 @@
 #include "ctrl_lib/CartesianForceControllerBase.hpp"
 #include <base/samples/Wrench.hpp>
 #include <base/samples/RigidBodyState.hpp>
-#include <wbc_common/CartesianState.hpp>
+#include <wbc/types/CartesianState.hpp>
 
 namespace ctrl_lib{
 

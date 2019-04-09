@@ -2,7 +2,7 @@
 
 #include "CartesianForceController.hpp"
 #include <base-logging/Logging.hpp>
-#include <ctrl_lib/PIDController.hpp>
+#include <wbc/controllers/PIDController.hpp>
 
 using namespace ctrl_lib;
 

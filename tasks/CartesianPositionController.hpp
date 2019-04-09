@@ -4,7 +4,7 @@
 #define CTRL_LIB_CARTESIANPOSITIONCONTROLLER_TASK_HPP
 
 #include "ctrl_lib/CartesianPositionControllerBase.hpp"
-#include <wbc_common/CartesianState.hpp>
+#include <wbc/types/CartesianState.hpp>
 
 namespace ctrl_lib {
 

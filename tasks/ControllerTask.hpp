@@ -4,7 +4,7 @@
 #define CTRL_LIB_CONTROLLERTASK_TASK_HPP
 
 #include "ctrl_lib/ControllerTaskBase.hpp"
-#include <ctrl_lib/ActivationFunction.hpp>
+#include <wbc/controllers/ActivationFunction.hpp>
 #include <base/Time.hpp>
 
 namespace ctrl_lib {

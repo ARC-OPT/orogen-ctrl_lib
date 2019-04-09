@@ -2,7 +2,7 @@
 
 #include "JointPositionController.hpp"
 #include <base-logging/Logging.hpp>
-#include <ctrl_lib/JointPosPDController.hpp>
+#include <wbc/controllers/JointPosPDController.hpp>
 
 using namespace ctrl_lib;
 

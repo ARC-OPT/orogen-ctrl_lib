@@ -1,9 +1,9 @@
 /* Generated from orogen/lib/orogen/templates/tasks/Task.cpp */
 
 #include "JointLimitAvoidance.hpp"
-#include <ctrl_lib/RadialPotentialField.hpp>
+#include <wbc/controllers/RadialPotentialField.hpp>
 #include <base-logging/Logging.hpp>
-#include <ctrl_lib/JointPotentialFieldsController.hpp>
+#include <wbc/controllers/JointLimitAvoidanceController.hpp>
 
 using namespace ctrl_lib;
 

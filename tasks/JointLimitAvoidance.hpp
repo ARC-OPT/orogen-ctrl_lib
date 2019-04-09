@@ -5,11 +5,10 @@
 
 #include "ctrl_lib/JointLimitAvoidanceBase.hpp"
 #include <base/commands/Joints.hpp>
-#include <ctrl_lib/JointLimitAvoidanceController.hpp>
 
 namespace ctrl_lib{
 
-class PotentialFieldsController;
+class JointLimitAvoidanceController;
 
 /*! \class JointLimitAvoidance Implementation of RadialPotentialFields in joint space. Each joint will have one 1-dimensional potential field.
 See ctrl_lib/RadialPotentialField.hpp and ctrl_lib/PotentialFieldsController.hpp for details */

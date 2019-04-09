@@ -1,10 +1,10 @@
 name "ctrl_lib"
 
-using_library "ctrl_lib"
-import_types_from "ctrl_lib/PotentialFieldInfo.hpp"
-import_types_from "ctrl_lib/ActivationFunction.hpp"
+using_library "wbc-controllers"
+import_types_from "wbc/controllers/PotentialFieldInfo.hpp"
+import_types_from "wbc/controllers/ActivationFunction.hpp"
 import_types_from "base"
-import_types_from "wbc_common/CartesianState.hpp"
+import_types_from "wbc/types/CartesianState.hpp"
 
 #
 # Base class for all controllers. State machine in RUNNING state:

@@ -4,7 +4,7 @@ using_library "wbc-controllers"
 import_types_from "wbc/controllers/PotentialFieldInfo.hpp"
 import_types_from "wbc/controllers/ActivationFunction.hpp"
 import_types_from "base"
-import_types_from "wbc/types/CartesianState.hpp"
+import_types_from "ctrl_types/CartesianState.hpp"
 
 #
 # Base class for all controllers. State machine in RUNNING state:
@@ -99,17 +99,17 @@ task_context "CartesianPositionController", subclasses: "ControllerTask" do
    property("dead_zone", "base/VectorXd")
 
    # Setpoint of the controller.
-   input_port("setpoint", "wbc/CartesianState")
+   input_port("setpoint", "base/samples/CartesianState")
 
    # Feedback term of the controller.
-   input_port("feedback", "wbc/CartesianState")
+   input_port("feedback", "base/samples/CartesianState")
 
    # Control output as Cartesian linear/angular velocity as well as Cartesian linear/angular acceleration.
-   output_port("control_output", "wbc/CartesianState")
+   output_port("control_output", "base/samples/CartesianState")
 
    # Debug Ports
-   output_port("current_setpoint", "wbc/CartesianState")
-   output_port("current_feedback", "wbc/CartesianState")
+   output_port("current_setpoint", "base/samples/CartesianState")
+   output_port("current_feedback", "base/samples/CartesianState")
    output_port("control_error", "base/VectorXd")
 
    periodic 0.01
@@ -154,7 +154,7 @@ task_context "CartesianForceController", subclasses: "ControllerTask" do
    input_port("feedback", "base/samples/Wrench")
 
    # Control output as Cartesian velocity/angular velocity.
-   output_port("control_output", "wbc/CartesianState")
+   output_port("control_output", "base/samples/CartesianState")
 
    # Debug Ports
    output_port("current_setpoint", "base/samples/Wrench")
@@ -217,16 +217,16 @@ task_context "CartesianRadialPotentialFields", subclasses: "ControllerTask" do
    property("max_control_output", "base/VectorXd")
 
    # Set new centers of the potential fields here. Number of fields can be anything > 0.
-   input_port("pot_field_centers",  "std/vector<wbc/CartesianState>")
+   input_port("pot_field_centers",  "std/vector<base/samples/RigidBodyState>")
 
    # Controller feedback: Actual position of the control frame on the robot. Orientation is not used in this controller
-   input_port("feedback", "wbc/CartesianState")
+   input_port("feedback", "base/samples/CartesianState")
 
    # Control output as cartesian velocity.
-   output_port("control_output",   "wbc/CartesianState")
+   output_port("control_output",   "base/samples/CartesianState")
 
    # Debug ports:
-   output_port("current_feedback", "wbc/CartesianState")
+   output_port("current_feedback", "base/samples/CartesianState")
    output_port("field_infos", "std/vector<ctrl_lib/PotentialFieldInfo>")
    output_port("euclidean_distance", "base/VectorXd")
 

@@ -4,7 +4,7 @@
 #define CTRL_LIB_CARTESIANRADIALPOTENTIALFIELDS_TASK_HPP
 
 #include "ctrl_lib/CartesianRadialPotentialFieldsBase.hpp"
-#include <wbc/types/CartesianState.hpp>
+#include <ctrl_types/CartesianState.hpp>
 
 namespace ctrl_lib {
 
@@ -38,8 +38,8 @@ protected:
     virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function);
 
     double influence_distance;
-    wbc::CartesianState control_output, feedback;
-    std::vector<wbc::CartesianState> pot_field_centers;
+    base::samples::CartesianState control_output, feedback;
+    std::vector<base::samples::RigidBodyState> pot_field_centers;
     PotentialFieldsController* controller;
     std::vector<PotentialFieldInfo> field_infos;
 };

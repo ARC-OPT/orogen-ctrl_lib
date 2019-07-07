@@ -2,7 +2,7 @@
 
 #include "CartesianForceController.hpp"
 #include <base-logging/Logging.hpp>
-#include <wbc/controllers/PIDController.hpp>
+#include <wbc/controllers/CartesianForcePIDController.hpp>
 
 using namespace ctrl_lib;
 
@@ -18,7 +18,7 @@ bool CartesianForceController::configureHook(){
     if (! CartesianForceControllerBase::configureHook())
         return false;
 
-    controller = new PIDController(6);
+    controller = new CartesianForcePIDController();
     PIDCtrlParams params(6);
     params.p_gain = _p_gain.get();
     controller->setPID(params);
@@ -81,23 +81,15 @@ bool CartesianForceController::readSetpoint(){
 
 void CartesianForceController::updateController(){
 
-    wrenchToRaw(setpoint, setpoint_raw);
-    wrenchToRaw(feedback, feedback_raw);
+    control_output = controller->update(setpoint, feedback, this->getActivity()->getPeriod());
 
-    ctrl_output_raw = controller->update(setpoint_raw,
-                                         feedback_raw,
-                                         this->getActivity()->getPeriod());
-
-    control_output.twist.linear  = ctrl_output_raw.segment(0,3);
-    control_output.twist.angular = ctrl_output_raw.segment(3,3);
-    control_output.time = base::Time::now();
     _control_output.write(control_output);
-    _control_error.write(setpoint_raw-feedback_raw);
+    _control_error.write(controller->getControlError());
 }
 
 const base::VectorXd& CartesianForceController::computeActivation(ActivationFunction &activation_function){
     tmp.resize(controller->getDimension());
     for(uint i = 0; i < controller->getDimension(); i++)
-        tmp(i) = fabs(ctrl_output_raw(i))/controller->getMaxCtrlOutput()(i);
+        tmp(i) = fabs(ctrl_output_raw(i))/controller->maxCtrlOutput()(i);
     return activation_function.compute(tmp);
 }

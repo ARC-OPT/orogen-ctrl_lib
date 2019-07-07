@@ -5,6 +5,8 @@ import_types_from "wbc/controllers/PotentialFieldInfo.hpp"
 import_types_from "wbc/controllers/ActivationFunction.hpp"
 import_types_from "base"
 import_types_from "ctrl_types/CartesianState.hpp"
+import_types_from "wbc/controllers/PIDController.hpp"
+
 
 #
 # Base class for all controllers. State machine in RUNNING state:
@@ -229,6 +231,39 @@ task_context "CartesianRadialPotentialFields", subclasses: "ControllerTask" do
    output_port("current_feedback", "base/samples/CartesianState")
    output_port("field_infos", "std/vector<ctrl_lib/PotentialFieldInfo>")
    output_port("euclidean_distance", "base/VectorXd")
+
+   periodic 0.01
+end
+
+#
+# Joint Torque PID controller. Dimension of all fields has to be equal to field_names property
+#
+task_context "JointTorqueController", subclasses: "ControllerTask" do
+   needs_configuration
+
+   # PID gains. Size has to be the same as size of field_names.
+   property("pid_params", "ctrl_lib/PIDCtrlParams")
+
+   # Maximum control output (saturation). If one output value exceeds maximum, all
+   # other values will be scaled accordingly. Size has to be the same as size of field_names.
+   property("max_control_output", "base/VectorXd")
+
+   # Minimum control error (dead zone). If one control error value falls below this minimum, it will be set to zero.
+   property("dead_zone", "base/VectorXd")
+
+   # Setpoint of the controller. Joints will be mapped by name internally. Size has to be >= size of field_names. All field names have to be present.
+   input_port("setpoint", "base/commands/Joints")
+
+   # Feedback term of the controller. Joints will be mapped by name internally. Size has to be >= size of field_names. All field names have to be present.
+   input_port("feedback", "base/samples/Joints")
+
+   # Control output as velocity. Size will be same as size of field_names.
+   output_port("control_output", "base/commands/Joints")
+
+   # Debug Ports
+   output_port("current_setpoint", "base/commands/Joints")
+   output_port("current_feedback", "base/samples/Joints")
+   output_port("control_error", "base/VectorXd")
 
    periodic 0.01
 end

@@ -52,10 +52,12 @@ void JointLimitAvoidance::cleanupHook(){
 }
 
 bool JointLimitAvoidance::readFeedback(){
-    if(_feedback.read(feedback) == RTT::NoData)
+    if(_feedback.readNewest(feedback) == RTT::NoData)
         return false;
-    else
+    else{
+        _current_feedback.write(feedback);
         return true;
+    }
 }
 
 bool JointLimitAvoidance::readSetpoint(){

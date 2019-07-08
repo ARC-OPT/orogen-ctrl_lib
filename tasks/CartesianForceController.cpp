@@ -19,8 +19,11 @@ bool CartesianForceController::configureHook(){
         return false;
 
     controller = new CartesianForcePIDController();
-    PIDCtrlParams params(6);
+    PIDCtrlParams params(controller->getDimension());
     params.p_gain = _p_gain.get();
+    params.i_gain.setZero();
+    params.d_gain.setZero();
+    params.windup.setZero();
     controller->setPID(params);
     controller->setMaxCtrlOutput(_max_control_output.get());
     controller->setDeadZone(_dead_zone.get());

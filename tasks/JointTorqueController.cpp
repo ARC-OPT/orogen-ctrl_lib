@@ -29,6 +29,8 @@ bool JointTorqueController::configureHook(){
 bool JointTorqueController::startHook(){
     if (! JointTorqueControllerBase::startHook())
         return false;
+    _setpoint.clear();
+    _feedback.clear();
     return true;
 }
 

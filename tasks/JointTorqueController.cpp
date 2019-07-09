@@ -19,12 +19,7 @@ bool JointTorqueController::configureHook(){
         return false;
 
     controller = new JointTorquePIDController(_field_names.get());
-    PIDCtrlParams params(controller->getDimension());
-    params.p_gain = _p_gain.get();
-    params.i_gain.setZero();
-    params.d_gain.setZero();
-    params.windup.setZero();
-    controller->setPID(params);
+    controller->setPID(_pid_params.get());
     controller->setMaxCtrlOutput(_max_control_output.get());
     controller->setDeadZone(_dead_zone.get());
 

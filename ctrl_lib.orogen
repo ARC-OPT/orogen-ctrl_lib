@@ -5,7 +5,7 @@ import_types_from "wbc/controllers/PotentialFieldInfo.hpp"
 import_types_from "wbc/controllers/ActivationFunction.hpp"
 import_types_from "base"
 import_types_from "ctrl_types/CartesianState.hpp"
-
+import_types_from "wbc/controllers/PIDCtrlParams.hpp"
 
 #
 # Base class for all controllers. State machine in RUNNING state:
@@ -241,7 +241,7 @@ task_context "JointTorqueController", subclasses: "ControllerTask" do
    needs_configuration
 
    # PID gains. Size has to be the same as size of field_names.
-   property("p_gain", "base/VectorXd")
+   property("pid_params", "ctrl_lib/PIDCtrlParams")
 
    # Maximum control output (saturation). If one output value exceeds maximum, all
    # other values will be scaled accordingly. Size has to be the same as size of field_names.

@@ -92,7 +92,9 @@ void CartesianForceController::updateController(){
 
 const base::VectorXd& CartesianForceController::computeActivation(ActivationFunction &activation_function){
     tmp.resize(controller->getDimension());
-    for(uint i = 0; i < controller->getDimension(); i++)
-        tmp(i) = fabs(ctrl_output_raw(i))/controller->maxCtrlOutput()(i);
+    for(uint i = 0; i < 3; i++){
+        tmp(i) = fabs(control_output.twist.linear(i))/controller->maxCtrlOutput()(i);
+        tmp(i+3) = fabs(control_output.twist.angular(i))/controller->maxCtrlOutput()(i+3);
+    }
     return activation_function.compute(tmp);
 }

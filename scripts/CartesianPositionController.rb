@@ -28,14 +28,14 @@ Orocos.run "ctrl_lib::CartesianPositionController" => "controller" do
    controller.configure
    controller.start
 
-   setpoint = Types.wbc.CartesianState.new
+   setpoint = Types.base.samples.CartesianState.new
    setpoint.time = Types.base.Time.now
    setpoint.pose.position[0] = 1.0
    setpoint.pose.position[1] = 2.0
    setpoint.pose.position[2] = 3.0
    setpoint.pose.orientation =  Eigen::Quaternion.from_angle_axis(1.571, Eigen::Vector3.UnitZ)
 
-   feedback = Types.wbc.CartesianState.new
+   feedback = Types.base.samples.CartesianState.new
    for i in 0..2 do feedback.pose.position[i] = 0 end
    feedback.pose.orientation.x,feedback.pose.orientation.y,feedback.pose.orientation.z,feedback.pose.orientation.w = 0,0,0,1
    euler = Types.base.Vector3d.new(3)
@@ -44,7 +44,7 @@ Orocos.run "ctrl_lib::CartesianPositionController" => "controller" do
    setpoint_writer       = controller.setpoint.writer
    feedback_writer       = controller.feedback.writer
    control_output_reader = controller.control_output.reader
-   control_output        = Types.wbc.CartesianState.new
+   control_output        = Types.base.samples.CartesianState.new
 
    cycle_time = 0.01
    puts "Press Ctrl-C to stop ..."

@@ -4,9 +4,9 @@ Orocos.initialize
 Orocos.load_typekit("base")
 Orocos.load_typekit("wbc")
 
-Orocos.run do # "ctrl_lib::CartesianForceController" => "controller" do
+Orocos.run "ctrl_lib::CartesianForceController" => "controller" do
 
-   controller = Orocos::TaskContext.get "orogen_default_ctrl_lib__CartesianPositionController"
+   controller = Orocos::TaskContext.get "controller"
 
    p_gain            = Types::Base::VectorXd.new(6)
    dead_zone          = Types::Base::VectorXd.new(6)
@@ -26,19 +26,19 @@ Orocos.run do # "ctrl_lib::CartesianForceController" => "controller" do
    controller.configure
    controller.start
 
-   setpoint = Types::Base::Samples::Wrench.new
+   setpoint = Types.base.samples.Wrench.new
    setpoint.time = Types::Base::Time.now
    setpoint.force[0],setpoint.force[1],setpoint.force[2] = 1.0,2.0,3.0
    setpoint.torque[0],setpoint.torque[1],setpoint.torque[2] = 0.0,0.0,0.0
 
-   feedback = Types::Base::Samples::Wrench.new
+   feedback = Types.base.samples.Wrench.new
    feedback.force[0],feedback.force[1],feedback.force[2] = 0.0,0.0,0.0
    feedback.torque[0],feedback.torque[1],feedback.torque[2] = 0.0,0.0,0.0
 
    setpoint_writer      = controller.setpoint.writer
    feedback_writer      = controller.feedback.writer
    control_output_reader = controller.control_output.reader
-   control_output        = Types::Wbc::CartesianState.new
+   control_output        = Types.base.samples.CartesianState.new
 
    setpoint_writer.write(setpoint)
 

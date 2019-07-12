@@ -20,7 +20,8 @@ bool JointLimitAvoidance::configureHook(){
     if(!JointLimitAvoidanceBase::configureHook())
         return false;
 
-    controller = new JointLimitAvoidanceController(_joint_limits.get(), _influence_distance.get());
+    joint_limits = _joint_limits.get();
+    controller = new JointLimitAvoidanceController(joint_limits, _influence_distance.get());
     controller->setPGain(_p_gain.get());
     controller->setMaxControlOutput(_max_control_output.get());
 

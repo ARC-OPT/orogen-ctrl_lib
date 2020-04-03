@@ -4,7 +4,7 @@
 #define CTRL_LIB_CARTESIANPOSITIONCONTROLLER_TASK_HPP
 
 #include "ctrl_lib/CartesianPositionControllerBase.hpp"
-#include <ctrl_types/CartesianState.hpp>
+#include <ctrl_types/RigidBodyStateSE3.hpp>
 
 namespace ctrl_lib {
 
@@ -36,7 +36,7 @@ protected:
     /** Compute Activation function*/
     virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function);
 
-    base::samples::CartesianState setpoint, control_output, feedback;
+    base::samples::RigidBodyStateSE3 setpoint, control_output, feedback;
     CartesianPosPDController* controller;
 };
 }

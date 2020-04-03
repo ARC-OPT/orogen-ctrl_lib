@@ -6,7 +6,7 @@
 #include "ctrl_lib/CartesianForceControllerBase.hpp"
 #include <base/samples/Wrench.hpp>
 #include <base/samples/RigidBodyState.hpp>
-#include <ctrl_types/CartesianState.hpp>
+#include <ctrl_types/RigidBodyStateSE3.hpp>
 
 namespace ctrl_lib{
 
@@ -53,7 +53,7 @@ protected:
 
     base::samples::Wrench setpoint, feedback;
     base::VectorXd setpoint_raw, feedback_raw, ctrl_output_raw;
-    base::samples::CartesianState control_output;
+    base::samples::RigidBodyStateSE3 control_output;
     CartesianForcePIDController* controller;
 
 };

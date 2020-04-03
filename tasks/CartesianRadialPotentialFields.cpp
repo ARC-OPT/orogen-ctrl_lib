@@ -78,7 +78,7 @@ void CartesianRadialPotentialFields::updateController(){
     for(size_t i = 0; i < pot_field_centers.size(); i++)
     {
         // Only use the fields with correct frame ID
-        if(pot_field_centers[i].targetFrame == feedback.source_frame){
+        if(pot_field_centers[i].targetFrame == feedback.frame_id){
 
             PotentialFieldPtr field = std::make_shared<RadialPotentialField>(3, pot_field_centers[i].sourceFrame);
             field->pot_field_center = pot_field_centers[i].position;

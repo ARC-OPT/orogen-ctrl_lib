@@ -4,7 +4,7 @@
 #define CTRL_LIB_CARTESIANRADIALPOTENTIALFIELDS_TASK_HPP
 
 #include "ctrl_lib/CartesianRadialPotentialFieldsBase.hpp"
-#include <ctrl_types/RigidBodyStateSE3.hpp>
+#include <base/samples/RigidBodyStateSE3.hpp>
 
 namespace ctrl_lib {
 

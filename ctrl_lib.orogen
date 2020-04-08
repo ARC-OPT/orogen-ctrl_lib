@@ -4,7 +4,6 @@ using_library "wbc-controllers"
 import_types_from "wbc/controllers/PotentialFieldInfo.hpp"
 import_types_from "wbc/controllers/ActivationFunction.hpp"
 import_types_from "base"
-import_types_from "ctrl_types/RigidBodyStateSE3.hpp"
 import_types_from "wbc/controllers/PIDCtrlParams.hpp"
 
 #

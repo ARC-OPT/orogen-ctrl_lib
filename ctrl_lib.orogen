@@ -4,6 +4,7 @@ using_library "wbc-controllers"
 import_types_from "wbc/controllers/PotentialFieldInfo.hpp"
 import_types_from "wbc/controllers/ActivationFunction.hpp"
 import_types_from "base"
+import_types_from "base/samples/RigidBodyStateSE3.hpp" # Workaround until RigidBodyStateSE3 is in base/orogen/types
 import_types_from "wbc/controllers/PIDCtrlParams.hpp"
 
 #

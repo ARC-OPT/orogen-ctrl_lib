@@ -55,9 +55,6 @@ task_context "JointPositionController", subclasses: "ControllerTask" do
    # Feed Forward gain. Size has to be the same as size of field_names.
    property("d_gain", "base/VectorXd")
 
-   # Feed Forward gain. Size has to be the same as size of field_names.
-   property("ff_gain", "base/VectorXd")
-
    # Maximum control output (saturation). If one output value exceeds maximum, all
    # other values will be scaled accordingly. Size has to be the same as size of field_names.
    property("max_control_output", "base/VectorXd")
@@ -94,9 +91,6 @@ task_context "CartesianPositionController", subclasses: "ControllerTask" do
 
    # Derivative gain. Size has to be the same as size of field_names.
    property("d_gain", "base/VectorXd")
-
-   # Feedforward gain. Size has to be the same as size of field_names.
-   property("ff_gain", "base/VectorXd")
 
    # Maximum control output (saturation). If one output value exceeds maximum, all
    # other values will be scaled accordingly. Size has to be the same as size of field_names.

@@ -21,7 +21,6 @@ bool JointPositionController::configureHook(){
     controller = new JointPosPDController(_field_names.get());
     controller->setPGain(_p_gain.get());
     controller->setDGain(_d_gain.get());
-    controller->setFFGain(_ff_gain.get());
     controller->setMaxCtrlOutput(_max_control_output.get());
     controller->setDeadZone(_dead_zone.get());
 

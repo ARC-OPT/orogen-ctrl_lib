@@ -21,7 +21,6 @@ bool CartesianPositionController::configureHook(){
     controller = new CartesianPosPDController();
     controller->setPGain(_p_gain.get());
     controller->setDGain(_d_gain.get());
-    controller->setFFGain(_ff_gain.get());
     controller->setMaxCtrlOutput(_max_control_output.get());
     controller->setDeadZone(_dead_zone.get());
 

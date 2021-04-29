@@ -4,7 +4,7 @@
 #define CTRL_LIB_CARTESIANFORCECONTROLLER_TASK_HPP
 
 #include "ctrl_lib/CartesianForceControllerBase.hpp"
-#include <base/samples/Wrench.hpp>
+#include <base/samples/Wrenches.hpp>
 #include <base/samples/RigidBodyState.hpp>
 #include <base/samples/RigidBodyStateSE3.hpp>
 
@@ -52,6 +52,8 @@ protected:
     }
 
     base::samples::Wrench setpoint, feedback;
+    base::samples::Wrenches feedback_wrenches;
+    std::string ft_sensor_name;
     base::VectorXd setpoint_raw, feedback_raw, ctrl_output_raw;
     base::samples::RigidBodyStateSE3 control_output;
     CartesianForcePIDController* controller;

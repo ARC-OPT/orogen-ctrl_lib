@@ -27,6 +27,7 @@ bool CartesianForceController::configureHook(){
     controller->setPID(params);
     controller->setMaxCtrlOutput(_max_control_output.get());
     controller->setDeadZone(_dead_zone.get());
+    ft_sensor_name = _ft_sensor_name.get();
 
     return true;
 }
@@ -57,16 +58,28 @@ void CartesianForceController::cleanupHook(){
 }
 
 bool CartesianForceController::readFeedback(){
-    if(_feedback.readNewest(feedback) == RTT::NoData)
-        return false;
-    else{
-        if(!isValid(feedback)){
-            LOG_ERROR("%s: Feedback has an invalid force or torque value", this->getName().c_str());
-            throw std::invalid_argument("Invalid feedback term");
+    if(_feedback.readNewest(feedback) == RTT::NoData){
+        if(_feedback_wrenches.readNewest(feedback_wrenches) == RTT::NoData)
+            return false;
+        else{
+            try{
+                feedback.time = feedback_wrenches.time;
+                feedback.force = feedback_wrenches[ft_sensor_name].force;
+                feedback.torque = feedback_wrenches[ft_sensor_name].torque;
+            }
+            catch(base::samples::Wrenches::InvalidName e){
+                LOG_ERROR_S << "You configured FT Sensor name '" << ft_sensor_name << "', but this name is not included in wrenches feedbacl vector" << std::endl;
+                throw e;
+            }
         }
-        _current_feedback.write(feedback);
-        return true;
     }
+
+    if(!isValid(feedback)){
+        LOG_ERROR("%s: Feedback has an invalid force or torque value", this->getName().c_str());
+        throw std::invalid_argument("Invalid feedback term");
+    }
+    _current_feedback.write(feedback);
+    return true;
 }
 
 bool CartesianForceController::readSetpoint(){

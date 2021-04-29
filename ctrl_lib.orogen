@@ -147,6 +147,9 @@ task_context "CartesianForceController", subclasses: "ControllerTask" do
    # Proportional gain. Size has to be the same as size of field_names.
    property("p_gain", "base/VectorXd")
 
+   # Name of the FT Sensor to use when using feedback_wrenches input. If you use single wrench input (feedback), this can be left empty.
+   property("ft_sensor_name", "std/string")
+
    # Maximum control output (saturation). If one output value exceeds maximum, all
    # other values will be scaled accordingly. Size has to be the same as size of field_names.
    property("max_control_output", "base/VectorXd")
@@ -159,6 +162,9 @@ task_context "CartesianForceController", subclasses: "ControllerTask" do
 
    # Feedback term of the controller.
    input_port("feedback", "base/samples/Wrench")
+
+   # Feedback term of the controller.
+   input_port("feedback_wrenches", "base/samples/Wrenches")
 
    # Control output as Cartesian velocity/angular velocity.
    output_port("control_output", "base/samples/RigidBodyStateSE3")

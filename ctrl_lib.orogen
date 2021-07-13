@@ -40,7 +40,7 @@ task_context "ControllerTask" do
    output_port("actual_cycle_time", "double")
 
    # The controllers should be called periodically to achieve best performance.
-   periodic 0.01
+   periodic 0.001
 end
 
 #
@@ -79,7 +79,7 @@ task_context "JointPositionController", subclasses: "ControllerTask" do
    output_port("current_feedback", "base/samples/Joints")
    output_port("control_error", "base/VectorXd")
 
-   periodic 0.01
+   periodic 0.001
 end
 
 #
@@ -119,7 +119,7 @@ task_context "CartesianPositionController", subclasses: "ControllerTask" do
    output_port("current_feedback", "base/samples/RigidBodyStateSE3")
    output_port("control_error", "base/VectorXd")
 
-   periodic 0.01
+   periodic 0.001
 end
 
 #
@@ -174,7 +174,7 @@ task_context "CartesianForceController", subclasses: "ControllerTask" do
    output_port("current_feedback", "base/samples/Wrench")
    output_port("control_error", "base/VectorXd")
 
-   periodic 0.01
+   periodic 0.001
 end
 
 #
@@ -209,7 +209,7 @@ task_context "JointLimitAvoidance", subclasses: "ControllerTask" do
    output_port("field_infos", "std/vector<ctrl_lib/PotentialFieldInfo>")
    output_port("current_joint_limits", "base/JointLimits")
 
-   periodic 0.01
+   periodic 0.001
 end
 
 #
@@ -243,7 +243,7 @@ task_context "CartesianRadialPotentialFields", subclasses: "ControllerTask" do
    output_port("field_infos", "std/vector<ctrl_lib/PotentialFieldInfo>")
    output_port("euclidean_distance", "base/VectorXd")
 
-   periodic 0.01
+   periodic 0.001
 end
 
 #
@@ -276,7 +276,7 @@ task_context "JointTorqueController", subclasses: "ControllerTask" do
    output_port("current_feedback", "base/samples/Joints")
    output_port("control_error", "base/VectorXd")
 
-   periodic 0.01
+   periodic 0.001
 end
 
 typekit do

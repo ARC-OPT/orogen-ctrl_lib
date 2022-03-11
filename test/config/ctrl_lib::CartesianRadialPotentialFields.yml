@@ -1,0 +1,18 @@
+--- name:default
+# Type of activation function used. See ctrl_lib/ActivationFunction.hpp for details.
+activation_function:
+  threshold: 0.0
+  type: :NO_ACTIVATION
+  activation:
+    data: []
+# Unique name for each variable, e.g. joint names in case of a joint space controller.
+field_names: ["X", "Y", "Z"]
+# Default influence distance. Has to be > 0!
+influence_distance: 1.0
+# Maximum control output (saturation). If one output value exceeds maximum, all
+# other values will be scaled accordingly. Size has to be the same as size of field_names.
+max_control_output:
+  data: [0.3,0.3,0.3]
+# Proportional gain. Size has to be the same as size of field_names.
+p_gain:
+  data: [1,1,1]

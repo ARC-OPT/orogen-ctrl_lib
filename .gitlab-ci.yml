@@ -35,4 +35,9 @@ run_tests_18.04:
   - /etc/init.d/omniorb4-nameserver start
   - source $AUTOPROJ_CURRENT_ROOT/env.sh
   - cd test
+  - ruby test_cartesian_force_controller.rb
+  - ruby test_cartesian_position_controller.rb
+  - ruby test_cartesian_radial_potential_fields.rb
+  - ruby test_joint_limit_avoidance.rb
+  - ruby test_joint_position_controller.rb
 

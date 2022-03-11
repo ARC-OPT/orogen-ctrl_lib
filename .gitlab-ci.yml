@@ -2,29 +2,37 @@
 # Full project: https://gitlab.com/pages/doxygen
 image: alpine
 
-pages:
-  environment: api
-  before_script:
-  - apk add --no-cache doxygen
+include:
+  - project: 'build_server/gitlab_ci_includes'
+    file: 'api_publish.yml'
+  - project: 'build_server/gitlab_ci_includes'
+    file: 'software_catalogue.yml'
+    
+build_rock_18.04:
+  image: d-reg.hb.dfki.de:5000/gitlab-ci/docker-wbc_ubuntu:18.04
+  stage: build
   script:
-  - doxygen Doxyfile.in
-  - rm -rf /home/www/htdocs/apis/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME
-  - mkdir -p /home/www/htdocs/apis/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME
-  - mv doc_html/* /home/www/htdocs/apis/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME
-  artifacts:
-    paths:
-    - public
-  only:
-  - master
+    - aup --config
+    - aup orogen/ctrl_lib
+    - amake orogen/ctrl_lib
 
-software_catalogue_entry:
-  image: d-reg.hb.dfki.de:5000/ubuntu:overview_generator
-  stage: deploy
+build_rock_20.04:
+  image: d-reg.hb.dfki.de:5000/gitlab-ci/docker-wbc_ubuntu:20.04
+  stage: build
   script:
-  - apt update
-  - apt install -y wget
-  - wget http://bob.dfki.uni-bremen.de/software_overview/generate.sh
-  - sh generate.sh $CI_PROJECT_NAMESPACE $CI_PROJECT_NAME $CI_PROJECT_URL
-  only:
-  - master
+    - aup --config
+    - aup orogen/ctrl_lib
+    - amake orogen/ctrl_lib
+
+run_tests_18.04:
+  image: d-reg.hb.dfki.de:5000/gitlab-ci/docker-wbc_ubuntu:18.04
+  stage: test
+  script:
+  - aup --config
+  - aup
+  - aup orogen/ctrl_lib
+  - amake orogen/ctrl_lib
+  - /etc/init.d/omniorb4-nameserver start
+  - source $AUTOPROJ_CURRENT_ROOT/env.sh
+  - cd test
 

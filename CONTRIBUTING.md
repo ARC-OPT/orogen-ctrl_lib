@@ -7,7 +7,7 @@ what you are trying to do.
 
 ## Pull Requests
 
-The preferred way to contribute to orogen-wbc is to fork the main repository on Gitlab, then submit a "pull request"
+The preferred way to contribute to orogen-ctrl_lib is to fork the main repository on Gitlab, then submit a "pull request"
 (PR):
 
 1. Fork the [project repository](https://git.hb.dfki.de/dfki-control/wbc/orogen-ctrl_lib):
@@ -16,7 +16,7 @@ The preferred way to contribute to orogen-wbc is to fork the main repository on 
 
 3. Clone this copy to your local disk:
 
-        $ git clone git@git.hb.dfki.de:YourLogin/orogen-wbc.git
+        $ git clone git@git.hb.dfki.de:YourLogin/orogen-ctrl_lib.git
 
 4. Create a branch to hold your changes:
 

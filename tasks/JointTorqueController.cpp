@@ -18,7 +18,7 @@ bool JointTorqueController::configureHook(){
     if (! JointTorqueControllerBase::configureHook())
         return false;
 
-    controller = new JointTorquePIDController(_field_names.get());
+    controller = new wbc::JointTorquePIDController(_field_names.get());
     controller->setPID(_pid_params.get());
     controller->setMaxCtrlOutput(_max_control_output.get());
     controller->setDeadZone(_dead_zone.get());

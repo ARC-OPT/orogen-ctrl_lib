@@ -37,7 +37,7 @@ protected:
     virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function);
 
     base::samples::RigidBodyStateSE3 setpoint, control_output, feedback;
-    CartesianPosPDController* controller;
+    wbc::CartesianPosPDController* controller;
 };
 }
 

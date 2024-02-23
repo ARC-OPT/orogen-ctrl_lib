@@ -30,8 +30,8 @@ task_context "ControllerTask" do
    # Unique name for each variable, e.g. joint names in case of a joint space controller.
    property("field_names", "std/vector<std/string>")
 
-   # Type of activation function used. See ctrl_lib/ActivationFunction.hpp for details.
-   property("activation_function", "ctrl_lib/ActivationFunction")
+   # Type of activation function used. See wbc/controllers/ActivationFunction.hpp for details.
+   property("activation_function", "wbc/ActivationFunction")
 
    # Current activation values
    output_port("activation", "base/VectorXd")
@@ -179,7 +179,7 @@ end
 
 #
 # Implementation of RadialPotentialFields in joint space. Each joint will have one 1-dimensional potential field.
-# See ctrl_lib/RadialPotentialField.hpp and ctrl_lib/JointPotentialFieldsController.hpp for details
+# See wbc/controllers/RadialPotentialField.hpp and wbc/controllers/JointPotentialFieldsController.hpp for details
 #
 task_context "JointLimitAvoidance", subclasses: "ControllerTask" do
    needs_configuration
@@ -206,15 +206,15 @@ task_context "JointLimitAvoidance", subclasses: "ControllerTask" do
 
    # Debug ports
    output_port("current_feedback", "base/samples/Joints")
-   output_port("field_infos", "std/vector<ctrl_lib/PotentialFieldInfo>")
+   output_port("field_infos", "std/vector<wbc/PotentialFieldInfo>")
    output_port("current_joint_limits", "base/JointLimits")
 
    periodic 0.001
 end
 
 #
-# Implementation of RadialPotentialFields in Cartesian space. Dimension of all fields has to be 3! See ctrl_lib/RadialPotentialField.hpp and
-# ctrl_lib/PotentialFieldsController.hpp for details
+# Implementation of RadialPotentialFields in Cartesian space. Dimension of all fields has to be 3! See wbc/controllers/RadialPotentialField.hpp 
+# and wbc/controllers/PotentialFieldsController.hpp for details
 #
 task_context "CartesianRadialPotentialFields", subclasses: "ControllerTask" do
    needs_configuration
@@ -240,7 +240,7 @@ task_context "CartesianRadialPotentialFields", subclasses: "ControllerTask" do
 
    # Debug ports:
    output_port("current_feedback", "base/samples/RigidBodyStateSE3")
-   output_port("field_infos", "std/vector<ctrl_lib/PotentialFieldInfo>")
+   output_port("field_infos", "std/vector<wbc/PotentialFieldInfo>")
    output_port("euclidean_distance", "base/VectorXd")
 
    periodic 0.001
@@ -253,7 +253,7 @@ task_context "JointTorqueController", subclasses: "ControllerTask" do
    needs_configuration
 
    # PID gains. Size has to be the same as size of field_names.
-   property("pid_params", "ctrl_lib/PIDCtrlParams")
+   property("pid_params", "wbc/PIDCtrlParams")
 
    # Maximum control output (saturation). If one output value exceeds maximum, all
    # other values will be scaled accordingly. Size has to be the same as size of field_names.
@@ -280,7 +280,7 @@ task_context "JointTorqueController", subclasses: "ControllerTask" do
 end
 
 typekit do
-   export_types "ctrl_lib/ActivationFunction"
-   export_types "std/vector<ctrl_lib/PotentialFieldInfo>"
-   export_types "ctrl_lib/PotentialFieldInfo"
+   export_types "wbc/ActivationFunction"
+   export_types "std/vector<wbc/PotentialFieldInfo>"
+   export_types "wbc/PotentialFieldInfo"
 end

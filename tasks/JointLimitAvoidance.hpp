@@ -11,7 +11,7 @@ namespace ctrl_lib{
 class JointLimitAvoidanceController;
 
 /*! \class JointLimitAvoidance Implementation of RadialPotentialFields in joint space. Each joint will have one 1-dimensional potential field.
-See ctrl_lib/RadialPotentialField.hpp and ctrl_lib/PotentialFieldsController.hpp for details */
+See wbc/controllers/RadialPotentialField.hpp and wbc/controllers/PotentialFieldsController.hpp for details */
 class JointLimitAvoidance : public JointLimitAvoidanceBase
 {
     friend class JointLimitAvoidanceBase;
@@ -42,7 +42,7 @@ protected:
     base::VectorXd position_raw;
     base::commands::Joints control_output;
     base::VectorXd influence_distance;
-    JointLimitAvoidanceController* controller;
+    wbc::JointLimitAvoidanceController* controller;
 };
 }
 

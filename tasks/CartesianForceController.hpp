@@ -12,7 +12,7 @@ namespace ctrl_lib{
 
 class CartesianForcePIDController;
 
-/*! \class CartesianForceController Implementation of a force controller in Cartesian space. See ctrl_lib/ProportionalController.hpp for details*/
+/*! \class CartesianForceController Implementation of a force controller in Cartesian space. See wbc/controllers/ProportionalController.hpp for details*/
 class CartesianForceController : public CartesianForceControllerBase
 {
     friend class CartesianForceControllerBase;
@@ -56,7 +56,7 @@ protected:
     std::string ft_sensor_name;
     base::VectorXd setpoint_raw, feedback_raw, ctrl_output_raw;
     base::samples::RigidBodyStateSE3 control_output;
-    CartesianForcePIDController* controller;
+    wbc::CartesianForcePIDController* controller;
 
 };
 }

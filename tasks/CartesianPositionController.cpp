@@ -18,7 +18,7 @@ bool CartesianPositionController::configureHook(){
     if (! CartesianPositionControllerBase::configureHook())
         return false;
 
-    controller = new CartesianPosPDController();
+    controller = new wbc::CartesianPosPDController();
     controller->setPGain(_p_gain.get());
     controller->setDGain(_d_gain.get());
     controller->setFFGain(_ff_gain.get());

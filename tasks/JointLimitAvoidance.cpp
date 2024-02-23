@@ -22,7 +22,7 @@ bool JointLimitAvoidance::configureHook(){
 
     joint_limits = _joint_limits.get();
     joint_limits.names = field_names;
-    controller = new JointLimitAvoidanceController(joint_limits, _influence_distance.get());
+    controller = new wbc::JointLimitAvoidanceController(joint_limits, _influence_distance.get());
     controller->setPGain(_p_gain.get());
     controller->setMaxControlOutput(_max_control_output.get());
 

@@ -18,7 +18,7 @@ bool CartesianForceController::configureHook(){
     if (! CartesianForceControllerBase::configureHook())
         return false;
 
-    controller = new CartesianForcePIDController();
+    controller = new wbc::CartesianForcePIDController();
     PIDCtrlParams params(controller->getDimension());
     params.p_gain = _p_gain.get();
     params.i_gain.setZero();

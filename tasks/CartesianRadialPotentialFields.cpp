@@ -19,7 +19,7 @@ bool CartesianRadialPotentialFields::configureHook(){
     if(!CartesianRadialPotentialFieldsBase::configureHook())
         return false;
 
-    controller = new CartesianPotentialFieldsController();
+    controller = new wbc::CartesianPotentialFieldsController();
     controller->setPGain(_p_gain.get());
     controller->setMaxControlOutput(_max_control_output.get());
     influence_distance = _influence_distance.get();

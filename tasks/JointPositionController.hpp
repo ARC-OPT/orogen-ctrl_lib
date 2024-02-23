@@ -10,7 +10,7 @@ namespace ctrl_lib {
 
 class JointPosPDController;
 
-/*! \class JointPositionController Implementation of PositionControlFeedForward in joint space. See ctrl_lib/PositionControlFeedForward.hpp for details*/
+/*! \class JointPositionController Implementation of PositionControlFeedForward in joint space. See wbc/controllers/PositionControlFeedForward.hpp for details*/
 class JointPositionController : public JointPositionControllerBase
 {
     friend class JointPositionControllerBase;
@@ -37,7 +37,7 @@ protected:
     virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function);
 
     base::commands::Joints setpoint, control_output, feedback;
-    JointPosPDController* controller;
+    wbc::JointPosPDController* controller;
 };
 }
 

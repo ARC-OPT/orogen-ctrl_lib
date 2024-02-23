@@ -10,8 +10,8 @@ namespace ctrl_lib {
 
 class PotentialFieldsController;
 
-/*! \class CartesianRadialPotentialFields Implementation of RadialPotentialFields in Cartesian space. Dimension of all fields has to be 3! See ctrl_lib/RadialPotentialField.hpp and
-ctrl_lib/PotentialFieldsController.hpp for details  */
+/*! \class CartesianRadialPotentialFields Implementation of RadialPotentialFields in Cartesian space. Dimension of all fields has to be 3! See wbc/controllers/RadialPotentialField.hpp and
+wbc/controllers/PotentialFieldsController.hpp for details  */
 class CartesianRadialPotentialFields : public CartesianRadialPotentialFieldsBase
 {
     friend class CartesianRadialPotentialFieldsBase;
@@ -40,7 +40,7 @@ protected:
     double influence_distance;
     base::samples::RigidBodyStateSE3 control_output, feedback;
     std::vector<base::samples::RigidBodyState> pot_field_centers;
-    PotentialFieldsController* controller;
+    wbc::PotentialFieldsController* controller;
     std::vector<PotentialFieldInfo> field_infos;
 };
 }

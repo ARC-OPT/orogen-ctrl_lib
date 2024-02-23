@@ -37,7 +37,7 @@ protected:
     virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function);
 
     base::commands::Joints setpoint, control_output, feedback;
-    JointTorquePIDController* controller;
+    wbc::JointTorquePIDController* controller;
 
 };
 }

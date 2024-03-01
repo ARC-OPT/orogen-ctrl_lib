@@ -78,7 +78,7 @@ void CartesianPositionController::updateController(){
     _control_error.write(controller->getControlError());
 }
 
-const base::VectorXd& CartesianPositionController::computeActivation(ActivationFunction &activation_function){
+const base::VectorXd& CartesianPositionController::computeActivation(wbc::ActivationFunction &activation_function){
     tmp.resize(6);
     tmp.segment(0,3) = control_output.twist.linear;
     tmp.segment(3,3) = control_output.twist.angular;

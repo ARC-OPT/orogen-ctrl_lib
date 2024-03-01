@@ -5,6 +5,7 @@
 
 #include "ctrl_lib/CartesianRadialPotentialFieldsBase.hpp"
 #include <base/samples/RigidBodyStateSE3.hpp>
+#include <wbc/controllers/PotentialFieldsController.hpp>
 
 namespace ctrl_lib {
 
@@ -35,13 +36,13 @@ protected:
     /** Compute output of the controller*/
     virtual void updateController();
     /** Compute Activation function*/
-    virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function);
+    virtual const base::VectorXd& computeActivation(wbc::ActivationFunction& activation_function);
 
     double influence_distance;
     base::samples::RigidBodyStateSE3 control_output, feedback;
     std::vector<base::samples::RigidBodyState> pot_field_centers;
     wbc::PotentialFieldsController* controller;
-    std::vector<PotentialFieldInfo> field_infos;
+    std::vector<wbc::PotentialFieldInfo> field_infos;
 };
 }
 

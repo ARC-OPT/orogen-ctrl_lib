@@ -74,32 +74,32 @@ bool CartesianRadialPotentialFields::readSetpoint(){
 
 void CartesianRadialPotentialFields::updateController(){
 
-    std::vector<PotentialFieldPtr> fields;
+    std::vector<wbc::PotentialFieldPtr> fields;
     for(size_t i = 0; i < pot_field_centers.size(); i++)
     {
         // Only use the fields with correct frame ID
         if(pot_field_centers[i].targetFrame == feedback.frame_id){
 
-            PotentialFieldPtr field = std::make_shared<RadialPotentialField>(3, pot_field_centers[i].sourceFrame);
+            wbc::PotentialFieldPtr field = std::make_shared<wbc::RadialPotentialField>(3, pot_field_centers[i].sourceFrame);
             field->pot_field_center = pot_field_centers[i].position;
             field->influence_distance = influence_distance;
             fields.push_back(field);
         }
     }
     controller->setFields(fields);
-    control_output = ((CartesianPotentialFieldsController*)controller)->update(feedback);
+    control_output = ((wbc::CartesianPotentialFieldsController*)controller)->update(feedback);
 
     _control_output.write(control_output);
     _field_infos.write(controller->getFieldInfos());
 }
 
-const base::VectorXd& CartesianRadialPotentialFields::computeActivation(ActivationFunction &activation_function){
+const base::VectorXd& CartesianRadialPotentialFields::computeActivation(wbc::ActivationFunction &activation_function){
     tmp.resize(6);
     tmp.setZero();
 
     // Get highest activation from all fields
     double max_activation = 0;
-    const std::vector<PotentialFieldPtr> &fields = controller->getFields();
+    const std::vector<wbc::PotentialFieldPtr> &fields = controller->getFields();
     for(uint i = 0; i < fields.size(); i++){
         double activation;
         if(fields[i]->distance.norm() > fields[i]->influence_distance)

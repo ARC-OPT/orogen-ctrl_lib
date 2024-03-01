@@ -5,6 +5,7 @@
 
 #include "ctrl_lib/JointPositionControllerBase.hpp"
 #include <base/commands/Joints.hpp>
+#include <wbc/controllers/JointPosPDController.hpp>
 
 namespace ctrl_lib {
 
@@ -34,7 +35,7 @@ protected:
     /** Compute output of the controller*/
     virtual void updateController();
     /** Compute Activation function*/
-    virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function);
+    virtual const base::VectorXd& computeActivation(wbc::ActivationFunction& activation_function);
 
     base::commands::Joints setpoint, control_output, feedback;
     wbc::JointPosPDController* controller;

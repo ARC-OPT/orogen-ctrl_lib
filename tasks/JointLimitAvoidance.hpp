@@ -5,6 +5,7 @@
 
 #include "ctrl_lib/JointLimitAvoidanceBase.hpp"
 #include <base/commands/Joints.hpp>
+#include <wbc/controllers/JointLimitAvoidanceController.hpp>
 
 namespace ctrl_lib{
 
@@ -35,7 +36,7 @@ protected:
     /** Compute output of the controller*/
     virtual void updateController();
     /** Compute Activation function*/
-    virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function);
+    virtual const base::VectorXd& computeActivation(wbc::ActivationFunction& activation_function);
 
     base::JointLimits joint_limits;
     base::samples::Joints feedback;

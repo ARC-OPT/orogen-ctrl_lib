@@ -7,6 +7,7 @@
 #include <base/samples/Wrenches.hpp>
 #include <base/samples/RigidBodyState.hpp>
 #include <base/samples/RigidBodyStateSE3.hpp>
+#include <wbc/controllers/CartesianForcePIDController.hpp>
 
 namespace ctrl_lib{
 
@@ -36,7 +37,7 @@ protected:
     /** Compute output of the controller*/
     virtual void updateController();
     /** Compute Activation function*/
-    virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function);
+    virtual const base::VectorXd& computeActivation(wbc::ActivationFunction& activation_function);
 
 
     bool isValid(const base::Wrench &w){

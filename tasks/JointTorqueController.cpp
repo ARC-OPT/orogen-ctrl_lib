@@ -75,7 +75,7 @@ void JointTorqueController::updateController(){
     _control_error.write(controller->getControlError());
 }
 
-const base::VectorXd& JointTorqueController::computeActivation(ActivationFunction &activation_function){
+const base::VectorXd& JointTorqueController::computeActivation(wbc::ActivationFunction &activation_function){
     tmp.resize(control_output.size());
     for(uint i = 0; i < tmp.size(); i++)
         tmp(i) = fabs(control_output[i].speed)/controller->maxCtrlOutput()(i);

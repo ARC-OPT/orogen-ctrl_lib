@@ -74,11 +74,11 @@ void JointLimitAvoidance::updateController(){
     _current_joint_limits.write(joint_limits);
 }
 
-const base::VectorXd& JointLimitAvoidance::computeActivation(ActivationFunction &activation_function){
+const base::VectorXd& JointLimitAvoidance::computeActivation(wbc::ActivationFunction &activation_function){
     tmp.resize(controller->getDimension());
     tmp.setZero();
 
-    const std::vector<PotentialFieldPtr> &fields = controller->getFields();
+    const std::vector<wbc::PotentialFieldPtr> &fields = controller->getFields();
     for(uint i = 0; i < fields.size(); i++){
         double dist = fields[i]->distance.norm();
         if(dist > fields[i]->influence_distance)

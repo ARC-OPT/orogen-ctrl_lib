@@ -5,6 +5,7 @@
 
 #include "ctrl_lib/CartesianPositionControllerBase.hpp"
 #include <base/samples/RigidBodyStateSE3.hpp>
+#include <wbc/controllers/CartesianPosPDController.hpp>
 
 namespace ctrl_lib {
 
@@ -34,7 +35,7 @@ protected:
     /** Compute output of the controller*/
     virtual void updateController();
     /** Compute Activation function*/
-    virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function);
+    virtual const base::VectorXd& computeActivation(wbc::ActivationFunction& activation_function);
 
     base::samples::RigidBodyStateSE3 setpoint, control_output, feedback;
     wbc::CartesianPosPDController* controller;

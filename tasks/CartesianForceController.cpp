@@ -19,7 +19,7 @@ bool CartesianForceController::configureHook(){
         return false;
 
     controller = new wbc::CartesianForcePIDController();
-    PIDCtrlParams params(controller->getDimension());
+    wbc::PIDCtrlParams params(controller->getDimension());
     params.p_gain = _p_gain.get();
     params.i_gain.setZero();
     params.d_gain.setZero();
@@ -103,7 +103,7 @@ void CartesianForceController::updateController(){
     _control_error.write(controller->getControlError());
 }
 
-const base::VectorXd& CartesianForceController::computeActivation(ActivationFunction &activation_function){
+const base::VectorXd& CartesianForceController::computeActivation(wbc::ActivationFunction &activation_function){
     tmp.resize(controller->getDimension());
     for(uint i = 0; i < 3; i++){
         tmp(i) = fabs(control_output.twist.linear(i))/controller->maxCtrlOutput()(i);

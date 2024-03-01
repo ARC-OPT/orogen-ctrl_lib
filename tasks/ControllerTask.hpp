@@ -33,10 +33,10 @@ protected:
     /** Compute output of the controller*/
     virtual void updateController() = 0;
     /** Compute Activation function*/
-    virtual const base::VectorXd& computeActivation(ActivationFunction& activation_function) = 0;
+    virtual const base::VectorXd& computeActivation(wbc::ActivationFunction& activation_function) = 0;
 
     std::vector<std::string> field_names;
-    ActivationFunction activation_function;
+    wbc::ActivationFunction activation_function;
     base::VectorXd tmp;
     base::Time stamp;
 

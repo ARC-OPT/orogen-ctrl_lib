@@ -1,3 +1,5 @@
+# DEPRECATED!!! This repository is not maintained anymore!
+
 # ctrl_lib - Controller Library for Whole-Body Control
 
 [Code API](http://arc-opt.github.io/orogen-ctrl_lib/)  | [Full Documentation](https://arc-opt.github.io/Documentation/)
